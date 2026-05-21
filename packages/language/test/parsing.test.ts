@@ -25,9 +25,13 @@ describe('Parsing tests', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
         expect(document.parseResult.value.env).toBe('PAGILA_DATABASE_URL');
-        expect(document.parseResult.value.queries).toHaveLength(1);
-        expect(document.parseResult.value.queries[0].table?.name).toBe('film');
-        expect(document.parseResult.value.queries[0].toolName).toBe('listFilms');
+        expect(document.parseResult.value.entries).toHaveLength(1);
+        const entry = document.parseResult.value.entries[0];
+        expect(entry.$type).toBe('TableQuery');
+        if (entry.$type === 'TableQuery') {
+            expect(entry.table?.name).toBe('film');
+            expect(entry.toolName).toBe('listFilms');
+        }
     });
 
     test('parses query with optional example, summary, and maxLimit', async () => {
@@ -44,10 +48,85 @@ describe('Parsing tests', () => {
         `);
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
-        const q = document.parseResult.value.queries[0];
+        const q = document.parseResult.value.entries[0];
+        expect(q.$type).toBe('TableQuery');
+        if (q.$type !== 'TableQuery') {
+            return;
+        }
         expect(q.table?.name).toBe('actor');
         expect(q.summary).toBe('Actors');
         expect(q.example).toBe('All actors');
         expect(q.maxLimit).toBe(200);
+    });
+
+    test('parses columns map in query block', async () => {
+        document = await parse(`
+            database env "PAGILA_DATABASE_URL"
+
+            SELECT * FROM actor {
+                toolName: "listActors"
+                intent: "list actors"
+                columns: {
+                    actor_id: "Primary key"
+                    first_name: "Given name"
+                }
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        const q = document.parseResult.value.entries[0];
+        expect(q.$type).toBe('TableQuery');
+        if (q.$type !== 'TableQuery') {
+            return;
+        }
+        expect(q.columns?.entries).toHaveLength(2);
+        expect(q.columns?.entries[0].name).toBe('actor_id');
+        expect(q.columns?.entries[0].description).toBe('Primary key');
+        expect(q.columns?.entries[1].name).toBe('first_name');
+    });
+
+    test('parses empty columns map', async () => {
+        document = await parse(`
+            database env "PAGILA_DATABASE_URL"
+
+            SELECT * FROM actor {
+                toolName: "listActors"
+                intent: "list actors"
+                columns: {}
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        const empty = document.parseResult.value.entries[0];
+        expect(empty.$type).toBe('TableQuery');
+        if (empty.$type === 'TableQuery') {
+            expect(empty.columns?.entries).toHaveLength(0);
+        }
+    });
+
+    test('parses SQL tool with query and params', async () => {
+        document = await parse(`
+            database env "PAGILA_DATABASE_URL"
+
+            SQL {
+                toolName: "filmsByRating"
+                intent: "films with minimum rating"
+                query: "SELECT film_id, title FROM film WHERE rating >= $1 LIMIT $2"
+                params: {
+                    $1: "minimum rating"
+                    $2: "max rows"
+                }
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        const entry = document.parseResult.value.entries[0];
+        expect(entry.$type).toBe('SqlQuery');
+        if (entry.$type === 'SqlQuery') {
+            expect(entry.toolName).toBe('filmsByRating');
+            expect(entry.query).toContain('$1');
+            expect(entry.params?.entries).toHaveLength(2);
+            expect(entry.params?.entries[0].placeholder).toBe('$1');
+        }
     });
 });

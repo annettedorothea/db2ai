@@ -2,9 +2,12 @@ grammar Db2AiDsl
 
 entry Model:
     'database' 'env' env=STRING
-    (queries += Query)*;
+    (entries += ModelEntry)*;
 
-Query:
+ModelEntry:
+    TableQuery | SqlQuery;
+
+TableQuery:
     'SELECT' '*' 'FROM' table=TableName '{'
         (
               'toolName' ':' toolName=STRING
@@ -12,12 +15,38 @@ Query:
             | 'example' ':' example=STRING
             | 'summary' ':' summary=STRING
             | 'maxLimit' ':' maxLimit=INT
+            | 'columns' ':' columns=ColumnDescriptions
         )*
     '}';
+
+SqlQuery:
+    'SQL' '{'
+        (
+              'toolName' ':' toolName=STRING
+            | 'intent' ':' intent=STRING
+            | 'example' ':' example=STRING
+            | 'summary' ':' summary=STRING
+            | 'query' ':' query=STRING
+            | 'params' ':' params=SqlParamMap
+        )*
+    '}';
+
+ColumnDescriptions:
+    '{' (entries += ColumnDescriptionEntry)* '}';
+
+ColumnDescriptionEntry:
+    name=ID ':' description=STRING;
+
+SqlParamMap:
+    '{' (entries += SqlParamEntry)* '}';
+
+SqlParamEntry:
+    placeholder=PARAM_REF ':' label=STRING;
 
 TableName:
     name=ID;
 
+terminal PARAM_REF: /\$[0-9]+/;
 terminal INT: /[0-9]+/;
 terminal ID: /[a-zA-Z_][a-zA-Z0-9_]*/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;

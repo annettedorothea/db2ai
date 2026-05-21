@@ -1,5 +1,7 @@
 export * from './db-2-ai-dsl-module.js';
 export * from './db-2-ai-dsl-validator.js';
+export * from './db-2-ai-dsl-sql-validator.js';
+export * from './sql-params.js';
 export * from './schema.js';
 export { loadLocalEnvFiles, workspaceDirsForDocumentUri } from './env.js';
 export * from './generated/ast.js';

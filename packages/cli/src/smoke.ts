@@ -3,10 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export type DbInvokeArgs = {
-    limit?: number;
-    offset?: number;
-};
+export type DbInvokeArgs = Record<string, unknown>;
 
 type GeneratedRuntimeModule = {
     generatedTools: Array<{ toolName: string }>;

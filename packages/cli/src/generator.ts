@@ -8,7 +8,9 @@ import {
     buildInputSchemaByTool,
     quotePostgresIdent,
     resolveToolsFromModel,
-    type ResolvedDbToolCodegen
+    type ResolvedDbToolCodegen,
+    type ResolvedSqlToolCodegen,
+    type ResolvedTableToolCodegen
 } from './db-query-codegen.js';
 
 export type GeneratedOutputFiles = {
@@ -154,11 +156,9 @@ function renderSourceReference(source: string): string {
     return path.relative(process.cwd(), path.resolve(source)) || path.basename(source);
 }
 
-function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[]): string {
-    return tools
-        .map(tool => {
-            const quotedTable = quotePostgresIdent(tool.table);
-            return `        case ${JSON.stringify(tool.toolName)}: {
+function renderTableInvokeCase(tool: ResolvedTableToolCodegen): string {
+    const quotedTable = quotePostgresIdent(tool.table);
+    return `        case ${JSON.stringify(tool.toolName)}: {
             const effectiveLimit = Math.min(
                 typeof options.limit === 'number' && Number.isFinite(options.limit) ? options.limit : DEFAULT_PAGE_LIMIT,
                 ${tool.maxLimitCap}
@@ -176,7 +176,27 @@ function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[]): string {
                 offset
             };
         }`;
-        })
+}
+
+function renderSqlInvokeCase(tool: ResolvedSqlToolCodegen): string {
+    const valueExprs = tool.params
+        .map(
+            p =>
+                `options[${JSON.stringify(p.propertyName)}] !== undefined && options[${JSON.stringify(p.propertyName)}] !== null ? String(options[${JSON.stringify(p.propertyName)}]) : null`
+        )
+        .join(', ');
+    return `        case ${JSON.stringify(tool.toolName)}: {
+            const result = await client.query({ text: ${JSON.stringify(tool.sqlText)}, values: [${valueExprs}] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }`;
+}
+
+function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[]): string {
+    return tools
+        .map(tool => (tool.kind === 'table' ? renderTableInvokeCase(tool) : renderSqlInvokeCase(tool)))
         .join('\n');
 }
 
@@ -188,7 +208,7 @@ import pg from 'pg';
 export const DEFAULT_PAGE_LIMIT = ${DEFAULT_PAGE_LIMIT};
 export const DEFAULT_MAX_LIMIT_CAP = ${DEFAULT_MAX_LIMIT_CAP};
 
-export type InvokeOptions = {
+export type InvokeOptions = Record<string, unknown> & {
     limit?: number;
     offset?: number;
 };
@@ -260,8 +280,10 @@ export type GeneratedTool = {
     toolName: string;
     title: string;
     description: string;
-    table: string;
-    maxLimitCap: number;
+    kind: 'table' | 'sql';
+    table?: string;
+    maxLimitCap?: number;
+    sqlText?: string;
     example?: string;
 };
 

@@ -10,7 +10,12 @@ vi.mock('../src/schema.js', async importOriginal => {
     return {
         ...actual,
         loadSchema: vi.fn(async () => ({
-            tables: ['actor', 'customer', 'film']
+            tables: ['actor', 'customer', 'film'],
+            columnsByTable: {
+                actor: ['actor_id', 'first_name', 'last_name', 'last_update'],
+                film: ['film_id', 'title'],
+                customer: ['customer_id']
+            }
         }))
     };
 });
@@ -36,6 +41,20 @@ beforeEach(() => {
 function tableLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
     return items
         .filter(i => i.detail === 'PostgreSQL table')
+        .map(i => String(i.label));
+}
+
+function columnLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
+    return items
+        .filter(i => i.detail === 'PostgreSQL column')
+        .map(i => String(i.label));
+}
+
+function blockKeywordLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
+    return items
+        .filter(
+            i => i.detail === 'Query block property' || i.detail === 'SQL block property'
+        )
         .map(i => String(i.label));
 }
 
@@ -101,5 +120,86 @@ describe('Completion for table name', () => {
         const labels = tableLabels(list?.items ?? []);
         expect(labels.every(l => l.startsWith('fi'))).toBe(true);
         expect(labels).toContain('film');
+    });
+});
+
+describe('Completion for column keys', () => {
+    test('lists columns inside columns map', async () => {
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSELECT * FROM actor {\n    toolName: "listActors"\n    intent: "list actors"\n    columns: { `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        const labels = columnLabels(list?.items ?? []);
+        expect(labels).toContain('actor_id');
+        expect(labels).toContain('first_name');
+    });
+
+    test('does not suggest already used column keys', async () => {
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSELECT * FROM actor {\n    toolName: "listActors"\n    intent: "list actors"\n    columns: {\n        actor_id: "id"\n        `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        const labels = columnLabels(list?.items ?? []);
+        expect(labels).not.toContain('actor_id');
+        expect(labels).toContain('first_name');
+    });
+
+    test('does not list columns before FROM', async () => {
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSELECT * FROM `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        expect(columnLabels(list?.items ?? [])).toHaveLength(0);
+    });
+});
+
+describe('Completion for query block keywords', () => {
+    test('lists block keywords inside empty query block', async () => {
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSELECT * FROM film {\n    `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        const labels = blockKeywordLabels(list?.items ?? []);
+        expect(labels).toContain('toolName');
+        expect(labels).toContain('intent');
+        expect(labels).toContain('columns');
+    });
+
+    test('does not suggest already used block keywords', async () => {
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSELECT * FROM film {\n    toolName: "listFilms"\n    intent: "list films"\n    `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        const labels = blockKeywordLabels(list?.items ?? []);
+        expect(labels).not.toContain('toolName');
+        expect(labels).not.toContain('intent');
+        expect(labels).toContain('summary');
+    });
+
+    test('lists SQL block keywords inside SQL block', async () => {
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        const labels = blockKeywordLabels(list?.items ?? []);
+        expect(labels).toContain('query');
+        expect(labels).toContain('params');
+    });
+
+    test('lists block keywords without database env value', async () => {
+        delete process.env.PAGILA_DATABASE_URL;
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSELECT * FROM film {\n    `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        const labels = blockKeywordLabels(list?.items ?? []);
+        expect(labels).toContain('toolName');
     });
 });

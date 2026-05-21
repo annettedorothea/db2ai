@@ -3,6 +3,7 @@ import { loadLocalEnvFiles, workspaceDirsForDocumentUri } from './env.js';
 
 export type LoadedSchema = {
     tables: string[];
+    columnsByTable: Record<string, string[]>;
 };
 
 const cache = new Map<string, LoadedSchema>();
@@ -55,14 +56,26 @@ export async function loadSchema(connectionUrl: string): Promise<LoadedSchema> {
     const client = new pg.Client({ connectionString: key });
     await client.connect();
     try {
-        const result = await client.query<{ table_name: string }>(
+        const tablesResult = await client.query<{ table_name: string }>(
             `SELECT table_name
              FROM information_schema.tables
              WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
              ORDER BY table_name`
         );
-        const tables = result.rows.map(row => row.table_name);
-        const loaded: LoadedSchema = { tables };
+        const columnsResult = await client.query<{ table_name: string; column_name: string }>(
+            `SELECT table_name, column_name
+             FROM information_schema.columns
+             WHERE table_schema = 'public'
+             ORDER BY table_name, ordinal_position`
+        );
+        const tables = tablesResult.rows.map(row => row.table_name);
+        const columnsByTable: Record<string, string[]> = {};
+        for (const row of columnsResult.rows) {
+            const list = columnsByTable[row.table_name] ?? [];
+            list.push(row.column_name);
+            columnsByTable[row.table_name] = list;
+        }
+        const loaded: LoadedSchema = { tables, columnsByTable };
         cache.set(key, loaded);
         return loaded;
     } finally {
@@ -72,4 +85,12 @@ export async function loadSchema(connectionUrl: string): Promise<LoadedSchema> {
 
 export function hasTable(loaded: LoadedSchema, tableName: string): boolean {
     return loaded.tables.includes(tableName);
+}
+
+export function columnsForTable(loaded: LoadedSchema, tableName: string): string[] {
+    return loaded.columnsByTable[tableName] ?? [];
+}
+
+export function hasColumn(loaded: LoadedSchema, tableName: string, columnName: string): boolean {
+    return columnsForTable(loaded, tableName).includes(columnName);
 }

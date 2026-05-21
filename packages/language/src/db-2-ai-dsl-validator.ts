@@ -1,8 +1,11 @@
 import type { ValidationAcceptor, ValidationChecks } from 'langium';
 import { CstUtils, isLeafCstNode } from 'langium';
-import type { Db2AiDslAstType, Model, Query } from './generated/ast.js';
+import type { Db2AiDslAstType, Model, TableQuery } from './generated/ast.js';
+import { isSqlQuery, isTableQuery } from './generated/ast.js';
 import type { Db2AiDslServices } from './db-2-ai-dsl-module.js';
+import { checkSqlQuery } from './db-2-ai-dsl-sql-validator.js';
 import {
+    hasColumn,
     hasTable,
     isPostgresqlConnectionUrl,
     isValidEnvVarName,
@@ -10,7 +13,8 @@ import {
     resolveDatabaseUrlFromEnvForDocument
 } from './schema.js';
 
-const QUERY_BLOCK_KEYS = ['toolName', 'intent', 'example', 'summary', 'maxLimit'] as const;
+export const QUERY_BLOCK_KEYS = ['toolName', 'intent', 'example', 'summary', 'maxLimit', 'columns'] as const;
+export type QueryBlockKey = (typeof QUERY_BLOCK_KEYS)[number];
 
 export const DEFAULT_MAX_LIMIT_CAP = 1000;
 export const DEFAULT_PAGE_LIMIT = 100;
@@ -27,11 +31,13 @@ export function registerValidationChecks(services: Db2AiDslServices): void {
 export class Db2AiDslValidator {
     async checkModel(model: Model, accept: ValidationAcceptor): Promise<void> {
         this.checkDatabaseEnv(model, accept);
-        this.checkQueryRequiredKeys(model, accept);
+        this.checkRequiredKeys(model, accept);
         this.checkMaxLimit(model, accept);
         this.checkBlockDuplicateKeys(model, accept);
+        this.checkColumnMapDuplicateKeys(model, accept);
         this.checkUniqueToolNames(model, accept);
         await this.checkTablesExist(model, accept);
+        await this.checkColumnKeysExist(model, accept);
     }
 
     private checkDatabaseEnv(model: Model, accept: ValidationAcceptor): void {
@@ -51,8 +57,7 @@ export class Db2AiDslValidator {
         }
     }
 
-    private queryBlockHasOpeningBrace(query: Query): boolean {
-        const cst = query.$cstNode;
+    private blockHasOpeningBrace(cst: TableQuery['$cstNode']): boolean {
         if (!cst) {
             return false;
         }
@@ -64,30 +69,37 @@ export class Db2AiDslValidator {
         return false;
     }
 
-    private checkQueryRequiredKeys(model: Model, accept: ValidationAcceptor): void {
-        for (const query of model.queries) {
-            if (!this.queryBlockHasOpeningBrace(query)) {
+    private checkRequiredKeys(model: Model, accept: ValidationAcceptor): void {
+        for (const entry of model.entries) {
+            if (isSqlQuery(entry)) {
+                checkSqlQuery(entry, accept);
                 continue;
             }
-            if (query.toolName === undefined) {
+            if (!isTableQuery(entry)) {
+                continue;
+            }
+            if (!this.blockHasOpeningBrace(entry.$cstNode)) {
+                continue;
+            }
+            if (entry.toolName === undefined) {
                 accept('error', 'Query requires `toolName: "..."`.', {
-                    node: query,
+                    node: entry,
                     property: 'toolName'
                 });
-            } else if (String(query.toolName).trim().length === 0) {
+            } else if (String(entry.toolName).trim().length === 0) {
                 accept('error', 'Query `toolName` must not be empty.', {
-                    node: query,
+                    node: entry,
                     property: 'toolName'
                 });
             }
-            if (query.intent === undefined) {
+            if (entry.intent === undefined) {
                 accept('error', 'Query requires `intent: "..."`.', {
-                    node: query,
+                    node: entry,
                     property: 'intent'
                 });
-            } else if (String(query.intent).trim().length === 0) {
+            } else if (String(entry.intent).trim().length === 0) {
                 accept('error', 'Query `intent` must not be empty.', {
-                    node: query,
+                    node: entry,
                     property: 'intent'
                 });
             }
@@ -95,15 +107,15 @@ export class Db2AiDslValidator {
     }
 
     private checkMaxLimit(model: Model, accept: ValidationAcceptor): void {
-        for (const query of model.queries) {
-            if (query.maxLimit === undefined) {
+        for (const entry of model.entries) {
+            if (!isTableQuery(entry) || entry.maxLimit === undefined) {
                 continue;
             }
             const maxLimit =
-                typeof query.maxLimit === 'number' ? query.maxLimit : Number(query.maxLimit);
+                typeof entry.maxLimit === 'number' ? entry.maxLimit : Number(entry.maxLimit);
             if (!Number.isFinite(maxLimit) || maxLimit < 1) {
                 accept('error', '`maxLimit` must be a positive integer.', {
-                    node: query,
+                    node: entry,
                     property: 'maxLimit'
                 });
             }
@@ -111,12 +123,15 @@ export class Db2AiDslValidator {
     }
 
     private checkBlockDuplicateKeys(model: Model, accept: ValidationAcceptor): void {
-        for (const query of model.queries) {
-            this.reportDuplicateKeywords(query, accept);
+        for (const entry of model.entries) {
+            if (!isTableQuery(entry)) {
+                continue;
+            }
+            this.reportDuplicateKeywords(entry, accept);
         }
     }
 
-    private reportDuplicateKeywords(query: Query, accept: ValidationAcceptor): void {
+    private reportDuplicateKeywords(query: TableQuery, accept: ValidationAcceptor): void {
         const cst = query.$cstNode;
         if (!cst) {
             return;
@@ -142,10 +157,37 @@ export class Db2AiDslValidator {
         }
     }
 
+    private checkColumnMapDuplicateKeys(model: Model, accept: ValidationAcceptor): void {
+        for (const entry of model.entries) {
+            if (!isTableQuery(entry)) {
+                continue;
+            }
+            const entries = entry.columns?.entries;
+            if (!entries || entries.length === 0) {
+                continue;
+            }
+            const seen = new Set<string>();
+            for (const col of entries) {
+                const name = col.name;
+                if (name === undefined || name.trim().length === 0) {
+                    continue;
+                }
+                if (seen.has(name)) {
+                    accept('error', `Duplicate column key "${name}". Each column may appear at most once.`, {
+                        node: col,
+                        property: 'name'
+                    });
+                    continue;
+                }
+                seen.add(name);
+            }
+        }
+    }
+
     private checkUniqueToolNames(model: Model, accept: ValidationAcceptor): void {
         const seenToolNames = new Map<string, number>();
-        model.queries.forEach((query, index) => {
-            const key = query.toolName;
+        model.entries.forEach((entry, index) => {
+            const key = entry.toolName;
             if (key === undefined || key === null || String(key).trim().length === 0) {
                 return;
             }
@@ -154,7 +196,7 @@ export class Db2AiDslValidator {
             if (firstIndex !== undefined) {
                 accept('error', `toolName "${normalized}" must be unique.`, {
                     node: model,
-                    property: 'queries',
+                    property: 'entries',
                     index
                 });
                 return;
@@ -205,22 +247,78 @@ export class Db2AiDslValidator {
             return;
         }
 
-        model.queries.forEach((query, index) => {
-            if (!this.queryBlockHasOpeningBrace(query)) {
+        model.entries.forEach((entry, index) => {
+            if (!isTableQuery(entry) || !this.blockHasOpeningBrace(entry.$cstNode)) {
                 return;
             }
-            const tableName = query.table?.name;
+            const tableName = entry.table?.name;
             if (tableName === undefined || tableName.trim().length === 0) {
                 return;
             }
             if (!hasTable(loaded, tableName)) {
                 accept('error', `Table "${tableName}" does not exist in the public schema.`, {
                     node: model,
-                    property: 'queries',
+                    property: 'entries',
                     index
                 });
             }
         });
+    }
+
+    private async checkColumnKeysExist(model: Model, accept: ValidationAcceptor): Promise<void> {
+        const envName = model.env;
+        if (envName === undefined || envName === null || String(envName).trim().length === 0) {
+            return;
+        }
+        if (!isValidEnvVarName(String(envName))) {
+            return;
+        }
+
+        const documentUri = model.$document?.uri.toString();
+        const connectionUrl = resolveDatabaseUrlFromEnvForDocument(String(envName), documentUri);
+        if (connectionUrl === undefined || !isPostgresqlConnectionUrl(connectionUrl)) {
+            return;
+        }
+
+        let loaded;
+        try {
+            loaded = await loadSchema(connectionUrl);
+        } catch {
+            return;
+        }
+
+        for (const entry of model.entries) {
+            if (!isTableQuery(entry) || !this.blockHasOpeningBrace(entry.$cstNode)) {
+                continue;
+            }
+            const colEntries = entry.columns?.entries;
+            if (!colEntries || colEntries.length === 0) {
+                continue;
+            }
+            const tableName = entry.table?.name;
+            if (tableName === undefined || tableName.trim().length === 0) {
+                continue;
+            }
+            if (!hasTable(loaded, tableName)) {
+                continue;
+            }
+            for (const col of colEntries) {
+                const columnName = col.name;
+                if (columnName === undefined || columnName.trim().length === 0) {
+                    continue;
+                }
+                if (!hasColumn(loaded, tableName, columnName)) {
+                    accept(
+                        'error',
+                        `Column "${columnName}" does not exist on table "${tableName}" in the public schema.`,
+                        {
+                            node: col,
+                            property: 'name'
+                        }
+                    );
+                }
+            }
+        }
     }
 
     private getErrorMessage(error: unknown): string {

@@ -10,10 +10,7 @@ type GeneratedTool = {
     description: string;
 };
 
-type GeneratedInvokeOptions = {
-    limit?: number;
-    offset?: number;
-};
+type GeneratedInvokeOptions = Record<string, unknown>;
 
 type GeneratedRuntimeModule = {
     generatedTools: GeneratedTool[];
@@ -177,10 +174,7 @@ export async function runMcpServerFromGeneratedModule(modulePath: string, option
             async args => {
                 const a = args as GeneratedInvokeOptions;
                 const currentModule = await loadModule();
-                const result = await currentModule.invokeTool(tool.toolName, {
-                    limit: a.limit,
-                    offset: a.offset
-                });
+                const result = await currentModule.invokeTool(tool.toolName, a);
                 return {
                     content: [
                         {

@@ -13,6 +13,11 @@ SELECT * FROM actor {
     intent: "list actors with pagination"
     summary: "Paginated actor rows"
     maxLimit: 500
+    columns: {
+        actor_id: "Primary key"
+        first_name: "Given name"
+        last_name: "Family name"
+    }
 }
 
 SELECT * FROM customer {
@@ -21,6 +26,11 @@ SELECT * FROM customer {
     example: "First 10 customers: limit 10 offset 0"
     summary: "Paginated customer rows"
     maxLimit: 500
+    columns: {
+        active: "Active customer flag"
+        address_id: "Address ID"
+        email: "Email address"
+    }
 }
 
 SELECT * FROM category {
@@ -28,4 +38,63 @@ SELECT * FROM category {
     intent: "list categories with pagination"
     summary: "Paginated category rows"
     maxLimit: 500
+}
+
+SELECT * FROM country {
+    toolName: "listCountries"
+    intent: "list countries with pagination"
+    summary: "Paginated country rows"
+    maxLimit: 500
+    columns: {
+        country: "country name"
+        last_update: "last update timestamp"
+    }
+}
+
+SELECT * FROM inventory {
+    toolName: "listInventory"
+    intent: "list inventory with pagination"
+    summary: "Paginated inventory rows"
+    maxLimit: 500
+    columns: {
+        inventory_id: "Primary key"
+        film_id: "Film ID"
+        store_id: "Store ID"
+    }
+}
+
+SQL {
+    toolName: "filmsByMpaaRating"
+    intent: "list films with a given MPAA age rating"
+    example: "MPAA rating PG-13, max 20 rows"
+    summary: "Films by MPAA rating (G, PG, PG-13, R, NC-17)"
+    query: "SELECT film_id, title, rating FROM film WHERE rating = $1::mpaa_rating ORDER BY title LIMIT $2"
+    params: {
+        $1: "MPAA rating (G, PG, PG-13, R, or NC-17)"
+        $2: "max rows to return"
+    }
+}
+
+SQL {
+    toolName: "filmsWithActorLastName"
+    intent: "which films feature actors whose last name starts with a given prefix"
+    example: "Last name prefix GAR (e.g. Gardner), limit 25"
+    summary: "Actor–film cast via film_actor join"
+    query: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2"
+    params: {
+        $1: "actor last name prefix (e.g. GAR, BER, HOP)"
+        $2: "max rows to return"
+    }
+}
+
+SQL {
+    toolName: "searchFilms"
+    intent: "search films by free text in title or description"
+    example: "Search dragon, limit 15"
+    summary: "Film full-text style search (title and description)"
+    query: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2"
+    params: {
+        $1: "search text (matched in title or description)"
+        $2: "max rows to return"
+    }
 }

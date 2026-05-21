@@ -9,7 +9,12 @@ vi.mock('../src/schema.js', async importOriginal => {
     return {
         ...actual,
         loadSchema: vi.fn(async () => ({
-            tables: ['film', 'actor', 'customer']
+            tables: ['film', 'actor', 'customer'],
+            columnsByTable: {
+                film: ['film_id', 'title'],
+                actor: ['actor_id', 'first_name', 'last_name'],
+                customer: ['customer_id']
+            }
         }))
     };
 });
@@ -126,6 +131,56 @@ describe('Validating', () => {
         `);
 
         expect(errorMessages(document).some(m => m.includes('postgresql'))).toBe(true);
+    });
+
+    test('accepts valid columns map', async () => {
+        document = await parseValidated(`
+            database env "PAGILA_DATABASE_URL"
+
+            SELECT * FROM actor {
+                toolName: "listActors"
+                intent: "list actors"
+                columns: {
+                    actor_id: "Primary key"
+                    first_name: "Given name"
+                }
+            }
+        `);
+
+        expect(errorMessages(document)).toHaveLength(0);
+    });
+
+    test('rejects unknown column in columns map', async () => {
+        document = await parseValidated(`
+            database env "PAGILA_DATABASE_URL"
+
+            SELECT * FROM actor {
+                toolName: "listActors"
+                intent: "list actors"
+                columns: {
+                    not_a_column: "x"
+                }
+            }
+        `);
+
+        expect(errorMessages(document).some(m => m.includes('not_a_column'))).toBe(true);
+    });
+
+    test('rejects duplicate column keys in columns map', async () => {
+        document = await parseValidated(`
+            database env "PAGILA_DATABASE_URL"
+
+            SELECT * FROM actor {
+                toolName: "listActors"
+                intent: "list actors"
+                columns: {
+                    actor_id: "a"
+                    actor_id: "b"
+                }
+            }
+        `);
+
+        expect(errorMessages(document).some(m => m.includes('Duplicate column key'))).toBe(true);
     });
 
     test('rejects non-positive maxLimit', async () => {

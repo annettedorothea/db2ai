@@ -220,10 +220,7 @@ async function runMcpServerFromGeneratedModule(modulePath, options = {}) {
       async (args) => {
         const a = args;
         const currentModule = await loadModule();
-        const result = await currentModule.invokeTool(tool.toolName, {
-          limit: a.limit,
-          offset: a.offset
-        });
+        const result = await currentModule.invokeTool(tool.toolName, a);
         return {
           content: [
             {
