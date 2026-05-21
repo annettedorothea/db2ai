@@ -1,5 +1,5 @@
 /**
- * Generated from: examples/pagila.db2ai
+ * Generated from: pagila.db2ai
  */
 
 export const connectionEnv = "PAGILA_DATABASE_URL";

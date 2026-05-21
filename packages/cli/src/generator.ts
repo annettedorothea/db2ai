@@ -153,7 +153,7 @@ function serializeJsonForModule(value: unknown): string {
 }
 
 function renderSourceReference(source: string): string {
-    return path.relative(process.cwd(), path.resolve(source)) || path.basename(source);
+    return path.basename(source);
 }
 
 function renderTableInvokeCase(tool: ResolvedTableToolCodegen): string {
