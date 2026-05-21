@@ -1,0 +1,16 @@
+{
+    "projectName": "Db2AiDsl",
+    "languages": [
+        {
+            "id": "db-2-ai-dsl",
+            "grammar": "src/db-2-ai-dsl.langium",
+            "fileExtensions": [
+                "db2ai"
+            ],
+            "textMate": {
+                "out": "syntaxes/db-2-ai-dsl.tmLanguage.json"
+            }
+        }
+    ],
+    "out": "src/generated"
+}

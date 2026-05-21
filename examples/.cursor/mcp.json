@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "db2ai-pagila": {
+      "command": "node",
+      "args": [
+        "./generated/cli/mcp-serve.mjs",
+        "./generated/tools/pagila-tools.mjs"
+      ]
+    }
+  }
+}

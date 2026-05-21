@@ -1,0 +1,15 @@
+{
+    "name": "db2ai-examples",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "db:setup": "bash scripts/setup-pagila.sh",
+        "db:reset": "bash scripts/setup-pagila.sh --reset",
+        "db:psql": "psql postgresql://postgres:postgres@localhost:5432/pagila"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "pg": "~8.16.0",
+        "zod": "^4.4.3"
+    }
+}

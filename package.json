@@ -1,0 +1,31 @@
+{
+    "name": "db-2-ai-dsl-workspace",
+    "description": "Langium workspace for db2ai — relational DB to MCP tools",
+    "version": "0.0.1",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "clean": "npm run clean --workspaces",
+        "watch": "tsc -b tsconfig.build.json --watch",
+        "build": "tsc -b tsconfig.build.json && npm run bundle:mcp-runtime && npm run build --workspaces",
+        "bundle:mcp-runtime": "esbuild packages/cli/mcp-bundle/mcp-standalone-entry.ts --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=packages/cli/resources/mcp-serve-emitted.mjs --external:@modelcontextprotocol/sdk --external:zod --external:pg --external:vscode-* --external:langium --external:langium/*",
+        "build:clean": "npm run clean && npm run build",
+        "langium:generate": "npm run --workspace packages/language langium:generate",
+        "langium:watch": "npm run --workspace packages/language langium:watch",
+        "generate:pagila": "node ./packages/cli/bin/cli.js generate ./examples/pagila.db2ai ./examples/generated/tools/pagila-tools.ts",
+        "test": "npm run --workspace packages/language test",
+        "test:smoke:pagila": "node ./packages/cli/bin/cli.js smoke-generated ./examples/generated/tools/pagila-tools.mjs listFilms",
+        "test:mcp:pagila": "node ./examples/generated/cli/mcp-serve.mjs ./examples/generated/tools/pagila-tools.mjs"
+    },
+    "devDependencies": {
+        "@types/node": "~20.17.48",
+        "esbuild": "^0.25.12",
+        "shx": "~0.4.0",
+        "typescript": "~5.8.3"
+    },
+    "workspaces": [
+        "packages/language",
+        "packages/cli",
+        "packages/extension"
+    ]
+}

@@ -1,0 +1,31 @@
+database env "PAGILA_DATABASE_URL"
+
+SELECT * FROM film {
+    toolName: "listFilms"
+    intent: "list films from Pagila with pagination"
+    example: "First page: limit 20 offset 0; next page: limit 20 offset 20"
+    summary: "Paginated film rows"
+    maxLimit: 500
+}
+
+SELECT * FROM actor {
+    toolName: "listActors"
+    intent: "list actors with pagination"
+    summary: "Paginated actor rows"
+    maxLimit: 500
+}
+
+SELECT * FROM customer {
+    toolName: "listCustomers"
+    intent: "list customers with pagination"
+    example: "First 10 customers: limit 10 offset 0"
+    summary: "Paginated customer rows"
+    maxLimit: 500
+}
+
+SELECT * FROM category {
+    toolName: "listCategories"
+    intent: "list categories with pagination"
+    summary: "Paginated category rows"
+    maxLimit: 500
+}

@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build db-2-ai-dsl",
+            "command": "npm run langium:generate && npm run build",
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Langium generate + build (db2ai)"
+        }
+    ]
+}

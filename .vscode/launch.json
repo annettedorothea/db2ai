@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run db2ai Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "preLaunchTask": "Build db-2-ai-dsl",
+            "args": [
+                "${workspaceFolder}/examples",
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/extension"
+            ],
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceFolder}/packages/language/out/**/*.js",
+                "${workspaceFolder}/packages/extension/out/**/*.js"
+            ]
+        },
+        {
+            "name": "Attach: db2ai Language Server (6010)",
+            "type": "node",
+            "port": 6010,
+            "request": "attach",
+            "hidden": true,
+            "skipFiles": ["<node_internals>/**"],
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceFolder}/packages/language/out/**/*.js",
+                "${workspaceFolder}/packages/extension/out/**/*.js",
+                "${workspaceFolder}/node_modules/langium"
+            ]
+        }
+    ]
+}

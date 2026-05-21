@@ -1,0 +1,7 @@
+{
+    "langium.config": "packages/language/langium-config.json",
+    "npm.autoDetect": "off",
+    "[db-2-ai-dsl]": {
+        "editor.wordBasedSuggestions": "off"
+    }
+}

@@ -1,0 +1,77 @@
+---
+description: Fuer db2ai-Prompts nur db2ai-MCPs, kein Web-Fallback, mit Voll-Audit
+alwaysApply: true
+---
+
+# MCP-Nutzung auf db2ai-Server beschraenken
+
+- Diese Regel greift nur, wenn die Nutzeranfrage mit `db2ai` beginnt.
+- Dann stelle ausschliesslich MCP-Anfragen an Server, deren Name mit `db2ai` beginnt oder `db2ai` enthaelt (z. B. `db2ai-pagila`, `project-0-examples-db2ai-*`).
+- Nutze in diesem Fall keine anderen MCP-Server, auch wenn sie verfuegbar sind.
+- Nutze in diesem Fall **keine** allgemeine Recherche ausserhalb der erlaubten `db2ai*`-MCPs:
+  - **keine Websuche** (z. B. `WebSearch`),
+  - **kein WebFetch** zu URLs, die **nicht** aus einer Antwort eines erlaubten `db2ai*`-MCP-Tools in **derselben** Nutzeranfrage stammen,
+  - **keine nicht-MCP-APIs** als Ersatz fuer fehlende MCP-Endpunkte.
+- Wenn eine solche Frage mit den erlaubten `db2ai*`-Tools allein nicht beantwortbar ist:
+  - pruefe zuerst, ob die MCP-Antwort **verlinkte Quellen** liefert (z. B. `url`) und ob der Nutzer damit gemeint sein koennte (siehe Abschnitt unten),
+  - erst wenn auch das scheitert oder nicht zutrifft: klar sagen, dass die Antwort nicht geliefert werden kann,
+  - **keine** Ersatzrecherche (Suche, andere URLs, Vermutungen).
+- Bevorzuge explizit tool-basierte Antworten mit nachvollziehbarer Quelle aus den erlaubten `*db2ai*`-Servern.
+
+## Tool-Wahl und Parameter ohne Workspace-/DSL-Wissen
+
+- Zum Testen soll ein Agent nur anhand der **bereitgestellten MCP-Tool-Informationen** (Toolname, Beschreibung/Intent, **JSON Schema** fuer Argumente wie sie fuer die jeweiligen `*db2ai*`-Tools ausgeliefert werden) arbeiten.
+- Bei `db2ai`-Anfragen **kein Workspace-Wissen** zur Beantwortung oder zur Konstruktion von Tool-Aufrufen nutzen, **insbesondere nicht**:
+  - `*.db2ai`-Quelldateien,
+  - `examples/generated/**` oder andere generierte Helferskripte als „Dokumentation“ fuer Parameter,
+  - `examples/.env` oder Connection-Strings im Repo als Ersatz fuer das MCP-Schema,
+  - README oder anderer Repo-Code, um **undokumentierte** Tabellen, Spalten oder SQL zu erraten.
+- **Erlaubt** bleibt: MCP-Descriptors lesen/pruefen (Schema vor Toolaufruf, wie ohnehin verlangt).
+- Sind Parameter oder Tabellen-Verhalten aus dem MCP-Schema **nicht** ableitbar:
+  - keinen Aufruf mit aus dem Gedaechtnis/DSL rekonstruierten Feldern fuellen,
+  - stattdessen ehrlich sagen, dass die Anfrage mit den vorliegenden **Tooldefinitionen allein** nicht zuverlaessig formuliert werden kann (optional: was im Schema **fehlt**).
+- **Ja, das ist beabsichtigt moeglich:** Der Agent soll sich hier **bewusst „schema-only“ verhalten** – keine parallele Spezifikation aus dem Repo, keine Vermutungen als Ersatz fuer fehlende Schema-Felder.
+
+## Pagination (`limit` / `offset`)
+
+- Pro Tool sind `limit` und `offset` die vorgesehenen MCP-Argumente (Default `limit`: 100, `offset`: 0).
+- Groessere Ergebnismengen: **mehrere MCP-Aufrufe** mit erhoehtem `offset`, nicht SQL oder Repo-Wissen erfinden.
+- Kein `limit` im Schema weglassen und stattdessen „alle Zeilen“ annehmen — fehlende Angabe nutzt den Tool-Default.
+
+## Quellen aus MCP-Antworten lesen
+
+- **Erlaubt:** Nach einem oder mehreren erfolgreichen Aufrufen erlaubter `db2ai*`-MCP-Tools darfst du **URLs und vergleichbare Links aus der Rohantwort** mit `WebFetch` (oder einem anderen **nicht-MCP** Lese-Tool, **kein** weiterer MCP-Server) laden, um z. B. Volltext oder Detailseiten zu holen, die der MCP selbst nicht liefert.
+- **Voraussetzungen:**
+  - Die URL muss **woertlich** in der MCP-Antwort stehen (typisch: Feld `url`, `link`, … — nur Felder, die im Response der genutzten Tool-Antwort vorkommen).
+  - **Keine** URL raten, aus dem Gedaechtnis ergaenzen oder aus Workspace/DSL konstruieren.
+  - Nur URLs abrufen, die **direkt** mit der Nutzeranfrage zusammenhaengen.
+  - **Keine Websuche**, kein „aehnliche Seite finden“, kein Crawlen weiterer Links von der geladenen Seite — nur die explizit aus der MCP-Antwort uebernommene(n) URL(s).
+- **Reihenfolge:** Zuerst `db2ai*`-MCP; danach optional Quellen folgen. Nicht umgekehrt.
+- **Fehler:** Wenn `WebFetch` scheitert, das sagen — nicht durch Suche ersetzen.
+- **Hinweis:** Typische db2ai-Listen-Tools liefern **Tabellenzeilen** (JSON), keine externen URLs — dann entfaellt dieser Schritt meist.
+
+## Audit
+
+- Fuege am Ende jeder Antwort in diesem Fall einen Abschnitt `Audit` hinzu, der alle MCP-Aufrufe vollstaendig listet.
+- **Pro Aufruf eine Ueberschrift (###)** — kein doppelter Toolname als Titel und als Feld.
+
+**Ueberschrift:** Kurztext aus dem **Intent** im MCP-Tool-Descriptor (`description`, Zeile direkt nach `Intent:`), vor dem Lesen des Schemas aus dem Descriptor extrahieren. Fuer die Nutzerantwort auf Deutsch: Intent sinngemaess auf Deutsch formulieren (ein kurzer Satz oder Nominalphrase). Fehlt `Intent:`, die erste kurze Zeile der Tool-Beschreibung oder den `title` nutzen.
+
+**Darunter je Eintrag (Bullet-Liste):**
+
+- **MCP-Server:** `serverName` aus `mcp.json` (z. B. `db2ai-pagila`)
+- **MCP-Tool:** technischer Toolname (z. B. `listFilms`) — genau einmal, nicht als Ueberschrift wiederholen
+- **Params:** exakt uebergebene Parameter/Argumente (`limit`, `offset`, …)
+- **Antwort:** relevante Rohantwort (oder Fehler)
+
+**Quellen-Follow-up (WebFetch o. a.):** Jeden Abruf einer URL aus einer MCP-Antwort zusaetzlich unter einer eigenen `###`-Ueberschrift dokumentieren (z. B. „Quelle aus MCP-Antwort laden“), mit:
+
+- **Quelle:** exakte URL (aus welchem MCP-Tool/Feld)
+- **Methode:** z. B. `WebFetch`
+- **Ergebnis:** Kurzfassung oder Fehler (kein vollstaendiger HTML-Dump noetig)
+
+Wenn kein MCP-Request moeglich/erfolgreich war, dokumentiere das explizit.
+
+**Benennung:** „MCP-Server“ und „MCP-Tool“ verwenden — nicht nur „Server“/„Tool“. Der MCP-Server ist der `serverName`-Eintrag in der lokalen `examples/.cursor/mcp.json`.
+
+**MCP-Server-Name im Audit:** Immer **`serverName`** (z. B. `db2ai-pagila`), **nicht** den Cursor-`serverIdentifier` (`project-0-examples-…`). Identifier nur auf Nachfrage in Klammern.
