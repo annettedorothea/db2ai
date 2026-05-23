@@ -2,13 +2,13 @@
 
 **db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares tables or SQL plus AI-facing metadata (intent, examples, tool names, optional column docs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL schema).
 
-Sibling project: [api2ai](https://github.com/annettedorothea/api2ai) (OpenAPI → MCP).
+Sibling project: [api2ai](https://github.com/annettodorothea/api2ai) (OpenAPI → MCP).
 
 Keywords: **DSL** · **SQL** · **PostgreSQL** · **code generator** · **MCP** · **Langium**
 
 ## DSL at a glance
 
-From [`./examples/pagila.db2ai`](./examples/pagila.db2ai):
+From [`./packages/extension/demos/pagila.db2ai`](./packages/extension/demos/pagila.db2ai):
 
 ```txt
 database env "PAGILA_DATABASE_URL"
@@ -22,9 +22,11 @@ SELECT * FROM film {
 
 Connection strings are **not** in the DSL — only the **env var name** (`database env "…"`). Values live in `.env` / MCP host config.
 
-## Examples
+## MCP demos
 
-Demos, Pagila (Docker), MCP config: **[`./examples/`](./examples/)** — see **[`./examples/README.md`](./examples/README.md)**. Start DB: `cd examples && npm run db:up`.
+Bundled demos and walkthrough: **[`./packages/extension/demos/`](./packages/extension/demos/)** — see **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**. Start DB: `cd packages/extension/demos && npm run db:up`.
+
+**Without cloning the repo:** install the VSIX, then Command Palette → **db2ai: Create demo workspace (MCP examples)**. Details: [`./packages/extension/README.md`](./packages/extension/README.md).
 
 ## Getting started (DSL / monorepo)
 
@@ -33,11 +35,11 @@ Prerequisite: **Node.js 20+**.
 - Clone the repo
 - Repository root: `npm install` → `npm run langium:generate` → `npm run build`
 - Open the **`db2ai`** repository root in Cursor/VS Code
-- Edit or create a `.db2ai` file (e.g. under `./examples/`)
-- **Extension dev:** Run and Debug → **Run db2ai Extension** (opens `examples/` in an Extension Development Host; save regenerates tools)
+- Edit or create a `.db2ai` file (e.g. under `./packages/extension/demos/`)
+- **Extension dev:** Run and Debug → **Run db2ai Extension** (opens `packages/extension/demos/` in an Extension Development Host; save regenerates tools)
 - **CLI only:** `node ./packages/cli/bin/cli.js generate <file.db2ai> <out-tools.ts>`
 
-MCP demos and chat tests: **[`./examples/README.md`](./examples/README.md)**.
+MCP demos and chat tests: **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**.
 
 ## Project layout
 
@@ -45,8 +47,7 @@ MCP demos and chat tests: **[`./examples/README.md`](./examples/README.md)**.
 |------|------|
 | `packages/language` | Langium grammar, SQL/schema validation, completion |
 | `packages/cli` | `generate`, smoke tests, MCP bundle |
-| `packages/extension` | VS Code / Cursor extension (VSIX) |
-| `examples/` | Sample `.db2ai`, generated tools, `.cursor/mcp.json` |
+| `packages/extension` | VS Code / Cursor extension (VSIX); includes **`demos/`** |
 
 Package notes: [`./packages/language/README.md`](./packages/language/README.md) · [`./packages/cli/README.md`](./packages/cli/README.md)
 
@@ -70,7 +71,7 @@ Package notes: [`./packages/language/README.md`](./packages/language/README.md) 
 
 | Configuration | What it does |
 |---------------|----------------|
-| **Run db2ai Extension** | Extension Development Host with workspace `examples/`. Pre-launch task **Build db-2-ai-dsl**. |
+| **Run db2ai Extension** | Extension Development Host with workspace `packages/extension/demos/`. Pre-launch task **Build db-2-ai-dsl**. |
 | **Attach: db2ai Language Server (6010)** | Attach debugger to the language server (port **6010**; api2ai uses 6009). |
 
 Pre-launch task **Build db-2-ai-dsl** in [`./.vscode/tasks.json`](./.vscode/tasks.json) (`langium:generate` + `build`).

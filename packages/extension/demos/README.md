@@ -1,8 +1,15 @@
-# examples — MCP demos for db2ai
+# db2ai MCP demos
 
-You use the **db2ai** extension (installed from a **VSIX** or via **Extension Development Host** from the monorepo). This folder is the recommended **Cursor/VS Code workspace**: `.db2ai` files, generated MCP tools, and [`.cursor/mcp.json`](./.cursor/mcp.json).
+Use the **db2ai** extension (VSIX or Extension Development Host). This folder is the recommended **Cursor/VS Code workspace**: `.db2ai` files, generated MCP tools, and [`.cursor/mcp.json`](./.cursor/mcp.json).
 
-> **Links:** Paths are relative to **`examples/`** unless noted. For the monorepo README, use [`../README.md`](../README.md) (parent = **db2ai** root, not api2ai).
+> **Links:** Paths are relative to **this demo workspace** unless noted. The db2ai project (DSL, build): [GitHub README](https://github.com/annettodorothea/db2ai/blob/main/README.md).
+
+## Get demos without cloning the repo
+
+1. Install the **db2ai** VSIX.
+2. Command Palette → **db2ai: Create demo workspace (MCP examples)** → choose an empty folder.
+3. In that folder: `npm install` → `npm run db:up` → copy [`.env.example`](./.env.example) to `.env` → `npm run generate:pagila` (or save [`./pagila.db2ai`](./pagila.db2ai) / **Generate tool code**).
+4. Open the folder as workspace → enable MCP server **`db2ai-pagila`** in `.cursor/mcp.json`.
 
 ## What you can do here
 
@@ -10,24 +17,21 @@ You use the **db2ai** extension (installed from a **VSIX** or via **Extension De
 - Run the **Pagila** PostgreSQL demo (DVD rental sample data) in Docker
 - Chat in Cursor with prompts prefixed by **`db2ai`** (see [Demo prompts](#demo-prompts))
 
-Monorepo build and DSL grammar: [`../README.md`](../README.md) in the **db2ai** repository root.
-
-## Getting started (examples)
+## Getting started
 
 Prerequisites: **Node.js 20+**, **Docker Desktop** (running), **db2ai** extension active.
 
-1. Open this folder **`examples`** as the workspace.
-2. `npm install` in `examples/`
+1. Open **this folder** as the workspace (so `.cursor/mcp.json` applies).
+2. `npm install`
 3. Start Pagila: `npm run db:up` (first start can take about a minute)
 4. Set `PAGILA_DATABASE_URL` in [`.env`](./.env) (default: `postgresql://postgres:postgres@localhost:5432/pagila`; see [`.env.example`](./.env.example))
-5. From **db2ai repo root**: `npm run generate:pagila` (or save [`./pagila.db2ai`](./pagila.db2ai) in the IDE)
+5. Generate tool code: `npm run generate:pagila`, or save [`./pagila.db2ai`](./pagila.db2ai), or Command Palette → **Generate tool code**
 6. **Cursor:** Tools & MCP → enable **`db2ai-pagila`** → reload MCP / **Developer: Reload Window**
 
 ### Pagila in Docker
 
 ```bash
 # Docker Desktop must be running
-cd examples
 npm run db:up
 ```
 
@@ -44,11 +48,11 @@ Image: [synthesizedio/pagila:1.2](https://hub.docker.com/r/synthesizedio/pagila)
 
 - **Port 5432 in use:** `PAGILA_HOST_PORT=5433 npm run db:up` and set `PAGILA_DATABASE_URL` to `…@localhost:5433/pagila` in `.env`.
 - **Timeout on first start:** healthcheck allows ~60s start period; check `docker compose logs pagila`.
-- **MCP errors:** ensure `npm run db:up` succeeded and workspace is **`examples/`**.
+- **MCP errors:** ensure `npm run db:up` succeeded and this folder is the workspace root.
 
 ## Test in Cursor
 
-1. Workspace = **`examples`**, MCP **`db2ai-pagila`** on.
+1. Workspace = this folder, MCP **`db2ai-pagila`** on.
 2. Prompts start with **`db2ai`** ([`./.cursor/rules/mcp-db2ai-only.mdc`](./.cursor/rules/mcp-db2ai-only.mdc)).
 
 | Check | Prompt |
@@ -57,7 +61,7 @@ Image: [synthesizedio/pagila:1.2](https://hub.docker.com/r/synthesizedio/pagila)
 | Search | `db2ai suche in den Filmen nach grace` |
 | Actor ↔ films | `db2ai in welchen Filmen spielt Penelope Guiness mit?` |
 
-After DSL changes: save or `npm run generate:pagila` from repo root, then reload MCP.
+After DSL changes: `npm run generate:pagila`, save the file, or **Generate tool code**, then reload MCP.
 
 ## MCP configuration
 
@@ -71,7 +75,7 @@ After DSL changes: save or `npm run generate:pagila` from repo root, then reload
 
 | Server | Auth | Prerequisite |
 |--------|------|--------------|
-| `db2ai-pagila` | PostgreSQL URL in env | `db:up`, `generate:pagila`, `PAGILA_DATABASE_URL` |
+| `db2ai-pagila` | PostgreSQL URL in env | `db:up`, generated tools, `PAGILA_DATABASE_URL` |
 
 ## Demo prompts
 

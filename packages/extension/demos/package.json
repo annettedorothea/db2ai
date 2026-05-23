@@ -6,7 +6,8 @@
         "db:up": "docker compose up -d --wait",
         "db:down": "docker compose down",
         "db:reset": "docker compose down -v && npm run db:up",
-        "db:psql": "docker compose exec pagila psql -U postgres -d pagila"
+        "db:psql": "docker compose exec pagila psql -U postgres -d pagila",
+        "generate:pagila": "node ./scripts/generate.mjs pagila.db2ai generated/tools/pagila-tools.ts"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",

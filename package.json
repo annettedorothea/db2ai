@@ -13,10 +13,10 @@
         "build:clean": "npm run clean && npm run build",
         "langium:generate": "npm run --workspace packages/language langium:generate",
         "langium:watch": "npm run --workspace packages/language langium:watch",
-        "generate:pagila": "node ./packages/cli/bin/cli.js generate ./examples/pagila.db2ai ./examples/generated/tools/pagila-tools.ts",
+        "generate:pagila": "npm run generate:pagila --prefix ./packages/extension/demos",
         "test": "npm run --workspace packages/language test",
-        "test:smoke:pagila": "node ./packages/cli/bin/cli.js smoke-generated ./examples/generated/tools/pagila-tools.mjs listFilms",
-        "test:mcp:pagila": "node ./examples/generated/cli/mcp-serve.mjs ./examples/generated/tools/pagila-tools.mjs"
+        "test:smoke:pagila": "node ./packages/cli/bin/cli.js smoke-generated ./packages/extension/demos/generated/tools/pagila-tools.mjs listFilms",
+        "test:mcp:pagila": "node ./packages/extension/demos/generated/cli/mcp-serve.mjs ./packages/extension/demos/generated/tools/pagila-tools.mjs"
     },
     "devDependencies": {
         "@types/node": "~20.17.48",

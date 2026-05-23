@@ -9,6 +9,6 @@ After code changes in this repository, run:
 
 `npm run langium:generate && npm run build`
 
-Exception: If all changed files are inside `examples/`, skip these commands.
+Exception: If all changed files are inside `packages/extension/demos/`, skip these commands.
 
 If either command fails, fix the issue before proceeding with more implementation work.

@@ -33,7 +33,7 @@ isProject: false
 | Container-Start | OK mit `POSTGRES_DB=pagila` (siehe unten) |
 | Daten | `SELECT count(*) FROM film` → **1000** (nach ~50s Init) |
 
-**Wichtig für Compose:** Ohne `POSTGRES_DB=pagila` legt das Image nur die DB `postgres` an; Tabellen stehen dann dort, aber [examples/.env](examples/.env) zeigt auf `/pagila` → Verbindung schlägt fehl. Im `docker-compose.yml` zwingend:
+**Wichtig für Compose:** Ohne `POSTGRES_DB=pagila` legt das Image nur die DB `postgres` an; Tabellen stehen dann dort, aber [packages/extension/demos/.env](packages/extension/demos/.env) zeigt auf `/pagila` → Verbindung schlägt fehl. Im `docker-compose.yml` zwingend:
 
 ```yaml
 environment:
@@ -52,14 +52,14 @@ Erste Inbetriebnahme dauert **ca. 45–60 Sekunden** (Schema/Daten im Image) —
 Einziger Weg, Pagila zu starten:
 
 ```bash
-cd examples
+cd packages/extension/demos
 npm install
 npm run db:up
 ```
 
 Weitere Skripte: `db:down`, `db:reset`, `db:psql` (alles über `docker compose` / `docker compose exec`).
 
-**Voraussetzungen:** Node.js 20+, **Docker Desktop** (läuft), Workspace `examples/` für MCP.
+**Voraussetzungen:** Node.js 20+, **Docker Desktop** (läuft), Workspace `packages/extension/demos/` für MCP.
 
 **Nicht mehr im Repo:** Homebrew-PostgreSQL, host-`psql`, `setup-pagila.sh`, `.pagila-src`-Clone, `db:setup` als separates lokales Setup.
 
@@ -75,7 +75,7 @@ flowchart LR
 
 ## 1. Neue Dateien
 
-### [examples/docker-compose.yml](examples/docker-compose.yml)
+### [packages/extension/demos/docker-compose.yml](packages/extension/demos/docker-compose.yml)
 
 ```yaml
 services:
@@ -98,7 +98,7 @@ services:
 
 `db:reset`: `docker compose down -v` + `db:up` (falls Named Volume ergänzt wird; bei reinem Container-Recreate ggf. nur `down` + `up`).
 
-### [examples/scripts/wait-for-pagila.sh](examples/scripts/wait-for-pagila.sh)
+### [packages/extension/demos/scripts/wait-for-pagila.sh](packages/extension/demos/scripts/wait-for-pagila.sh)
 
 - Prüft `docker` / `docker compose`
 - Wartet auf `healthy` oder `pg_isready` via `docker compose exec`
@@ -110,14 +110,14 @@ services:
 
 | Aktion | Datei / Stelle |
 |--------|----------------|
-| **Löschen** | [examples/scripts/setup-pagila.sh](examples/scripts/setup-pagila.sh) |
+| **Löschen** | [packages/extension/demos/scripts/setup-pagila.sh](packages/extension/demos/scripts/setup-pagila.sh) |
 | **Entfernen aus package.json** | `db:setup`, altes `db:reset`/`db:psql` mit host-`psql` |
 | **Neu in package.json** | `db:up`, `db:down`, `db:reset`, `db:psql` (nur Docker) |
-| **README** | [examples/README.md](examples/README.md): gesamter Homebrew/`db:setup`-Block streichen |
+| **README** | [packages/extension/demos/README.md](packages/extension/demos/README.md): gesamter Homebrew/`db:setup`-Block streichen |
 | **README** | [README.md](../README.md): nur `npm run db:up`, kein lokales Postgres |
-| **Extension** | [packages/extension/README.md](packages/extension/README.md): „Docker: cd examples && npm run db:up“ statt lokales Pagila |
-| **.gitignore** | Eintrag `examples/.pagila-src/` entfernen (Ordner nicht mehr genutzt) |
-| **Optional löschen** | Lokaler Ordner `examples/.pagila-src/` auf der Platte (gitignored, manuell) |
+| **Extension** | [packages/extension/README.md](packages/extension/README.md): „Docker: cd packages/extension/demos && npm run db:up“ statt lokales Pagila |
+| **.gitignore** | Eintrag `packages/extension/demos/.pagila-src/` entfernen (Ordner nicht mehr genutzt) |
+| **Optional löschen** | Lokaler Ordner `packages/extension/demos/.pagila-src/` auf der Platte (gitignored, manuell) |
 
 Kein „Optional: lokales PostgreSQL“, kein `db:setup`-Alias, keine Colima-Erwähnung.
 
@@ -125,13 +125,13 @@ Kein „Optional: lokales PostgreSQL“, kein `db:setup`-Alias, keine Colima-Erw
 
 ## 3. Dokumentation (nur Docker)
 
-### [examples/README.md](examples/README.md)
+### [packages/extension/demos/README.md](packages/extension/demos/README.md)
 
 Getting started:
 
 1. Docker Desktop starten
-2. `cd examples && npm install && npm run db:up`
-3. `PAGILA_DATABASE_URL` in [.env](examples/.env) (unverändert: `…/pagila`)
+2. `cd packages/extension/demos && npm install && npm run db:up`
+3. `PAGILA_DATABASE_URL` in [.env](packages/extension/demos/.env) (unverändert: `…/pagila`)
 4. Repo root: `npm run generate:pagila`
 5. Cursor: MCP `db2ai-pagila` aktivieren
 
@@ -141,7 +141,7 @@ Troubleshooting:
 - Erster Start langsam (~1 Min.)
 - Image-Quelle: [synthesizedio/pagila](https://hub.docker.com/r/synthesizedio/pagila) Tag `1.2`
 
-### [examples/.env.example](examples/.env.example) (neu)
+### [packages/extension/demos/.env.example](packages/extension/demos/.env.example) (neu)
 
 `PAGILA_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pagila`
 
@@ -149,7 +149,7 @@ Troubleshooting:
 
 ## 4. MCP
 
-[examples/.cursor/mcp.json](examples/.cursor/mcp.json) unverändert lassen, solange Workspace = `examples` und `.env` existiert.
+[packages/extension/demos/.cursor/mcp.json](packages/extension/demos/.cursor/mcp.json) unverändert lassen, solange Workspace = `examples` und `.env` existiert.
 
 Optional nach Test: `"env"` mit URL in `mcp.json` — nur bei Bedarf.
 
@@ -158,7 +158,7 @@ Optional nach Test: `"env"` mit URL in `mcp.json` — nur bei Bedarf.
 ## 5. Verifikation nach Implementierung
 
 ```bash
-cd examples && npm run db:up
+cd packages/extension/demos && npm run db:up
 npm run db:psql   # \dt → film, actor, …
 cd .. && npm run test:smoke:pagila
 ```

@@ -36,11 +36,15 @@
         "commands": [{
             "command": "db2ai.generateTools",
             "title": "Generate tool code (.ts + .mjs + MCP host)"
+        }, {
+            "command": "db2ai.createDemoWorkspace",
+            "title": "db2ai: Create demo workspace (MCP examples)"
         }]
     },
     "activationEvents": [
         "onLanguage:db-2-ai-dsl",
-        "onCommand:db2ai.generateTools"
+        "onCommand:db2ai.generateTools",
+        "onCommand:db2ai.createDemoWorkspace"
     ],
     "main": "./out/extension/main.cjs",
     "scripts": {

@@ -6,7 +6,7 @@ alwaysApply: true
 # MCP-Nutzung auf db2ai-Server beschraenken
 
 - Diese Regel greift nur, wenn die Nutzeranfrage mit `db2ai` beginnt.
-- Dann stelle ausschliesslich MCP-Anfragen an Server, deren Name mit `db2ai` beginnt oder `db2ai` enthaelt (z. B. `db2ai-pagila`, `project-0-examples-db2ai-*`).
+- Dann stelle ausschliesslich MCP-Anfragen an Server, deren Name mit `db2ai` beginnt oder `db2ai` enthaelt (z. B. `db2ai-pagila`, `project-0-demos-db2ai-*`).
 - Nutze in diesem Fall keine anderen MCP-Server, auch wenn sie verfuegbar sind.
 - Nutze in diesem Fall **keine** allgemeine Recherche ausserhalb der erlaubten `db2ai*`-MCPs:
   - **keine Websuche** (z. B. `WebSearch`),
@@ -23,8 +23,8 @@ alwaysApply: true
 - Zum Testen soll ein Agent nur anhand der **bereitgestellten MCP-Tool-Informationen** (Toolname, Beschreibung/Intent, **JSON Schema** fuer Argumente wie sie fuer die jeweiligen `*db2ai*`-Tools ausgeliefert werden) arbeiten.
 - Bei `db2ai`-Anfragen **kein Workspace-Wissen** zur Beantwortung oder zur Konstruktion von Tool-Aufrufen nutzen, **insbesondere nicht**:
   - `*.db2ai`-Quelldateien,
-  - `examples/generated/**` oder andere generierte Helferskripte als „Dokumentation“ fuer Parameter,
-  - `examples/.env` oder Connection-Strings im Repo als Ersatz fuer das MCP-Schema,
+  - `generated/**` oder andere generierte Helferskripte als „Dokumentation“ fuer Parameter,
+  - `.env` oder Connection-Strings im Repo als Ersatz fuer das MCP-Schema,
   - README oder anderer Repo-Code, um **undokumentierte** Tabellen, Spalten oder SQL zu erraten.
 - **Erlaubt** bleibt: MCP-Descriptors lesen/pruefen (Schema vor Toolaufruf, wie ohnehin verlangt).
 - Sind Parameter oder Tabellen-Verhalten aus dem MCP-Schema **nicht** ableitbar:
@@ -42,7 +42,7 @@ alwaysApply: true
 
 - Schlaegt ein erlaubter `db2ai*`-MCP-Aufruf fehl (Tool nicht gefunden, Server nicht erreichbar, Auth/Abbruch durch Nutzer, Laufzeitfehler, Timeout), **sofort aufhoeren** — keine weiteren Umwege ausprobieren.
 - **Nicht** erlaubt als Ersatz fuer den fehlgeschlagenen MCP-Aufruf:
-  - direktes `invokeTool` / Import aus `examples/generated/**`,
+  - direktes `invokeTool` / Import aus `generated/**`,
   - `db2ai invoke`, `node …/pagila-tools.mjs`, Smoke-/CLI-Skripte,
   - `psql`, SQL per Shell, Docker-Exec gegen die DB,
   - andere MCP-Server-IDs oder Server-Namen durchprobieren,
@@ -84,6 +84,6 @@ alwaysApply: true
 
 Wenn kein MCP-Request moeglich/erfolgreich war, dokumentiere das explizit.
 
-**Benennung:** „MCP-Server“ und „MCP-Tool“ verwenden — nicht nur „Server“/„Tool“. Der MCP-Server ist der `serverName`-Eintrag in der lokalen `examples/.cursor/mcp.json`.
+**Benennung:** „MCP-Server“ und „MCP-Tool“ verwenden — nicht nur „Server“/„Tool“. Der MCP-Server ist der `serverName`-Eintrag in `.cursor/mcp.json`.
 
-**MCP-Server-Name im Audit:** Immer **`serverName`** (z. B. `db2ai-pagila`), **nicht** den Cursor-`serverIdentifier` (`project-0-examples-…`). Identifier nur auf Nachfrage in Klammern.
+**MCP-Server-Name im Audit:** Immer **`serverName`** (z. B. `db2ai-pagila`), **nicht** den Cursor-`serverIdentifier` (`project-0-demos-…`). Identifier nur auf Nachfrage in Klammern.

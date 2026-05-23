@@ -200,8 +200,8 @@ Dateien: [`packages/cli/src/db-query-codegen.ts`](../../packages/cli/src/db-quer
 
 ## 6. Beispiele & Doku
 
-- [`examples/pagila.db2ai`](../../examples/pagila.db2ai): `columns`-Block beim `actor`-Query (3–4 Spalten)
-- [`examples/README.md`](../../examples/README.md): kurzer Abschnitt zu `columns`, Voraussetzung `.env` + Pagila für Autocomplete/Validation
+- [`packages/extension/demos/pagila.db2ai`](../../packages/extension/demos/pagila.db2ai): `columns`-Block beim `actor`-Query (3–4 Spalten)
+- [`packages/extension/demos/README.md`](../../packages/extension/demos/README.md): kurzer Abschnitt zu `columns`, Voraussetzung `.env` + Pagila für Autocomplete/Validation
 
 ---
 

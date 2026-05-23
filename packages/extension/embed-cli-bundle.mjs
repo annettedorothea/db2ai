@@ -35,13 +35,7 @@ await esbuild.build({
     define: {
         __DB2AI_CLI_BUNDLE_VERSION__: JSON.stringify(cliVersion)
     },
-    external: [
-        'vscode-jsonrpc',
-        'vscode-languageserver-protocol',
-        'vscode-languageserver',
-        'vscode-languageserver-textdocument',
-        'vscode-uri'
-    ]
+    // Bundle LSP/jsonrpc deps so cli.cjs works from the terminal (npm run generate:*), not only inside the extension host.
 });
 
 const dir = path.dirname(mcpDest);

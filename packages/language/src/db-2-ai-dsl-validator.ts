@@ -219,7 +219,7 @@ export class Db2AiDslValidator {
         if (connectionUrl === undefined) {
             accept(
                 'warning',
-                `Environment variable "${String(envName)}" is not set or empty (check examples/.env — value must be on the same line as the key).`,
+                `Environment variable "${String(envName)}" is not set or empty (check .env in your workspace — value must be on the same line as the key).`,
                 { node: model, property: 'env' }
             );
             return;

@@ -1,7 +1,7 @@
 import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node.js';
 import * as vscode from 'vscode';
 import * as path from 'node:path';
-import { existsSync } from 'node:fs';
+import { cpSync, existsSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node.js';
 
@@ -12,6 +12,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     client = await startLanguageClient(context);
     registerGenerateOnSave(context);
     registerGenerateCommand(context);
+    registerCreateDemoWorkspaceCommand(context);
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -68,6 +69,94 @@ function registerGenerateOnSave(context: vscode.ExtensionContext): void {
         generateByFileQueue.set(sourcePath, next);
     });
     context.subscriptions.push(disposable);
+}
+
+const DEMO_COPY_SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp', '.pagila-src']);
+const DEMO_COPY_SKIP_FILES = new Set(['package-lock.json', '.env', '.env.local']);
+
+function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): void {
+    const disposable = vscode.commands.registerCommand('db2ai.createDemoWorkspace', async () => {
+        const targetUri = await pickDemoWorkspaceTarget();
+        if (!targetUri) {
+            return;
+        }
+        const targetDir = targetUri.fsPath;
+        if (existsSync(path.join(targetDir, 'package.json'))) {
+            const overwrite = await vscode.window.showWarningMessage(
+                'db2ai: Target folder already contains package.json. Overwrite demo files?',
+                { modal: true },
+                'Overwrite'
+            );
+            if (overwrite !== 'Overwrite') {
+                return;
+            }
+        }
+        const sourceDir = context.asAbsolutePath('demos');
+        if (!existsSync(sourceDir)) {
+            void vscode.window.showErrorMessage(
+                'db2ai: Bundled demos folder missing. Reinstall the extension or rebuild the VSIX.'
+            );
+            return;
+        }
+        try {
+            cpSync(sourceDir, targetDir, {
+                recursive: true,
+                filter: src => shouldCopyDemoPath(sourceDir, src)
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            void vscode.window.showErrorMessage(`db2ai: Failed to create demo workspace: ${message}`);
+            return;
+        }
+        const openFolder = 'Open folder';
+        const choice = await vscode.window.showInformationMessage(
+            `db2ai: Demo workspace created in ${targetDir}. Run npm install, npm run db:up, copy .env.example to .env, then npm run generate:pagila (or save pagila.db2ai).`,
+            openFolder
+        );
+        if (choice === openFolder) {
+            await vscode.commands.executeCommand('vscode.openFolder', targetUri, { forceNewWindow: false });
+        }
+    });
+    context.subscriptions.push(disposable);
+}
+
+async function pickDemoWorkspaceTarget(): Promise<vscode.Uri | undefined> {
+    const picked = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: 'Create demo workspace here'
+    });
+    if (picked?.[0]) {
+        return picked[0];
+    }
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    if (folder && !existsSync(path.join(folder.uri.fsPath, 'package.json'))) {
+        const useWorkspace = await vscode.window.showQuickPick(
+            [{ label: 'Use current workspace folder', folder }],
+            { placeHolder: 'No folder selected — use open workspace?' }
+        );
+        if (useWorkspace) {
+            return useWorkspace.folder.uri;
+        }
+    }
+    return undefined;
+}
+
+function shouldCopyDemoPath(sourceDir: string, src: string): boolean {
+    const relative = path.relative(sourceDir, src);
+    if (!relative || relative === '') {
+        return true;
+    }
+    const parts = relative.split(path.sep);
+    if (parts.some(part => DEMO_COPY_SKIP_DIRS.has(part))) {
+        return false;
+    }
+    const base = parts[parts.length - 1];
+    if (base && DEMO_COPY_SKIP_FILES.has(base)) {
+        return false;
+    }
+    return true;
 }
 
 function registerGenerateCommand(context: vscode.ExtensionContext): void {
@@ -140,6 +229,10 @@ function resolveCliSpawn(context: vscode.ExtensionContext): CliSpawn | undefined
         const parentPackages = path.resolve(workspaceFolder, '..', 'packages', 'cli', 'bin', 'cli.js');
         if (existsSync(parentPackages)) {
             return { scriptPath: parentPackages };
+        }
+        const demosMonorepoCli = path.resolve(workspaceFolder, '../../cli/bin/cli.js');
+        if (existsSync(demosMonorepoCli)) {
+            return { scriptPath: demosMonorepoCli };
         }
     }
 

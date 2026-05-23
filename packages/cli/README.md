@@ -1,6 +1,6 @@
 # Command-line interface (CLI)
 
-Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files, plus **`smoke-generated`** for testing MCP tool modules. The generator emits TypeScript, ESM `.mjs`, and copies the bundled MCP host into `examples/generated/cli/` when you generate from repo examples.
+Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files, plus **`smoke-generated`** for testing MCP tool modules. The generator emits TypeScript, ESM `.mjs`, and copies the bundled MCP host into `packages/extension/demos/generated/cli/` when you generate from repo demos.
 
 ## Commands
 
