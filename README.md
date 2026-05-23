@@ -24,7 +24,7 @@ Connection strings are **not** in the DSL — only the **env var name** (`databa
 
 ## Examples
 
-Demos, Pagila DB setup, MCP config: **[`./examples/`](./examples/)** — see **[`./examples/README.md`](./examples/README.md)**.
+Demos, Pagila (Docker), MCP config: **[`./examples/`](./examples/)** — see **[`./examples/README.md`](./examples/README.md)**. Start DB: `cd examples && npm run db:up`.
 
 ## Getting started (DSL / monorepo)
 

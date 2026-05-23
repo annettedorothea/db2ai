@@ -11,4 +11,3 @@ syntaxes/
 *.tsbuildinfo
 *.vsix
 .idea
-examples/.pagila-src/

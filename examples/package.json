@@ -3,9 +3,10 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "db:setup": "bash scripts/setup-pagila.sh",
-        "db:reset": "bash scripts/setup-pagila.sh --reset",
-        "db:psql": "psql postgresql://postgres:postgres@localhost:5432/pagila"
+        "db:up": "docker compose up -d --wait",
+        "db:down": "docker compose down",
+        "db:reset": "docker compose down -v && npm run db:up",
+        "db:psql": "docker compose exec pagila psql -U postgres -d pagila"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",

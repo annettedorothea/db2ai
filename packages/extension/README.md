@@ -8,7 +8,7 @@ Curate `SELECT` queries or `SQL { … }` blocks into MCP tools — the full proj
 
 - VS Code or Cursor **1.67+**
 - Node.js **20+** where you generate tools (MCP runtime: `@modelcontextprotocol/sdk`, `zod`, `pg`)
-- PostgreSQL for schema validation/completion (e.g. Pagila demo in `examples/`)
+- Docker Desktop for the Pagila demo DB (`cd examples && npm run db:up`) — used for schema validation/completion
 
 ## Usage
 

@@ -38,6 +38,18 @@ alwaysApply: true
 - Groessere Ergebnismengen: **mehrere MCP-Aufrufe** mit erhoehtem `offset`, nicht SQL oder Repo-Wissen erfinden.
 - Kein `limit` im Schema weglassen und stattdessen „alle Zeilen“ annehmen — fehlende Angabe nutzt den Tool-Default.
 
+## Bei MCP-Fehlern abbrechen (kein Workaround)
+
+- Schlaegt ein erlaubter `db2ai*`-MCP-Aufruf fehl (Tool nicht gefunden, Server nicht erreichbar, Auth/Abbruch durch Nutzer, Laufzeitfehler, Timeout), **sofort aufhoeren** — keine weiteren Umwege ausprobieren.
+- **Nicht** erlaubt als Ersatz fuer den fehlgeschlagenen MCP-Aufruf:
+  - direktes `invokeTool` / Import aus `examples/generated/**`,
+  - `db2ai invoke`, `node …/pagila-tools.mjs`, Smoke-/CLI-Skripte,
+  - `psql`, SQL per Shell, Docker-Exec gegen die DB,
+  - andere MCP-Server-IDs oder Server-Namen durchprobieren,
+  - erneute Aufrufe mit anderen Parametern, nur um denselben Fehler zu umgehen.
+- **Erlaubt** vor dem (oder beim) einen MCP-Versuch: MCP-Tool-Descriptor lesen (Schema), um den Aufruf korrekt zu formulieren — das ist keine Ersatz-Datenquelle.
+- **Genau ein** MCP-Tool-Aufruf pro geplanter Abfrage; scheitert er, Antwort mit kurzer Fehlermeldung, Hinweis fuer den Nutzer (z. B. MCP-Server aktivieren, DB laeuft, Aufruf erneut senden) und **Audit** mit dem Fehler — **keine** Daten aus anderen Quellen liefern.
+
 ## Quellen aus MCP-Antworten lesen
 
 - **Erlaubt:** Nach einem oder mehreren erfolgreichen Aufrufen erlaubter `db2ai*`-MCP-Tools darfst du **URLs und vergleichbare Links aus der Rohantwort** mit `WebFetch` (oder einem anderen **nicht-MCP** Lese-Tool, **kein** weiterer MCP-Server) laden, um z. B. Volltext oder Detailseiten zu holen, die der MCP selbst nicht liefert.
