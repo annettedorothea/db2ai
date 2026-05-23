@@ -2,8 +2,6 @@
 
 **db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares tables or SQL plus AI-facing metadata (intent, examples, tool names, optional column docs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL schema).
 
-> **Links:** Paths below are relative to **this repository** (`db2ai/`). Open the **`db2ai`** folder as your workspace (not only the parent `MCP/` folder), so clicks land in the right repo.
-
 Sibling project: [api2ai](https://github.com/annettedorothea/api2ai) (OpenAPI → MCP).
 
 Keywords: **DSL** · **SQL** · **PostgreSQL** · **code generator** · **MCP** · **Langium**
