@@ -1,8 +1,14 @@
 {
     "name": "vscode-db2ai",
-    "description": "VS Code / Cursor extension for db2ai",
-    "version": "0.0.1",
     "displayName": "db2ai",
+    "description": "Language support and code generation for the .db2ai DSL (PostgreSQL → MCP tools).",
+    "version": "0.0.1",
+    "publisher": "db2ai",
+    "license": "MIT",
+    "icon": "icon.png",
+    "author": {
+        "name": "Annette Pohl"
+    },
     "type": "module",
     "engines": {
         "vscode": "^1.67.0"
@@ -44,7 +50,8 @@
         "build": "npm run build:prepare && tsc -b tsconfig.json && node esbuild.mjs && node embed-cli-bundle.mjs",
         "build:clean": "npm run clean && npm run build",
         "watch": "npm run build:prepare && npm run embed-cli:onetime && concurrently -n tsc,esbuild -c blue,yellow \"tsc -b tsconfig.json --watch\" \"node esbuild.mjs --watch\"",
-        "embed-cli:onetime": "node embed-cli-bundle.mjs"
+        "embed-cli:onetime": "node embed-cli-bundle.mjs",
+        "extension:vsix": "npm run langium:generate --prefix ../.. && npm run build --prefix ../.. && shx cp ../../LICENSE LICENSE && npx @vscode/vsce package --allow-missing-repository --no-rewrite-relative-links && shx rm -f LICENSE"
     },
     "dependencies": {
         "db-2-ai-dsl-language": "0.0.1",
@@ -53,6 +60,7 @@
     },
     "devDependencies": {
         "@types/vscode": "~1.67.0",
+        "@vscode/vsce": "^3.7.1",
         "concurrently": "~8.2.1",
         "esbuild": "~0.25.5"
     },

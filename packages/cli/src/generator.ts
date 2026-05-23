@@ -22,11 +22,12 @@ export type GeneratedOutputFiles = {
 declare const __dirname: string | undefined;
 
 function bundleSafeGeneratorImplementationDir(): string {
-    const cjsBundleDir = typeof __dirname !== 'undefined' ? __dirname : '';
-    if (cjsBundleDir.length > 0) {
-        return cjsBundleDir;
+    // VS Code extension embed bundle (CJS): esbuild sets __dirname next to cli.cjs + resources/.
+    if (typeof __dirname !== 'undefined' && __dirname.length > 0) {
+        return __dirname;
     }
-    return url.fileURLToPath(new URL('.', import.meta.url));
+    // CLI via `node packages/cli/...` (ESM source).
+    return path.dirname(url.fileURLToPath(import.meta.url));
 }
 
 const __generatorDirname = bundleSafeGeneratorImplementationDir();

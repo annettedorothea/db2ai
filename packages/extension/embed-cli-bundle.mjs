@@ -29,6 +29,9 @@ await esbuild.build({
     },
     sourcemap: false,
     logLevel: 'warning',
+    logOverride: {
+        'empty-import-meta': 'silent',
+    },
     define: {
         __DB2AI_CLI_BUNDLE_VERSION__: JSON.stringify(cliVersion)
     },
