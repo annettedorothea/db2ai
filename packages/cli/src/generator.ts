@@ -8,10 +8,12 @@ import {
     buildInputSchemaByTool,
     quotePostgresIdent,
     resolveToolsFromModel,
+    type JsonSchemaDict,
     type ResolvedDbToolCodegen,
     type ResolvedSqlToolCodegen,
     type ResolvedTableToolCodegen
 } from './db-query-codegen.js';
+import { buildInputZodBlock } from './json-schema-to-zod-codegen.js';
 
 export type GeneratedOutputFiles = {
     tsPath: string;
@@ -77,15 +79,159 @@ function copyBundledMcpServeInto(cliDir: string): string {
     return dest;
 }
 
-function readCliVersionsForBootstrap(): { sdk: string; zod: string; pg: string } {
+function readCliPackageJson(): { version: string; dependencies?: Record<string, string> } {
     const p = resolveCliPackageJsonPathForVersions();
     const raw = fs.readFileSync(p, 'utf-8');
-    const pkg = JSON.parse(raw) as { dependencies?: Record<string, string> };
+    return JSON.parse(raw) as { version: string; dependencies?: Record<string, string> };
+}
+
+function readCliVersionsForBootstrap(): { sdk: string; zod: string; pg: string } {
+    const pkg = readCliPackageJson();
     return {
         sdk: pkg.dependencies?.['@modelcontextprotocol/sdk'] ?? '^1.29.0',
         zod: pkg.dependencies?.zod ?? '^4.4.3',
         pg: pkg.dependencies?.pg ?? '^8.16.0'
     };
+}
+
+function resolveMcpServerIdentityFromDestination(destinationTsPath: string): { name: string; version: string } {
+    const pkg = readCliPackageJson();
+    return {
+        name: path.parse(destinationTsPath).name,
+        version: pkg.version ?? '0.0.1'
+    };
+}
+
+function renderMcpServerIdentityExports(name: string, version: string): string {
+    return `export const mcpServerName = ${JSON.stringify(name)};
+export const mcpServerVersion = ${JSON.stringify(version)};
+`;
+}
+
+function renderDbMcpHostAdapterBlock(authKind: 'none' | 'credential'): string {
+    const authCheck =
+        authKind === 'credential'
+            ? `
+        if (!credential) {
+            throw new Error(
+                'Missing host credential. Pass --auth-env on mcp-serve.mjs and set the variable (re-read on every tool call).'
+            );
+        }`
+            : `
+        credential = credential || undefined;`;
+    return `const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
+const META_ENV_DIRS = 'MCP_HOST_ENV_DIRS';
+
+function applyHostEnvKeys(hostConfig, envDirs) {
+    if (hostConfig.authEnv) {
+        process.env[META_AUTH_ENV_KEY] = hostConfig.authEnv;
+    } else {
+        delete process.env[META_AUTH_ENV_KEY];
+    }
+    if (envDirs.length > 0) {
+        process.env[META_ENV_DIRS] = JSON.stringify(envDirs);
+    } else {
+        delete process.env[META_ENV_DIRS];
+    }
+}
+
+function decodeJwtPayloadUnsafe(token) {
+    const parts = String(token).trim().split('.');
+    if (parts.length !== 3) {
+        throw new Error('credential is not a JWT (expected three dot-separated segments).');
+    }
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) {
+        b64 += '=';
+    }
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+}
+
+export const mcpHostAdapter = {
+    configureFromArgv(argv, envDirs) {
+        let authEnv;
+        for (let i = 0; i < argv.length; i++) {
+            const arg = argv[i];
+            if (arg === '--auth-env') {
+                authEnv = argv[++i];
+                if (!authEnv) {
+                    throw new Error('Missing value after --auth-env');
+                }
+                continue;
+            }
+            if (arg.startsWith('-')) {
+                throw new Error('Unknown option: ' + arg);
+            }
+            throw new Error('Unexpected positional argument: ' + arg);
+        }
+        applyHostEnvKeys({ authEnv }, envDirs);
+    },
+
+    validateAtStartup(requiresAuth) {
+        const connectionString = process.env[connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).'
+            );
+        }
+        if (!requiresAuth) {
+            return;
+        }
+        const authEnvName = process.env[META_AUTH_ENV_KEY]?.trim();
+        if (!authEnvName) {
+            throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
+        }
+        const credential = process.env[authEnvName]?.trim();
+        if (!credential) {
+            throw new Error(
+                'Environment variable "' + authEnvName + '" is missing or empty (required by --auth-env).'
+            );
+        }
+    },
+
+    resolveHostContext() {
+        const connectionString = process.env[connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).'
+            );
+        }
+
+        const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
+        let credential = authKey ? process.env[authKey]?.trim() : undefined;${authCheck}
+
+        let jwt;
+        if (credential) {
+            const segments = String(credential).trim().split('.');
+            if (segments.length === 3) {
+                try {
+                    jwt = decodeJwtPayloadUnsafe(credential);
+                } catch {
+                    jwt = undefined;
+                }
+            }
+        }
+
+        return { connectionString, credential, jwt };
+    },
+
+    envDirsForReload() {
+        const raw = process.env[META_ENV_DIRS];
+        if (!raw?.trim()) {
+            return [];
+        }
+        try {
+            const dirs = JSON.parse(raw);
+            if (Array.isArray(dirs) && dirs.every((d) => typeof d === 'string')) {
+                return dirs;
+            }
+        } catch {
+            // ignore malformed config
+        }
+        return [];
+    }
+};
+`;
 }
 
 function warnIfPackageJsonMissingMcpDeps(packageJsonDir: string): void {
@@ -214,12 +360,25 @@ export type InvokeOptions = Record<string, unknown> & {
     offset?: number;
 };
 
-export async function invokeTool(toolName: string, options: InvokeOptions = {}): Promise<unknown> {
-    const connectionString = process.env[connectionEnv];
-    if (!connectionString || String(connectionString).trim().length === 0) {
-        throw new Error(\`Missing database URL: set environment variable "\${connectionEnv}".\`);
+function resolveConnectionString(hostContext: unknown): string {
+    if (hostContext && typeof hostContext === 'object' && 'connectionString' in hostContext) {
+        const cs = (hostContext as { connectionString?: unknown }).connectionString;
+        if (cs !== undefined && cs !== null && String(cs).trim().length > 0) {
+            return String(cs).trim();
+        }
     }
-    const client = new pg.Client({ connectionString: String(connectionString).trim() });
+    throw new Error(
+        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
+    );
+}
+
+export async function invokeTool(
+    toolName: string,
+    options: InvokeOptions = {},
+    hostContext?: unknown
+): Promise<unknown> {
+    const connectionString = resolveConnectionString(hostContext);
+    const client = new pg.Client({ connectionString });
     await client.connect();
     try {
         switch (toolName) {
@@ -242,12 +401,21 @@ import pg from 'pg';
 export const DEFAULT_PAGE_LIMIT = ${DEFAULT_PAGE_LIMIT};
 export const DEFAULT_MAX_LIMIT_CAP = ${DEFAULT_MAX_LIMIT_CAP};
 
-export async function invokeTool(toolName, options = {}) {
-    const connectionString = process.env[connectionEnv];
-    if (!connectionString || String(connectionString).trim().length === 0) {
-        throw new Error(\`Missing database URL: set environment variable "\${connectionEnv}".\`);
+function resolveConnectionString(hostContext) {
+    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
+        const cs = String(hostContext.connectionString).trim();
+        if (cs.length > 0) {
+            return cs;
+        }
     }
-    const client = new pg.Client({ connectionString: String(connectionString).trim() });
+    throw new Error(
+        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
+    );
+}
+
+export async function invokeTool(toolName, options = {}, hostContext) {
+    const connectionString = resolveConnectionString(hostContext);
+    const client = new pg.Client({ connectionString });
     await client.connect();
     try {
         switch (toolName) {
@@ -265,8 +433,8 @@ ${toolCases}
 function renderTsModule(
     tools: ResolvedDbToolCodegen[],
     connectionEnv: string,
-    inputSchemaLiteral: string,
-    invokeBlock: string,
+    mcpServerIdentityBlock: string,
+    toolRuntimeBlock: string,
     source: string
 ): string {
     const toolsLiteral = serializeJsonForModule(tools);
@@ -276,6 +444,8 @@ function renderTsModule(
  */
 
 export const connectionEnv = ${JSON.stringify(connectionEnv)};
+
+export const requiresAuth = false;
 
 export type GeneratedTool = {
     toolName: string;
@@ -290,17 +460,16 @@ export type GeneratedTool = {
 
 export const generatedTools: GeneratedTool[] = ${toolsLiteral};
 
-export const inputSchemaByTool: Record<string, Record<string, unknown>> = ${inputSchemaLiteral};
-
-${invokeBlock}
+${mcpServerIdentityBlock}
+${toolRuntimeBlock}
 `;
 }
 
 function renderJsModule(
     tools: ResolvedDbToolCodegen[],
     connectionEnv: string,
-    inputSchemaLiteral: string,
-    invokeBlock: string,
+    mcpServerIdentityBlock: string,
+    toolRuntimeBlock: string,
     source: string
 ): string {
     const sourceRef = renderSourceReference(source);
@@ -310,11 +479,12 @@ function renderJsModule(
 
 export const connectionEnv = ${JSON.stringify(connectionEnv)};
 
+export const requiresAuth = false;
+
 export const generatedTools = ${serializeJsonForModule(tools)};
 
-export const inputSchemaByTool = ${inputSchemaLiteral};
-
-${invokeBlock}
+${mcpServerIdentityBlock}
+${toolRuntimeBlock}
 `;
 }
 
@@ -326,10 +496,19 @@ export async function generateOutput(model: Model, source: string, destination: 
 
     const envName = String(model.env).trim();
     const tools = resolveToolsFromModel(model);
-    const inputSchemaByTool = buildInputSchemaByTool(tools);
-    const inputSchemaLiteral = serializeJsonForModule(inputSchemaByTool);
-    fs.writeFileSync(tsPath, renderTsModule(tools, envName, inputSchemaLiteral, renderInvokeBlockTs(tools), source));
-    fs.writeFileSync(jsPath, renderJsModule(tools, envName, inputSchemaLiteral, renderInvokeBlockJs(tools), source));
+    const inputSchemaByTool = buildInputSchemaByTool(tools) as Record<string, JsonSchemaDict>;
+    const authKind: 'none' | 'credential' = 'none';
+    const { name: mcpServerName, version: mcpServerVersion } = resolveMcpServerIdentityFromDestination(tsPath);
+    const mcpServerIdentityBlock = renderMcpServerIdentityExports(mcpServerName, mcpServerVersion);
+    const sharedRuntimePrefix = `${buildInputZodBlock(inputSchemaByTool)}\n${renderDbMcpHostAdapterBlock(authKind)}\n`;
+    fs.writeFileSync(
+        tsPath,
+        renderTsModule(tools, envName, mcpServerIdentityBlock, `${sharedRuntimePrefix}${renderInvokeBlockTs(tools)}`, source)
+    );
+    fs.writeFileSync(
+        jsPath,
+        renderJsModule(tools, envName, mcpServerIdentityBlock, `${sharedRuntimePrefix}${renderInvokeBlockJs(tools)}`, source)
+    );
 
     const cliDir = resolveGeneratedCliDir(tsPath);
     const mcpServePath = copyBundledMcpServeInto(cliDir);

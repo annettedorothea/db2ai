@@ -8,8 +8,8 @@
     "scripts": {
         "clean": "npm run clean --workspaces",
         "watch": "tsc -b tsconfig.build.json --watch",
-        "build": "tsc -b tsconfig.build.json && npm run bundle:mcp-runtime && npm run build --workspaces",
-        "bundle:mcp-runtime": "esbuild packages/cli/mcp-bundle/mcp-standalone-entry.ts --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=packages/cli/resources/mcp-serve-emitted.mjs --external:@modelcontextprotocol/sdk --external:zod --external:pg --external:vscode-* --external:langium --external:langium/*",
+        "build": "npm --prefix ../core2ai run build && tsc -b tsconfig.build.json && npm run bundle:mcp-runtime && npm run build --workspaces",
+        "bundle:mcp-runtime": "esbuild ../core2ai/packages/mcp-host/src/mcp-standalone-entry.ts --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=packages/cli/resources/mcp-serve-emitted.mjs --external:@modelcontextprotocol/sdk --external:zod --external:pg",
         "build:clean": "npm run clean && npm run build",
         "langium:generate": "npm run --workspace packages/language langium:generate",
         "langium:watch": "npm run --workspace packages/language langium:watch",

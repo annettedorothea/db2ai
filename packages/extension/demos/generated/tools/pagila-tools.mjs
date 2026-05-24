@@ -4,6 +4,8 @@
 
 export const connectionEnv = "PAGILA_DATABASE_URL";
 
+export const requiresAuth = false;
+
 export const generatedTools = [
     {
         "kind": "table",
@@ -123,174 +125,136 @@ export const generatedTools = [
     }
 ];
 
-export const inputSchemaByTool = {
-    "listFilms": {
-        "type": "object",
-        "properties": {
-            "limit": {
-                "type": "integer",
-                "minimum": 1,
-                "default": 100,
-                "description": "Rows per page (default 100)."
-            },
-            "offset": {
-                "type": "integer",
-                "minimum": 0,
-                "default": 0,
-                "description": "Rows to skip for pagination (default 0)."
+export const mcpServerName = "pagila-tools";
+export const mcpServerVersion = "0.0.1";
+
+import * as z from 'zod/v4';
+
+const __db2aiPrimitiveUnion = z.union([z.string(), z.number(), z.boolean()]);
+
+export const inputZodByTool = {
+    "listFilms": z.object({ "limit": z.number().describe("Rows per page (default 100).").optional(), "offset": z.number().describe("Rows to skip for pagination (default 0).").optional() }).strict(),
+    "listActors": z.object({ "limit": z.number().describe("Rows per page (default 100).").optional(), "offset": z.number().describe("Rows to skip for pagination (default 0).").optional() }).strict(),
+    "listCustomers": z.object({ "limit": z.number().describe("Rows per page (default 100).").optional(), "offset": z.number().describe("Rows to skip for pagination (default 0).").optional() }).strict(),
+    "listCategories": z.object({ "limit": z.number().describe("Rows per page (default 100).").optional(), "offset": z.number().describe("Rows to skip for pagination (default 0).").optional() }).strict(),
+    "listCountries": z.object({ "limit": z.number().describe("Rows per page (default 100).").optional(), "offset": z.number().describe("Rows to skip for pagination (default 0).").optional() }).strict(),
+    "listInventory": z.object({ "limit": z.number().describe("Rows per page (default 100).").optional(), "offset": z.number().describe("Rows to skip for pagination (default 0).").optional() }).strict(),
+    "filmsByMpaaRating": z.object({ "param1": z.string().describe("MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)"), "param2": z.string().describe("max rows to return (SQL $2)") }).strict(),
+    "filmsWithActorLastName": z.object({ "param1": z.string().describe("actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)"), "param2": z.string().describe("max rows to return (SQL $2)") }).strict(),
+    "searchFilms": z.object({ "param1": z.string().describe("search text (matched in title or description) (SQL $1)"), "param2": z.string().describe("max rows to return (SQL $2)") }).strict()
+};
+
+const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
+const META_ENV_DIRS = 'MCP_HOST_ENV_DIRS';
+
+function applyHostEnvKeys(hostConfig, envDirs) {
+    if (hostConfig.authEnv) {
+        process.env[META_AUTH_ENV_KEY] = hostConfig.authEnv;
+    } else {
+        delete process.env[META_AUTH_ENV_KEY];
+    }
+    if (envDirs.length > 0) {
+        process.env[META_ENV_DIRS] = JSON.stringify(envDirs);
+    } else {
+        delete process.env[META_ENV_DIRS];
+    }
+}
+
+function decodeJwtPayloadUnsafe(token) {
+    const parts = String(token).trim().split('.');
+    if (parts.length !== 3) {
+        throw new Error('credential is not a JWT (expected three dot-separated segments).');
+    }
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) {
+        b64 += '=';
+    }
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+}
+
+export const mcpHostAdapter = {
+    configureFromArgv(argv, envDirs) {
+        let authEnv;
+        for (let i = 0; i < argv.length; i++) {
+            const arg = argv[i];
+            if (arg === '--auth-env') {
+                authEnv = argv[++i];
+                if (!authEnv) {
+                    throw new Error('Missing value after --auth-env');
+                }
+                continue;
             }
-        },
-        "required": [],
-        "additionalProperties": false
+            if (arg.startsWith('-')) {
+                throw new Error('Unknown option: ' + arg);
+            }
+            throw new Error('Unexpected positional argument: ' + arg);
+        }
+        applyHostEnvKeys({ authEnv }, envDirs);
     },
-    "listActors": {
-        "type": "object",
-        "properties": {
-            "limit": {
-                "type": "integer",
-                "minimum": 1,
-                "default": 100,
-                "description": "Rows per page (default 100)."
-            },
-            "offset": {
-                "type": "integer",
-                "minimum": 0,
-                "default": 0,
-                "description": "Rows to skip for pagination (default 0)."
-            }
-        },
-        "required": [],
-        "additionalProperties": false
+
+    validateAtStartup(requiresAuth) {
+        const connectionString = process.env[connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).'
+            );
+        }
+        if (!requiresAuth) {
+            return;
+        }
+        const authEnvName = process.env[META_AUTH_ENV_KEY]?.trim();
+        if (!authEnvName) {
+            throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
+        }
+        const credential = process.env[authEnvName]?.trim();
+        if (!credential) {
+            throw new Error(
+                'Environment variable "' + authEnvName + '" is missing or empty (required by --auth-env).'
+            );
+        }
     },
-    "listCustomers": {
-        "type": "object",
-        "properties": {
-            "limit": {
-                "type": "integer",
-                "minimum": 1,
-                "default": 100,
-                "description": "Rows per page (default 100)."
-            },
-            "offset": {
-                "type": "integer",
-                "minimum": 0,
-                "default": 0,
-                "description": "Rows to skip for pagination (default 0)."
+
+    resolveHostContext() {
+        const connectionString = process.env[connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).'
+            );
+        }
+
+        const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
+        let credential = authKey ? process.env[authKey]?.trim() : undefined;
+        credential = credential || undefined;
+
+        let jwt;
+        if (credential) {
+            const segments = String(credential).trim().split('.');
+            if (segments.length === 3) {
+                try {
+                    jwt = decodeJwtPayloadUnsafe(credential);
+                } catch {
+                    jwt = undefined;
+                }
             }
-        },
-        "required": [],
-        "additionalProperties": false
+        }
+
+        return { connectionString, credential, jwt };
     },
-    "listCategories": {
-        "type": "object",
-        "properties": {
-            "limit": {
-                "type": "integer",
-                "minimum": 1,
-                "default": 100,
-                "description": "Rows per page (default 100)."
-            },
-            "offset": {
-                "type": "integer",
-                "minimum": 0,
-                "default": 0,
-                "description": "Rows to skip for pagination (default 0)."
+
+    envDirsForReload() {
+        const raw = process.env[META_ENV_DIRS];
+        if (!raw?.trim()) {
+            return [];
+        }
+        try {
+            const dirs = JSON.parse(raw);
+            if (Array.isArray(dirs) && dirs.every((d) => typeof d === 'string')) {
+                return dirs;
             }
-        },
-        "required": [],
-        "additionalProperties": false
-    },
-    "listCountries": {
-        "type": "object",
-        "properties": {
-            "limit": {
-                "type": "integer",
-                "minimum": 1,
-                "default": 100,
-                "description": "Rows per page (default 100)."
-            },
-            "offset": {
-                "type": "integer",
-                "minimum": 0,
-                "default": 0,
-                "description": "Rows to skip for pagination (default 0)."
-            }
-        },
-        "required": [],
-        "additionalProperties": false
-    },
-    "listInventory": {
-        "type": "object",
-        "properties": {
-            "limit": {
-                "type": "integer",
-                "minimum": 1,
-                "default": 100,
-                "description": "Rows per page (default 100)."
-            },
-            "offset": {
-                "type": "integer",
-                "minimum": 0,
-                "default": 0,
-                "description": "Rows to skip for pagination (default 0)."
-            }
-        },
-        "required": [],
-        "additionalProperties": false
-    },
-    "filmsByMpaaRating": {
-        "type": "object",
-        "properties": {
-            "param1": {
-                "type": "string",
-                "description": "MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)"
-            },
-            "param2": {
-                "type": "string",
-                "description": "max rows to return (SQL $2)"
-            }
-        },
-        "required": [
-            "param1",
-            "param2"
-        ],
-        "additionalProperties": false
-    },
-    "filmsWithActorLastName": {
-        "type": "object",
-        "properties": {
-            "param1": {
-                "type": "string",
-                "description": "actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)"
-            },
-            "param2": {
-                "type": "string",
-                "description": "max rows to return (SQL $2)"
-            }
-        },
-        "required": [
-            "param1",
-            "param2"
-        ],
-        "additionalProperties": false
-    },
-    "searchFilms": {
-        "type": "object",
-        "properties": {
-            "param1": {
-                "type": "string",
-                "description": "search text (matched in title or description) (SQL $1)"
-            },
-            "param2": {
-                "type": "string",
-                "description": "max rows to return (SQL $2)"
-            }
-        },
-        "required": [
-            "param1",
-            "param2"
-        ],
-        "additionalProperties": false
+        } catch {
+            // ignore malformed config
+        }
+        return [];
     }
 };
 
@@ -299,12 +263,21 @@ import pg from 'pg';
 export const DEFAULT_PAGE_LIMIT = 100;
 export const DEFAULT_MAX_LIMIT_CAP = 1000;
 
-export async function invokeTool(toolName, options = {}) {
-    const connectionString = process.env[connectionEnv];
-    if (!connectionString || String(connectionString).trim().length === 0) {
-        throw new Error(`Missing database URL: set environment variable "${connectionEnv}".`);
+function resolveConnectionString(hostContext) {
+    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
+        const cs = String(hostContext.connectionString).trim();
+        if (cs.length > 0) {
+            return cs;
+        }
     }
-    const client = new pg.Client({ connectionString: String(connectionString).trim() });
+    throw new Error(
+        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
+    );
+}
+
+export async function invokeTool(toolName, options = {}, hostContext) {
+    const connectionString = resolveConnectionString(hostContext);
+    const client = new pg.Client({ connectionString });
     await client.connect();
     try {
         switch (toolName) {

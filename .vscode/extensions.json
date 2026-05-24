@@ -1,6 +1,9 @@
 {
     "recommendations": [
         "langium.langium-vscode",
-        "vitest.explorer"
+        "vitest.explorer",
+        "eamodio.gitlens",
+        "mhutchie.vscode-git-graph",
+        "usernamehw.errorlens"
     ]
 }

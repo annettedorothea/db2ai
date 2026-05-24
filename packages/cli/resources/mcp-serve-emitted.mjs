@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-// packages/cli/mcp-bundle/mcp-standalone-entry.ts
-import * as path3 from "node:path";
+// ../core2ai/packages/mcp-host/src/mcp-standalone-entry.ts
+import * as path2 from "node:path";
+import { pathToFileURL } from "node:url";
 
-// packages/cli/src/env.ts
+// ../core2ai/packages/mcp-host/src/env.ts
 import * as fs from "node:fs";
 import * as path from "node:path";
 var LOCAL_ENV_FILES = [".env", ".env.local"];
@@ -54,9 +55,6 @@ function loadLocalEnvFiles(startDirs) {
   const loadedFiles = [];
   const visitedFiles = /* @__PURE__ */ new Set();
   for (const startDir of startDirs) {
-    if (!startDir || startDir.trim().length === 0) {
-      continue;
-    }
     for (const directory of ancestorDirectories(startDir)) {
       for (const fileName of LOCAL_ENV_FILES) {
         const filePath = path.join(directory, fileName);
@@ -65,16 +63,14 @@ function loadLocalEnvFiles(startDirs) {
         }
         visitedFiles.add(filePath);
         const content = fs.readFileSync(filePath, "utf-8");
+        const overrideExisting = fileName === ".env.local";
         for (const line of content.split(/\r?\n/u)) {
           const parsed = parseEnvLine(line);
           if (!parsed) {
             continue;
           }
           const [key, value] = parsed;
-          if (value.length === 0) {
-            continue;
-          }
-          if (!protectedKeys.has(key) || loadedKeys.has(key)) {
+          if (overrideExisting || !protectedKeys.has(key) || loadedKeys.has(key)) {
             process.env[key] = value;
             loadedKeys.add(key);
           }
@@ -86,130 +82,87 @@ function loadLocalEnvFiles(startDirs) {
   return loadedFiles;
 }
 
-// packages/cli/mcp-bundle/mcp-server.ts
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import * as path2 from "node:path";
-import { pathToFileURL } from "node:url";
-import * as z from "zod/v4";
-function isFiniteNumber(value) {
-  return typeof value === "number" && Number.isFinite(value);
+// ../core2ai/packages/mcp-host/src/mcp-host-adapter.ts
+function readMcpHostAdapter(imported2) {
+  const adapter = imported2.mcpHostAdapter;
+  if (!adapter || typeof adapter !== "object") {
+    throw new Error('Generated module must export "mcpHostAdapter". Regenerate tool code.');
+  }
+  const a = adapter;
+  if (typeof a.configureFromArgv !== "function") {
+    throw new Error("mcpHostAdapter.configureFromArgv is required. Regenerate tool code.");
+  }
+  if (typeof a.validateAtStartup !== "function") {
+    throw new Error("mcpHostAdapter.validateAtStartup is required. Regenerate tool code.");
+  }
+  if (typeof a.resolveHostContext !== "function") {
+    throw new Error("mcpHostAdapter.resolveHostContext is required. Regenerate tool code.");
+  }
+  if (typeof a.envDirsForReload !== "function") {
+    throw new Error("mcpHostAdapter.envDirsForReload is required. Regenerate tool code.");
+  }
+  return a;
 }
-function zodNumericPicklist(values) {
-  if (values.length === 0) {
-    return z.never();
-  }
-  if (values.length === 1) {
-    return z.literal(values[0]);
-  }
-  const literals = values.map((v) => z.literal(v));
-  return z.union(literals);
-}
-function jsonSchemaToZod(schema) {
-  if (schema === null || typeof schema !== "object") {
-    return z.unknown();
-  }
-  const s = schema;
-  if (Array.isArray(s.anyOf)) {
-    const parts = s.anyOf.map((p) => jsonSchemaToZod(p));
-    if (parts.length === 0) {
-      return z.never();
-    }
-    if (parts.length === 1) {
-      return parts[0];
-    }
-    return z.union(parts);
-  }
-  if (s.type === "object" && s.properties !== void 0 && typeof s.properties === "object" && !Array.isArray(s.properties)) {
-    const props = s.properties;
-    const required = new Set(
-      Array.isArray(s.required) ? s.required.filter((x) => typeof x === "string") : []
-    );
-    const shape = {};
-    for (const [key, propSchema] of Object.entries(props)) {
-      let inner = jsonSchemaToZod(propSchema);
-      if (!required.has(key)) {
-        inner = inner.optional();
-      }
-      shape[key] = inner;
-    }
-    let obj = z.object(shape);
-    if (s.additionalProperties === false) {
-      obj = obj.strict();
-    }
-    return obj;
-  }
-  if (s.type === "array") {
-    return z.array(jsonSchemaToZod(s.items));
-  }
-  if (s.type === "string") {
-    return z.string();
-  }
-  if (s.type === "number" || s.type === "integer") {
-    if (Array.isArray(s.enum) && s.enum.length >= 1 && s.enum.every(isFiniteNumber)) {
-      return zodNumericPicklist(s.enum);
-    }
-    return z.number();
-  }
-  if (s.type === "boolean") {
-    return z.boolean();
-  }
-  return z.unknown();
-}
-var fallbackInputSchema = z.object({
-  limit: z.number().int().min(1).optional(),
-  offset: z.number().int().min(0).optional()
-}).strict();
-function asLocalModulePath(modulePath) {
-  if (modulePath.startsWith("file://")) {
-    throw new Error("mcp-serve.mjs accepts local file paths only (no file:// URLs).");
-  }
-  return path2.resolve(modulePath);
-}
-function readRuntimeModule(imported) {
-  const generatedTools = imported.generatedTools;
-  const invokeTool = imported.invokeTool;
+function readGeneratedModule(imported2) {
+  const generatedTools = imported2.generatedTools;
+  const invokeTool = imported2.invokeTool;
   if (!Array.isArray(generatedTools)) {
     throw new Error('Generated module must export "generatedTools" array.');
   }
   if (typeof invokeTool !== "function") {
     throw new Error('Generated module must export async "invokeTool" function.');
   }
-  const inputSchemaByTool = imported.inputSchemaByTool;
+  const inputZodByTool = imported2.inputZodByTool;
+  const mcpServerName = imported2.mcpServerName;
+  const mcpServerVersion = imported2.mcpServerVersion;
   return {
+    adapter: readMcpHostAdapter(imported2),
     generatedTools,
     invokeTool,
-    inputSchemaByTool: inputSchemaByTool && typeof inputSchemaByTool === "object" && !Array.isArray(inputSchemaByTool) ? inputSchemaByTool : void 0
+    inputZodByTool: inputZodByTool && typeof inputZodByTool === "object" && !Array.isArray(inputZodByTool) ? inputZodByTool : void 0,
+    mcpServerName: typeof mcpServerName === "string" ? mcpServerName : void 0,
+    mcpServerVersion: typeof mcpServerVersion === "string" ? mcpServerVersion : void 0,
+    requiresAuth: imported2.requiresAuth === true
   };
 }
-async function importGeneratedModule(modulePath) {
-  const absolutePath = asLocalModulePath(modulePath);
-  const imported = await import(pathToFileURL(absolutePath).href);
-  if (!imported || typeof imported !== "object") {
-    throw new Error(`Generated module "${modulePath}" did not export an object.`);
+
+// ../core2ai/packages/mcp-host/src/mcp-server.ts
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+function requireMcpServerIdentity(generated2) {
+  const name = generated2.mcpServerName?.trim();
+  const version = generated2.mcpServerVersion?.trim();
+  if (!name) {
+    throw new Error('Generated module must export "mcpServerName". Regenerate tool code.');
   }
-  return readRuntimeModule(imported);
-}
-async function importGeneratedModuleWithoutCache(modulePath) {
-  const absolutePath = asLocalModulePath(modulePath);
-  const moduleUrl = pathToFileURL(absolutePath);
-  moduleUrl.searchParams.set("t", `${Date.now()}`);
-  const imported = await import(moduleUrl.href);
-  if (!imported || typeof imported !== "object") {
-    throw new Error(`Generated module "${modulePath}" did not export an object.`);
+  if (!version) {
+    throw new Error('Generated module must export "mcpServerVersion". Regenerate tool code.');
   }
-  return readRuntimeModule(imported);
+  return { name, version };
 }
-async function runMcpServerFromGeneratedModule(modulePath, options = {}) {
-  const generated = await importGeneratedModule(modulePath);
-  const loadModule = options.reloadModulePerRequest ? () => importGeneratedModuleWithoutCache(modulePath) : () => importGeneratedModule(modulePath);
-  const server = new McpServer({
-    name: "db2ai-generated-tools",
-    version: "0.1.0"
-  });
-  for (const tool of generated.generatedTools) {
-    const rawSchema = generated.inputSchemaByTool?.[tool.toolName];
-    const inputSchema = rawSchema !== void 0 ? jsonSchemaToZod(rawSchema) : fallbackInputSchema;
+function requireInputZodSchema(inputZodByTool, toolName) {
+  if (!inputZodByTool) {
+    throw new Error('Generated module must export "inputZodByTool". Regenerate tool code.');
+  }
+  const schema = inputZodByTool[toolName];
+  if (!schema || typeof schema !== "object") {
+    throw new Error(
+      `Generated module inputZodByTool has no schema for tool "${toolName}". Regenerate tool code.`
+    );
+  }
+  return schema;
+}
+function reloadEnvFilesForDev(generated2) {
+  const dirs = generated2.adapter.envDirsForReload();
+  if (dirs.length > 0) {
+    loadLocalEnvFiles(dirs);
+  }
+}
+async function runMcpServer(generated2) {
+  const { name, version } = requireMcpServerIdentity(generated2);
+  const server = new McpServer({ name, version });
+  for (const tool of generated2.generatedTools) {
+    const inputSchema = requireInputZodSchema(generated2.inputZodByTool, tool.toolName);
     server.registerTool(
       tool.toolName,
       {
@@ -218,9 +171,13 @@ async function runMcpServerFromGeneratedModule(modulePath, options = {}) {
         inputSchema
       },
       async (args) => {
-        const a = args;
-        const currentModule = await loadModule();
-        const result = await currentModule.invokeTool(tool.toolName, a);
+        reloadEnvFilesForDev(generated2);
+        const hostContext = generated2.adapter.resolveHostContext();
+        const result = await generated2.invokeTool(
+          tool.toolName,
+          args ?? {},
+          hostContext
+        );
         return {
           content: [
             {
@@ -236,11 +193,20 @@ async function runMcpServerFromGeneratedModule(modulePath, options = {}) {
   await server.connect(transport);
 }
 
-// packages/cli/mcp-bundle/mcp-standalone-entry.ts
-var modPath = process.argv[2];
-if (!modPath) {
-  console.error("Usage: node mcp-serve.mjs <path-to-*-tools.mjs>");
-  process.exit(1);
+// ../core2ai/packages/mcp-host/src/mcp-standalone-entry.ts
+var argv = process.argv.slice(2);
+var modulePath = argv[0];
+if (!modulePath) {
+  throw new Error("Usage: node mcp-serve.mjs <path-to-*-tools.mjs> [host options...]");
 }
-loadLocalEnvFiles([process.cwd(), path3.dirname(path3.resolve(modPath))]);
-await runMcpServerFromGeneratedModule(modPath);
+var envDirs = [process.cwd(), path2.dirname(path2.resolve(modulePath))];
+loadLocalEnvFiles(envDirs);
+var imported = await import(pathToFileURL(path2.resolve(modulePath)).href);
+if (!imported || typeof imported !== "object") {
+  throw new Error(`Generated module "${modulePath}" did not export an object.`);
+}
+var generated = readGeneratedModule(imported);
+generated.adapter.configureFromArgv(argv.slice(1), envDirs);
+generated.adapter.validateAtStartup(generated.requiresAuth === true);
+console.error("[mcp] host context refreshed each tool call");
+await runMcpServer(generated);
