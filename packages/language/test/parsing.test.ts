@@ -39,10 +39,10 @@ describe('Parsing tests', () => {
             database env "PAGILA_DATABASE_URL"
 
             SELECT * FROM actor {
+                toolName: "listActors"
+                intent: "list actors"
                 summary: "Actors"
                 example: "All actors"
-                intent: "list actors"
-                toolName: "listActors"
                 maxLimit: 200
             }
         `);
@@ -57,6 +57,20 @@ describe('Parsing tests', () => {
         expect(q.summary).toBe('Actors');
         expect(q.example).toBe('All actors');
         expect(q.maxLimit).toBe(200);
+    });
+
+    test('rejects query properties outside the canonical order', async () => {
+        document = await parse(`
+            database env "PAGILA_DATABASE_URL"
+
+            SELECT * FROM actor {
+                summary: "Actors"
+                toolName: "listActors"
+                intent: "list actors"
+            }
+        `);
+
+        expect(document.parseResult.parserErrors.length).toBeGreaterThan(0);
     });
 
     test('parses columns map in query block', async () => {

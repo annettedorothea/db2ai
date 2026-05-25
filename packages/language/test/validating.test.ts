@@ -90,20 +90,6 @@ describe('Validating', () => {
         expect(messages.some((m) => m.includes('intent'))).toBe(true);
     });
 
-    test('rejects duplicate toolName keys in block', async () => {
-        document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
-
-            SELECT * FROM film {
-                toolName: "a"
-                toolName: "b"
-                intent: "x"
-            }
-        `);
-
-        expect(errorMessages(document).some((m) => m.includes('Duplicate key "toolName"'))).toBe(true);
-    });
-
     test('rejects invalid env var name', async () => {
         document = await parseValidated(`
             database env "not-valid"

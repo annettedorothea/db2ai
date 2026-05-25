@@ -9,26 +9,22 @@ ModelEntry:
 
 TableQuery:
     'SELECT' '*' 'FROM' table=TableName '{'
-        (
-              'toolName' ':' toolName=STRING
-            | 'intent' ':' intent=STRING
-            | 'example' ':' example=STRING
-            | 'summary' ':' summary=STRING
-            | 'maxLimit' ':' maxLimit=INT
-            | 'columns' ':' columns=ColumnDescriptions
-        )*
+        ('toolName' ':' toolName=STRING)?
+        ('intent' ':' intent=STRING)?
+        ('summary' ':' summary=STRING)?
+        ('example' ':' example=STRING)?
+        ('maxLimit' ':' maxLimit=INT)?
+        ('columns' ':' columns=ColumnDescriptions)?
     '}';
 
 SqlQuery:
     'SQL' '{'
-        (
-              'toolName' ':' toolName=STRING
-            | 'intent' ':' intent=STRING
-            | 'example' ':' example=STRING
-            | 'summary' ':' summary=STRING
-            | 'query' ':' query=STRING
-            | 'params' ':' params=SqlParamMap
-        )*
+        ('toolName' ':' toolName=STRING)?
+        ('intent' ':' intent=STRING)?
+        ('query' ':' query=STRING)?
+        ('summary' ':' summary=STRING)?
+        ('example' ':' example=STRING)?
+        ('params' ':' params=SqlParamMap)?
     '}';
 
 ColumnDescriptions:

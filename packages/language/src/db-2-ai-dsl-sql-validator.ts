@@ -1,13 +1,9 @@
 import type { ValidationAcceptor } from 'langium';
-import { CstUtils, isLeafCstNode } from 'langium';
 import type { SqlQuery } from './generated/ast.js';
 import { extractPlaceholderNumbers } from './sql-params.js';
 
-export const SQL_BLOCK_KEYS = ['toolName', 'intent', 'example', 'summary', 'query', 'params'] as const;
-
 export function checkSqlQuery(sqlQuery: SqlQuery, accept: ValidationAcceptor): void {
     checkSqlRequiredKeys(sqlQuery, accept);
-    reportSqlDuplicateBlockKeys(sqlQuery, accept);
     checkSqlParamMap(sqlQuery, accept);
 }
 
@@ -24,32 +20,6 @@ function checkSqlRequiredKeys(sqlQuery: SqlQuery, accept: ValidationAcceptor): v
     }
     if (sqlQuery.query === undefined || String(sqlQuery.query).trim().length === 0) {
         accept('error', 'SQL tool requires `query: "..."`.', { node: sqlQuery, property: 'query' });
-    }
-}
-
-function reportSqlDuplicateBlockKeys(sqlQuery: SqlQuery, accept: ValidationAcceptor): void {
-    const cst = sqlQuery.$cstNode;
-    if (!cst) {
-        return;
-    }
-    const allowed = new Set<string>(SQL_BLOCK_KEYS);
-    const seen = new Set<string>();
-    for (const leaf of CstUtils.flattenCst(cst)) {
-        if (!isLeafCstNode(leaf)) {
-            continue;
-        }
-        const text = leaf.text;
-        if (!allowed.has(text)) {
-            continue;
-        }
-        if (!seen.has(text)) {
-            seen.add(text);
-            continue;
-        }
-        accept('error', `Duplicate key "${text}". Each property may appear at most once per block.`, {
-            node: sqlQuery,
-            range: leaf.range
-        });
     }
 }
 

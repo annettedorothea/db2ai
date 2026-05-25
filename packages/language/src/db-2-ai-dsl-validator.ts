@@ -1,6 +1,6 @@
 import type { ValidationAcceptor, ValidationChecks } from 'langium';
 import { CstUtils, isLeafCstNode } from 'langium';
-import type { Db2AiDslAstType, Model, TableQuery } from './generated/ast.js';
+import type { Db2AiDslAstType, Model } from './generated/ast.js';
 import { isSqlQuery, isTableQuery } from './generated/ast.js';
 import type { Db2AiDslServices } from './db-2-ai-dsl-module.js';
 import { checkSqlQuery } from './db-2-ai-dsl-sql-validator.js';
@@ -12,9 +12,6 @@ import {
     loadSchema,
     resolveDatabaseUrlFromEnvForDocument
 } from './schema.js';
-
-export const QUERY_BLOCK_KEYS = ['toolName', 'intent', 'example', 'summary', 'maxLimit', 'columns'] as const;
-export type QueryBlockKey = (typeof QUERY_BLOCK_KEYS)[number];
 
 export const DEFAULT_MAX_LIMIT_CAP = 1000;
 export const DEFAULT_PAGE_LIMIT = 100;
@@ -33,7 +30,6 @@ export class Db2AiDslValidator {
         this.checkDatabaseEnv(model, accept);
         this.checkRequiredKeys(model, accept);
         this.checkMaxLimit(model, accept);
-        this.checkBlockDuplicateKeys(model, accept);
         this.checkColumnMapDuplicateKeys(model, accept);
         this.checkUniqueToolNames(model, accept);
         await this.checkTablesExist(model, accept);
@@ -57,7 +53,7 @@ export class Db2AiDslValidator {
         }
     }
 
-    private blockHasOpeningBrace(cst: TableQuery['$cstNode']): boolean {
+    private blockHasOpeningBrace(cst: Model['entries'][number]['$cstNode']): boolean {
         if (!cst) {
             return false;
         }
@@ -118,41 +114,6 @@ export class Db2AiDslValidator {
                     property: 'maxLimit'
                 });
             }
-        }
-    }
-
-    private checkBlockDuplicateKeys(model: Model, accept: ValidationAcceptor): void {
-        for (const entry of model.entries) {
-            if (!isTableQuery(entry)) {
-                continue;
-            }
-            this.reportDuplicateKeywords(entry, accept);
-        }
-    }
-
-    private reportDuplicateKeywords(query: TableQuery, accept: ValidationAcceptor): void {
-        const cst = query.$cstNode;
-        if (!cst) {
-            return;
-        }
-        const allowed = new Set<string>(QUERY_BLOCK_KEYS);
-        const seen = new Set<string>();
-        for (const leaf of CstUtils.flattenCst(cst)) {
-            if (!isLeafCstNode(leaf)) {
-                continue;
-            }
-            const text = leaf.text;
-            if (!allowed.has(text)) {
-                continue;
-            }
-            if (!seen.has(text)) {
-                seen.add(text);
-                continue;
-            }
-            accept('error', `Duplicate key "${text}". Each property may appear at most once per block.`, {
-                node: query,
-                range: leaf.range
-            });
         }
     }
 

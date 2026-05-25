@@ -52,6 +52,13 @@ function blockKeywordLabels(items: Array<{ detail?: unknown; label: unknown }>):
         .map((i) => String(i.label));
 }
 
+function sortedBlockKeywordLabels(items: Array<{ detail?: unknown; label: unknown; sortText?: string }>): string[] {
+    return items
+        .filter((i) => i.detail === 'Query block property' || i.detail === 'SQL block property')
+        .sort((a, b) => String(a.sortText).localeCompare(String(b.sortText)))
+        .map((i) => String(i.label));
+}
+
 async function completionAt(content: string, offset: number) {
     completionCase += 1;
     const documentUri = path.join(fixtureDir, `completion-case-${completionCase}.db2ai`);
@@ -157,10 +164,8 @@ describe('Completion for query block keywords', () => {
 
         const list = await completionAt(header, offset);
 
-        const labels = blockKeywordLabels(list?.items ?? []);
-        expect(labels).toContain('toolName');
-        expect(labels).toContain('intent');
-        expect(labels).toContain('columns');
+        const labels = sortedBlockKeywordLabels(list?.items ?? []);
+        expect(labels).toEqual(['toolName', 'intent', 'summary', 'example', 'maxLimit', 'columns']);
     });
 
     test('does not suggest already used block keywords', async () => {
@@ -181,9 +186,8 @@ describe('Completion for query block keywords', () => {
 
         const list = await completionAt(header, offset);
 
-        const labels = blockKeywordLabels(list?.items ?? []);
-        expect(labels).toContain('query');
-        expect(labels).toContain('params');
+        const labels = sortedBlockKeywordLabels(list?.items ?? []);
+        expect(labels).toEqual(['toolName', 'intent', 'query', 'summary', 'example', 'params']);
     });
 
     test('lists block keywords without database env value', async () => {

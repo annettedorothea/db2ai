@@ -4,8 +4,6 @@ import type { CompletionProviderOptions } from 'langium/lsp';
 import { DefaultCompletionProvider } from 'langium/lsp';
 import type { AstNode, CstNode, LangiumDocument, LeafCstNode } from 'langium';
 import { AstUtils, Cancellation, CstUtils, isLeafCstNode } from 'langium';
-import { SQL_BLOCK_KEYS } from './db-2-ai-dsl-sql-validator.js';
-import { QUERY_BLOCK_KEYS, type QueryBlockKey } from './db-2-ai-dsl-validator.js';
 import { columnsForTable, loadSchema, resolveDatabaseUrlFromEnvForDocument } from './schema.js';
 import type { LoadedSchema } from './schema.js';
 import {
@@ -19,6 +17,21 @@ import {
     type SqlQuery,
     type TableQuery
 } from './generated/ast.js';
+
+const TABLE_BLOCK_KEYS = ['toolName', 'intent', 'summary', 'example', 'maxLimit', 'columns'] as const;
+type TableBlockKey = (typeof TABLE_BLOCK_KEYS)[number];
+const SQL_BLOCK_KEYS = ['toolName', 'intent', 'query', 'summary', 'example', 'params'] as const;
+type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
+const KEYWORD_SORT: Record<TableBlockKey | SqlBlockKey, string> = {
+    toolName: '0100',
+    intent: '0101',
+    query: '0102',
+    summary: '0103',
+    example: '0104',
+    maxLimit: '0105',
+    columns: '0106',
+    params: '0107'
+};
 
 function debugCompletion(message: string, data?: unknown): void {
     if (process.env.DB2AI_DSL_DEBUG_COMPLETION === '1') {
@@ -368,21 +381,21 @@ function tableItemsForQuery(
     return [];
 }
 
-const TABLE_BLOCK_KEYWORD_INSERT: Record<QueryBlockKey, string> = {
+const TABLE_BLOCK_KEYWORD_INSERT: Record<TableBlockKey, string> = {
     toolName: 'toolName: "$1"$0',
     intent: 'intent: "$1"$0',
-    example: 'example: "$1"$0',
     summary: 'summary: "$1"$0',
+    example: 'example: "$1"$0',
     maxLimit: 'maxLimit: $1$0',
     columns: 'columns: {\n    $1: "$2"\n}$0'
 };
 
-const SQL_BLOCK_KEYWORD_INSERT: Record<(typeof SQL_BLOCK_KEYS)[number], string> = {
+const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     toolName: 'toolName: "$1"$0',
     intent: 'intent: "$1"$0',
-    example: 'example: "$1"$0',
-    summary: 'summary: "$1"$0',
     query: 'query: "$1"$0',
+    summary: 'summary: "$1"$0',
+    example: 'example: "$1"$0',
     params: 'params: {\n    $1: "$2"\n}$0'
 };
 
@@ -505,8 +518,8 @@ function blockKeywordItemsForEntry(
     position: Position
 ): CompletionItem[] {
     const isSql = isSqlQuery(entry);
-    const keys = isSql ? SQL_BLOCK_KEYS : QUERY_BLOCK_KEYS;
-    const inserts = isSql ? SQL_BLOCK_KEYWORD_INSERT : TABLE_BLOCK_KEYWORD_INSERT;
+    const keys: readonly (TableBlockKey | SqlBlockKey)[] = isSql ? SQL_BLOCK_KEYS : TABLE_BLOCK_KEYS;
+    const inserts: Record<string, string> = isSql ? SQL_BLOCK_KEYWORD_INSERT : TABLE_BLOCK_KEYWORD_INSERT;
     const used = isSql ? usedSqlBlockKeys(entry) : usedTableBlockKeys(entry);
 
     if (!offsetInsideToolBlock(entry, offset)) {
@@ -537,7 +550,7 @@ function blockKeywordItemsForEntry(
             kind: CompletionItemKind.Keyword,
             detail: isSql ? 'SQL block property' : 'Query block property',
             insertTextFormat: InsertTextFormat.Snippet,
-            sortText: '1',
+            sortText: KEYWORD_SORT[key as keyof typeof KEYWORD_SORT],
             textEdit: TextEdit.replace(keywordLeaf.range, inserts[key as keyof typeof inserts]),
             insertText: inserts[key as keyof typeof inserts]
         }));
@@ -552,7 +565,7 @@ function blockKeywordItemsForEntry(
         kind: CompletionItemKind.Keyword,
         detail: isSql ? 'SQL block property' : 'Query block property',
         insertTextFormat: InsertTextFormat.Snippet,
-        sortText: '1',
+        sortText: KEYWORD_SORT[key as keyof typeof KEYWORD_SORT],
         insertText: inserts[key as keyof typeof inserts],
         textEdit: TextEdit.insert(position, inserts[key as keyof typeof inserts])
     }));
