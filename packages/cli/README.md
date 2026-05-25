@@ -49,6 +49,6 @@ Root `npm run bundle:mcp-runtime` bundles `core2ai/packages/mcp-host/src/mcp-sta
 - [`src/main.ts`](./src/main.ts) — Commander setup
 - [`src/generator.ts`](./src/generator.ts) — code generation
 - [`src/db-query-codegen.ts`](./src/db-query-codegen.ts) — SQL / table tool schemas
-- [`src/json-schema-to-zod-codegen.ts`](./src/json-schema-to-zod-codegen.ts) — Zod schemas for MCP
+- [`src/generator/`](./src/generator/) — generated module renderers and project bootstrap
 - [`src/smoke.ts`](./src/smoke.ts) — smoke runner
 - [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs) — bundled MCP host

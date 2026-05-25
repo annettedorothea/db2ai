@@ -141,7 +141,7 @@ export const mcpServerVersion = "0.0.1";
 
 import * as z from 'zod/v4';
 
-const __db2aiPrimitiveUnion = z.union([z.string(), z.number(), z.boolean()]);
+const __core2aiPrimitiveUnion = z.union([z.string(), z.number(), z.boolean()]);
 
 export const inputZodByTool = {
     "listFilms": z.object({ "limit": z.number().describe("Rows per page (default 100).").optional(), "offset": z.number().describe("Rows to skip for pagination (default 0).").optional() }).strict(),
