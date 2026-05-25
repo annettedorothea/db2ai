@@ -1,10 +1,10 @@
 # db2ai
 
-**db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares tables or SQL plus AI-facing metadata (intent, examples, tool names, optional column docs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL schema).
+**db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares tables or SQL plus AI-facing metadata (intent, examples, tool names, optional column docs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL/MySQL schemas).
 
 Sibling project: [api2ai](https://github.com/annettodorothea/api2ai) (OpenAPI → MCP).
 
-Keywords: **DSL** · **SQL** · **PostgreSQL** · **code generator** · **MCP** · **Langium**
+Keywords: **DSL** · **SQL** · **PostgreSQL** · **MySQL** · **code generator** · **MCP** · **Langium**
 
 ## DSL at a glance
 
@@ -21,10 +21,11 @@ SELECT * FROM film {
 ```
 
 Connection strings are **not** in the DSL — only the **env var name** (`database env "…"`). Values live in `.env` / MCP host config.
+Use `database mysql env "SAKILA_DATABASE_URL"` for MySQL; omitted dialect remains PostgreSQL for backwards compatibility.
 
 ## MCP demos
 
-Bundled demos and walkthrough: **[`./packages/extension/demos/`](./packages/extension/demos/)** — see **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**. Start DB: `cd packages/extension/demos && npm run db:up`.
+Bundled demos and walkthrough: **[`./packages/extension/demos/`](./packages/extension/demos/)** — see **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**. Start PostgreSQL: `cd packages/extension/demos && npm run db:up`; start MySQL: `npm run db:sakila:up`.
 
 **Without cloning the repo:** install the VSIX, then Command Palette → **db2ai: Create demo workspace (MCP examples)**. Details: [`./packages/extension/README.md`](./packages/extension/README.md).
 
@@ -62,10 +63,12 @@ Package notes: [`./packages/language/README.md`](./packages/language/README.md) 
 | `watch`              | TypeScript watch on the monorepo build graph                 |
 | `clean`              | Clean all workspace build outputs                            |
 | `bundle:mcp-runtime` | Bundle standalone `mcp-serve` into `packages/cli/resources/` |
-| `generate:pagila`    | Regenerate Pagila example tools                              |
-| `test`               | All automated tests, including Pagila MCP stdio smoke        |
+| `generate:pagila`    | Regenerate Pagila PostgreSQL example tools                   |
+| `generate:sakila`    | Regenerate Sakila MySQL example tools                        |
+| `test`               | All automated tests, including Pagila/Sakila MCP stdio smoke |
 | `test:smoke:pagila`  | Smoke-call `listFilms` on generated tools                    |
 | `test:mcp:pagila`    | Smoke Pagila through generated MCP stdio host                |
+| `test:mcp:sakila`    | Smoke Sakila through generated MCP stdio host                |
 
 ## Launch configurations ([`./.vscode/launch.json`](./.vscode/launch.json))
 

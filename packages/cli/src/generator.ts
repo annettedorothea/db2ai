@@ -1,4 +1,5 @@
 import type { Model } from 'db-2-ai-dsl-language';
+import { databaseDialectFromModel, type ResolvedDatabaseDialect } from 'db-2-ai-dsl-language';
 import {
     buildInputZodBlock,
     copyBundledMcpServeInto,
@@ -37,16 +38,18 @@ function bundleSafeGeneratorImplementationDir(): string {
 
 const __generatorDirname = bundleSafeGeneratorImplementationDir();
 
-function createBootstrapConfig(): ProjectBootstrapConfig {
+function createBootstrapConfig(databaseDialect: ResolvedDatabaseDialect): ProjectBootstrapConfig {
+    const databaseDriverDep = databaseDialect === 'mysql' ? 'mysql2' : 'pg';
     return {
         generatorImplementationDir: __generatorDirname,
         embedHomeEnv: 'DB2AI_EMBED_HOME',
         fallbackProjectName: 'db2ai-project',
-        requiredRuntimeDeps: ['@modelcontextprotocol/sdk', 'zod', 'pg'],
+        requiredRuntimeDeps: ['@modelcontextprotocol/sdk', 'zod', databaseDriverDep],
         dependencyVersionFallbacks: {
             '@modelcontextprotocol/sdk': '^1.29.0',
             zod: '^4.4.3',
-            pg: '^8.16.0'
+            pg: '^8.16.0',
+            mysql2: '^3.22.3'
         },
         resolvePackageRoot(dir) {
             const oneUp = path.resolve(dir, '..');
@@ -66,7 +69,8 @@ function createBootstrapConfig(): ProjectBootstrapConfig {
 
 export async function generateOutput(model: Model, source: string, destination: string): Promise<GeneratedOutputFiles> {
     ensureParentDir(destination);
-    const bootstrapConfig = createBootstrapConfig();
+    const databaseDialect = databaseDialectFromModel(model);
+    const bootstrapConfig = createBootstrapConfig(databaseDialect);
     const parsed = path.parse(destination);
     const tsPath = parsed.ext === '.ts' ? destination : path.join(parsed.dir, `${parsed.name}.ts`);
     const jsPath = path.join(parsed.dir, `${parsed.name}.mjs`);
@@ -86,8 +90,9 @@ export async function generateOutput(model: Model, source: string, destination: 
         renderTsModule(
             tools,
             envName,
+            databaseDialect,
             mcpServerIdentityBlock,
-            `${sharedRuntimePrefix}${renderInvokeBlockTs(tools)}`,
+            `${sharedRuntimePrefix}${renderInvokeBlockTs(tools, databaseDialect)}`,
             source
         )
     );
@@ -96,8 +101,9 @@ export async function generateOutput(model: Model, source: string, destination: 
         renderJsModule(
             tools,
             envName,
+            databaseDialect,
             mcpServerIdentityBlock,
-            `${sharedRuntimePrefix}${renderInvokeBlockJs(tools)}`,
+            `${sharedRuntimePrefix}${renderInvokeBlockJs(tools, databaseDialect)}`,
             source
         )
     );

@@ -1,7 +1,16 @@
 import pg from 'pg';
+import mysql from 'mysql2/promise';
+import type { RowDataPacket } from 'mysql2';
+import type { ResolvedDatabaseDialect } from './dialect.js';
+import {
+    DEFAULT_DATABASE_DIALECT,
+    expectedConnectionUrlDescription,
+    isSupportedConnectionUrlForDialect
+} from './dialect.js';
 import { loadLocalEnvFiles, workspaceDirsForDocumentUri } from './env.js';
 
 export type LoadedSchema = {
+    dialect: ResolvedDatabaseDialect;
     tables: string[];
     columnsByTable: Record<string, string[]>;
 };
@@ -10,11 +19,6 @@ const cache = new Map<string, LoadedSchema>();
 
 export function clearSchemaCache(): void {
     cache.clear();
-}
-
-export function isPostgresqlConnectionUrl(connectionUrl: string): boolean {
-    const trimmed = connectionUrl.trim();
-    return trimmed.startsWith('postgresql://') || trimmed.startsWith('postgres://');
 }
 
 export function isValidEnvVarName(name: string): boolean {
@@ -43,17 +47,29 @@ export function resolveDatabaseUrlFromEnvForDocument(envName: string, documentUr
     return resolveDatabaseUrlFromEnv(envName);
 }
 
-export async function loadSchema(connectionUrl: string): Promise<LoadedSchema> {
-    const key = connectionUrl.trim();
+export async function loadSchema(
+    connectionUrl: string,
+    dialect: ResolvedDatabaseDialect = DEFAULT_DATABASE_DIALECT
+): Promise<LoadedSchema> {
+    const key = `${dialect}:${connectionUrl.trim()}`;
     const cached = cache.get(key);
     if (cached) {
         return cached;
     }
-    if (!isPostgresqlConnectionUrl(key)) {
-        throw new Error('Only postgresql:// or postgres:// connection URLs are supported.');
+    if (!isSupportedConnectionUrlForDialect(dialect, connectionUrl)) {
+        throw new Error(`Expected ${expectedConnectionUrlDescription(dialect)} for ${dialect} database.`);
     }
 
-    const client = new pg.Client({ connectionString: key });
+    const loaded =
+        dialect === 'mysql'
+            ? await loadMysqlSchema(connectionUrl.trim())
+            : await loadPostgresSchema(connectionUrl.trim());
+    cache.set(key, loaded);
+    return loaded;
+}
+
+async function loadPostgresSchema(connectionUrl: string): Promise<LoadedSchema> {
+    const client = new pg.Client({ connectionString: connectionUrl });
     await client.connect();
     try {
         const tablesResult = await client.query<{ table_name: string }>(
@@ -75,11 +91,40 @@ export async function loadSchema(connectionUrl: string): Promise<LoadedSchema> {
             list.push(row.column_name);
             columnsByTable[row.table_name] = list;
         }
-        const loaded: LoadedSchema = { tables, columnsByTable };
-        cache.set(key, loaded);
-        return loaded;
+        return { dialect: 'postgres', tables, columnsByTable };
     } finally {
         await client.end();
+    }
+}
+
+type MysqlTableRow = RowDataPacket & { table_name: string };
+type MysqlColumnRow = RowDataPacket & { table_name: string; column_name: string };
+
+async function loadMysqlSchema(connectionUrl: string): Promise<LoadedSchema> {
+    const connection = await mysql.createConnection(connectionUrl);
+    try {
+        const [tablesRows] = await connection.query<MysqlTableRow[]>(
+            `SELECT TABLE_NAME AS table_name
+             FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'
+             ORDER BY TABLE_NAME`
+        );
+        const [columnsRows] = await connection.query<MysqlColumnRow[]>(
+            `SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+             ORDER BY TABLE_NAME, ORDINAL_POSITION`
+        );
+        const tables = tablesRows.map((row) => row.table_name);
+        const columnsByTable: Record<string, string[]> = {};
+        for (const row of columnsRows) {
+            const list = columnsByTable[row.table_name] ?? [];
+            list.push(row.column_name);
+            columnsByTable[row.table_name] = list;
+        }
+        return { dialect: 'mysql', tables, columnsByTable };
+    } finally {
+        await connection.end();
     }
 }
 

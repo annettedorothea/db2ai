@@ -13,19 +13,20 @@ node ./packages/cli/bin/cli.js generate <source.db2ai> <dest-tools.ts>
 node ./packages/cli/bin/cli.js smoke-generated <path-to-*-tools.mjs> <toolName> [argsJson]
 ```
 
-Prefer root `package.json` scripts: `generate:pagila`, `test:smoke:pagila`, `test:mcp:pagila`.
+Prefer root `package.json` scripts: `generate:pagila`, `generate:sakila`, `test:smoke:pagila`, `test:mcp:pagila`, `test:mcp:sakila`.
 
-`npm test` includes a Pagila direct-invoke integration test and the MCP stdio smoke. Both reuse a healthy `db2ai-pagila` Docker container when available; otherwise they start one via the demo Docker Compose setup. Newly started containers default to `PAGILA_HOST_PORT=55432` unless the variable is set explicitly. `npm run check` intentionally skips tests so pre-commit stays fast.
+`npm test` includes Pagila and Sakila direct-invoke integration tests plus MCP stdio smokes. Tests reuse healthy `db2ai-pagila` / `db2ai-sakila` Docker containers when available; otherwise they start them via the demo Docker Compose setup. Newly started containers default to `PAGILA_HOST_PORT=55432` and `SAKILA_HOST_PORT=53306` unless set explicitly. `npm run check` intentionally skips tests so pre-commit stays fast.
 
 ## Database env (DSL)
 
-The `.db2ai` file declares the **environment variable name** for the PostgreSQL URL:
+The `.db2ai` file declares the database dialect and **environment variable name** for the connection URL:
 
 ```text
 database env "PAGILA_DATABASE_URL"
+database mysql env "SAKILA_DATABASE_URL"
 ```
 
-That name is emitted as `connectionEnv` in generated tools and used by the MCP host for startup validation and `hostContext.connectionString`. The actual URL lives in `.env` / `.env.local` (or Cursor `mcp.json` `env`), not in the DSL.
+The omitted dialect is PostgreSQL for backwards compatibility. The env name is emitted as `connectionEnv` in generated tools and used by the MCP host for startup validation and `hostContext.connectionString`. The actual URL lives in `.env` / `.env.local` (or Cursor `mcp.json` `env`), not in the DSL.
 
 ## MCP serve (JWT, optional)
 
@@ -53,9 +54,9 @@ Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host/standalone-ent
 - [`src/db-query-codegen.ts`](./src/db-query-codegen.ts) — SQL / table tool schemas
 - [`src/generator/`](./src/generator/) — generated module renderers and project bootstrap
 - [`test/smoke/smoke.ts`](./test/smoke/smoke.ts) — smoke runner
-- [`test/e2e/mcp-smoke-pagila.ts`](./test/e2e/mcp-smoke-pagila.ts) — MCP stdio end-to-end smoke runner for Pagila
-- [`test/integration/`](./test/integration/) — Vitest integration tests, including Pagila direct invoke
-- [`test/support/`](./test/support/) — shared test helpers, including Pagila Docker setup
+- [`test/e2e/`](./test/e2e/) — MCP stdio end-to-end smoke runners for Pagila and Sakila
+- [`test/integration/`](./test/integration/) — Vitest integration tests, including direct invoke
+- [`test/support/`](./test/support/) — shared test helpers, including Docker setup
 - [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs) — bundled MCP host
 
 ---

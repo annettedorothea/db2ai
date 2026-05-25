@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import type { ResolvedDatabaseDialect } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen } from '../db-query-codegen.js';
 
 function serializeJsonForModule(value: unknown): string {
@@ -18,6 +19,7 @@ export const mcpServerVersion = ${JSON.stringify(version)};
 export function renderTsModule(
     tools: ResolvedDbToolCodegen[],
     connectionEnv: string,
+    databaseDialect: ResolvedDatabaseDialect,
     mcpServerIdentityBlock: string,
     toolRuntimeBlock: string,
     source: string
@@ -29,6 +31,8 @@ export function renderTsModule(
  */
 
 export const connectionEnv = ${JSON.stringify(connectionEnv)};
+
+export const databaseDialect = ${JSON.stringify(databaseDialect)};
 
 export const requiresAuth = false;
 
@@ -53,6 +57,7 @@ ${toolRuntimeBlock}
 export function renderJsModule(
     tools: ResolvedDbToolCodegen[],
     connectionEnv: string,
+    databaseDialect: ResolvedDatabaseDialect,
     mcpServerIdentityBlock: string,
     toolRuntimeBlock: string,
     source: string
@@ -63,6 +68,8 @@ export function renderJsModule(
  */
 
 export const connectionEnv = ${JSON.stringify(connectionEnv)};
+
+export const databaseDialect = ${JSON.stringify(databaseDialect)};
 
 export const requiresAuth = false;
 

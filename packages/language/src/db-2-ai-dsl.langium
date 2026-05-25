@@ -1,8 +1,11 @@
 grammar Db2AiDsl
 
 entry Model:
-    'database' 'env' env=STRING
+    'database' (dialect=DatabaseDialect)? 'env' env=STRING
     (entries += ModelEntry)*;
+
+DatabaseDialect returns string:
+    'postgres' | 'postgresql' | 'mysql';
 
 ModelEntry:
     TableQuery | SqlQuery;

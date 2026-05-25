@@ -8,7 +8,8 @@ vi.mock('../src/schema.js', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/schema.js')>();
     return {
         ...actual,
-        loadSchema: vi.fn(async () => ({
+        loadSchema: vi.fn(async (_connectionUrl: string, dialect: 'postgres' | 'mysql' = 'postgres') => ({
+            dialect,
             tables: ['film', 'actor', 'customer'],
             columnsByTable: {
                 film: ['film_id', 'title'],
@@ -36,6 +37,7 @@ beforeAll(async () => {
 beforeEach(() => {
     clearSchemaCache();
     process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+    process.env.SAKILA_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
 });
 
 function parseValidated(input: string) {
@@ -103,7 +105,7 @@ describe('Validating', () => {
         expect(errorMessages(document).some((m) => m.includes('environment variable name'))).toBe(true);
     });
 
-    test('rejects non-postgresql value in env var', async () => {
+    test('rejects mysql URL for implicit postgres dialect', async () => {
         process.env.PAGILA_DATABASE_URL = 'mysql://localhost/db';
         document = await parseValidated(`
             database env "PAGILA_DATABASE_URL"
@@ -114,7 +116,34 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some((m) => m.includes('postgresql'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('PostgreSQL'))).toBe(true);
+    });
+
+    test('accepts mysql URL for explicit mysql dialect', async () => {
+        document = await parseValidated(`
+            database mysql env "SAKILA_DATABASE_URL"
+
+            SELECT * FROM film {
+                toolName: "listFilms"
+                intent: "list films"
+            }
+        `);
+
+        expect(errorMessages(document)).toHaveLength(0);
+    });
+
+    test('rejects postgres URL for explicit mysql dialect', async () => {
+        process.env.SAKILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+        document = await parseValidated(`
+            database mysql env "SAKILA_DATABASE_URL"
+
+            SELECT * FROM film {
+                toolName: "listFilms"
+                intent: "list films"
+            }
+        `);
+
+        expect(errorMessages(document).some((m) => m.includes('MySQL'))).toBe(true);
     });
 
     test('accepts valid columns map', async () => {

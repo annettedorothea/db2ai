@@ -18,6 +18,7 @@ beforeAll(async () => {
 beforeEach(() => {
     clearSchemaCache();
     process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+    process.env.SAKILA_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
 });
 
 function parseValidated(input: string) {
@@ -41,6 +42,25 @@ describe('SQL tool validation', () => {
                 query: "SELECT film_id FROM film WHERE rating >= $1 LIMIT $2"
                 params: {
                     $1: "minimum rating"
+                    $2: "max rows"
+                }
+            }
+        `);
+
+        expect(errorMessages(document)).toHaveLength(0);
+    });
+
+    test('accepts logical $n placeholders for mysql dialect', async () => {
+        delete process.env.SAKILA_DATABASE_URL;
+        const document = await parseValidated(`
+            database mysql env "SAKILA_DATABASE_URL"
+
+            SQL {
+                toolName: "filmsByRating"
+                intent: "films with a given rating"
+                query: "SELECT film_id FROM film WHERE rating = $1 LIMIT $2"
+                params: {
+                    $1: "rating"
                     $2: "max rows"
                 }
             }

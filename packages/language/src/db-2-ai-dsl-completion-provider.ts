@@ -4,6 +4,7 @@ import type { CompletionProviderOptions } from 'langium/lsp';
 import { DefaultCompletionProvider } from 'langium/lsp';
 import type { AstNode, CstNode, LangiumDocument, LeafCstNode } from 'langium';
 import { AstUtils, Cancellation, CstUtils, isLeafCstNode } from 'langium';
+import { databaseDialectDisplayName, databaseDialectFromModel } from './dialect.js';
 import { columnsForTable, loadSchema, resolveDatabaseUrlFromEnvForDocument } from './schema.js';
 import type { LoadedSchema } from './schema.js';
 import {
@@ -237,6 +238,7 @@ function columnItemsForQuery(
         return [];
     }
 
+    const detail = `${databaseDialectDisplayName(loaded.dialect)} column`;
     const nameLeaf = columnNameLeafAtOffset(query, offset);
     if (nameLeaf) {
         const prefixEnd = Math.min(offset, nameLeaf.offset + nameLeaf.text.length);
@@ -251,7 +253,7 @@ function columnItemsForQuery(
         return filtered.map((column) => ({
             label: column,
             kind: CompletionItemKind.Property,
-            detail: 'PostgreSQL column',
+            detail,
             insertTextFormat: InsertTextFormat.PlainText,
             sortText: '0',
             textEdit: TextEdit.replace(nameLeaf.range, column)
@@ -262,7 +264,7 @@ function columnItemsForQuery(
         return candidates.map((column) => ({
             label: column,
             kind: CompletionItemKind.Property,
-            detail: 'PostgreSQL column',
+            detail,
             insertTextFormat: InsertTextFormat.PlainText,
             sortText: '0',
             textEdit: TextEdit.insert(position, column)
@@ -341,11 +343,13 @@ function tableItemsForQuery(
     offset: number,
     textDoc: LangiumDocument['textDocument'],
     position: Position,
-    candidates: string[]
+    loaded: LoadedSchema
 ): CompletionItem[] {
+    const candidates = loaded.tables;
     if (!offsetInTableNameRegion(query, offset)) {
         return [];
     }
+    const detail = `${databaseDialectDisplayName(loaded.dialect)} table`;
     const tableLeaf = tableNameLeaf(query);
     if (tableLeaf) {
         const prefixEnd = Math.min(offset, tableLeaf.offset + tableLeaf.text.length);
@@ -360,7 +364,7 @@ function tableItemsForQuery(
         return filtered.map((table) => ({
             label: table,
             kind: CompletionItemKind.Value,
-            detail: 'PostgreSQL table',
+            detail,
             insertTextFormat: InsertTextFormat.PlainText,
             sortText: '0',
             textEdit: TextEdit.replace(tableLeaf.range, table)
@@ -371,7 +375,7 @@ function tableItemsForQuery(
         return candidates.map((table) => ({
             label: table,
             kind: CompletionItemKind.Value,
-            detail: 'PostgreSQL table',
+            detail,
             insertTextFormat: InsertTextFormat.PlainText,
             sortText: '0',
             textEdit: TextEdit.insert(position, table)
@@ -656,10 +660,11 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         if (connectionUrl === undefined) {
             return [];
         }
+        const dialect = databaseDialectFromModel(model);
 
         let loaded;
         try {
-            loaded = await loadSchema(connectionUrl);
+            loaded = await loadSchema(connectionUrl, dialect);
         } catch {
             return [];
         }
@@ -691,7 +696,7 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         const offset = textDoc.offsetAt(position);
 
         return this.buildSchemaItems(document, position, (query, loaded) =>
-            tableItemsForQuery(query, offset, textDoc, position, loaded.tables)
+            tableItemsForQuery(query, offset, textDoc, position, loaded)
         );
     }
 }

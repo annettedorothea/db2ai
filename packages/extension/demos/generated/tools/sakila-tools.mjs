@@ -1,10 +1,10 @@
 /**
- * Generated from: pagila.db2ai
+ * Generated from: sakila.db2ai
  */
 
-export const connectionEnv = 'PAGILA_DATABASE_URL';
+export const connectionEnv = 'SAKILA_DATABASE_URL';
 
-export const databaseDialect = 'postgres';
+export const databaseDialect = 'mysql';
 
 export const requiresAuth = false;
 
@@ -12,9 +12,9 @@ export const generatedTools = [
     {
         kind: 'table',
         toolName: 'listFilms',
-        title: 'Paginated film rows',
+        title: 'Paginated Sakila film rows',
         description:
-            'list films from Pagila with pagination\n\nRuns SELECT * FROM public.film with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nExample: First page: limit 20 offset 0; next page: limit 20 offset 20',
+            'list films from Sakila with pagination\n\nRuns SELECT * FROM film with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nExample: First page: limit 20 offset 0; next page: limit 20 offset 20',
         table: 'film',
         maxLimitCap: 500,
         example: 'First page: limit 20 offset 0; next page: limit 20 offset 20'
@@ -22,61 +22,33 @@ export const generatedTools = [
     {
         kind: 'table',
         toolName: 'listActors',
-        title: 'Paginated actor rows',
+        title: 'Paginated Sakila actor rows',
         description:
-            'list actors with pagination\n\nRuns SELECT * FROM public.actor with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- actor_id — Primary key\n- first_name — Given name\n- last_name — Family name',
+            'list actors with pagination\n\nRuns SELECT * FROM actor with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- actor_id — Primary key\n- first_name — Given name\n- last_name — Family name',
         table: 'actor',
         maxLimitCap: 500
     },
     {
         kind: 'table',
-        toolName: 'listCustomers',
-        title: 'Paginated customer rows',
-        description:
-            'list customers with pagination\n\nRuns SELECT * FROM public.customer with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- active — Active customer flag\n- address_id — Address ID\n- email — Email address\n\nExample: First 10 customers: limit 10 offset 0',
-        table: 'customer',
-        maxLimitCap: 500,
-        example: 'First 10 customers: limit 10 offset 0'
-    },
-    {
-        kind: 'table',
         toolName: 'listCategories',
-        title: 'Paginated category rows',
+        title: 'Paginated Sakila category rows',
         description:
-            'list categories with pagination\n\nRuns SELECT * FROM public.category with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).',
+            'list film categories with pagination\n\nRuns SELECT * FROM category with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).',
         table: 'category',
         maxLimitCap: 500
     },
     {
-        kind: 'table',
-        toolName: 'listCountries',
-        title: 'Paginated country rows',
-        description:
-            'list countries with pagination\n\nRuns SELECT * FROM public.country with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- country — country name\n- last_update — last update timestamp',
-        table: 'country',
-        maxLimitCap: 500
-    },
-    {
-        kind: 'table',
-        toolName: 'listInventory',
-        title: 'Paginated inventory rows',
-        description:
-            'list inventory with pagination\n\nRuns SELECT * FROM public.inventory with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- inventory_id — Primary key\n- film_id — Film ID\n- store_id — Store ID',
-        table: 'inventory',
-        maxLimitCap: 500
-    },
-    {
         kind: 'sql',
-        toolName: 'filmsByMpaaRating',
-        title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
+        toolName: 'filmsByRating',
+        title: 'Films by rating (G, PG, PG-13, R, NC-17)',
         description:
-            'list films with a given MPAA age rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): MPAA rating (G, PG, PG-13, R, or NC-17)\n- param2 ($2): max rows to return\n\nExample: MPAA rating PG-13, max 20 rows',
-        sqlText: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
+            'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): rating (G, PG, PG-13, R, or NC-17)\n- param2 ($2): max rows to return\n\nExample: Rating PG, max 20 rows',
+        sqlText: 'SELECT film_id, title, rating FROM film WHERE rating = $1 ORDER BY title LIMIT $2',
         params: [
             {
                 placeholder: '$1',
                 index: 1,
-                label: 'MPAA rating (G, PG, PG-13, R, or NC-17)',
+                label: 'rating (G, PG, PG-13, R, or NC-17)',
                 propertyName: 'param1'
             },
             {
@@ -86,16 +58,16 @@ export const generatedTools = [
                 propertyName: 'param2'
             }
         ],
-        example: 'MPAA rating PG-13, max 20 rows'
+        example: 'Rating PG, max 20 rows'
     },
     {
         kind: 'sql',
         toolName: 'filmsWithActorLastName',
-        title: 'Actor–film cast via film_actor join',
+        title: 'Actor-film cast via film_actor join',
         description:
-            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): actor last name prefix (e.g. GAR, BER, HOP)\n- param2 ($2): max rows to return\n\nExample: Last name prefix GAR (e.g. Gardner), limit 25',
+            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): actor last name prefix (e.g. GAR, BER, HOP)\n- param2 ($2): max rows to return\n\nExample: Last name prefix GAR, limit 25',
         sqlText:
-            "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
+            "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name LIKE CONCAT($1, '%') ORDER BY a.last_name, f.title LIMIT $2",
         params: [
             {
                 placeholder: '$1',
@@ -110,16 +82,16 @@ export const generatedTools = [
                 propertyName: 'param2'
             }
         ],
-        example: 'Last name prefix GAR (e.g. Gardner), limit 25'
+        example: 'Last name prefix GAR, limit 25'
     },
     {
         kind: 'sql',
         toolName: 'searchFilms',
-        title: 'Film full-text style search (title and description)',
+        title: 'Film search across title and description',
         description:
             'search films by free text in title or description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): search text (matched in title or description)\n- param2 ($2): max rows to return\n\nExample: Search dragon, limit 15',
         sqlText:
-            "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
+            "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title LIKE CONCAT('%', $1, '%') OR description LIKE CONCAT('%', $1, '%') ORDER BY title LIMIT $2",
         params: [
             {
                 placeholder: '$1',
@@ -138,7 +110,7 @@ export const generatedTools = [
     }
 ];
 
-export const mcpServerName = 'pagila-tools';
+export const mcpServerName = 'sakila-tools';
 export const mcpServerVersion = '0.0.1';
 
 import * as z from 'zod/v4';
@@ -158,33 +130,15 @@ export const inputZodByTool = {
             offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
         })
         .strict(),
-    listCustomers: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
     listCategories: z
         .object({
             limit: z.number().describe('Rows per page (default 100).').optional(),
             offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
         })
         .strict(),
-    listCountries: z
+    filmsByRating: z
         .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    listInventory: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    filmsByMpaaRating: z
-        .object({
-            param1: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)'),
+            param1: z.string().describe('rating (G, PG, PG-13, R, or NC-17) (SQL $1)'),
             param2: z.string().describe('max rows to return (SQL $2)')
         })
         .strict(),
@@ -339,7 +293,7 @@ export const mcpHostAdapter = {
     }
 };
 
-import pg from 'pg';
+import mysql from 'mysql2/promise';
 
 export const DEFAULT_PAGE_LIMIT = 100;
 export const DEFAULT_MAX_LIMIT_CAP = 1000;
@@ -356,10 +310,25 @@ function resolveConnectionString(hostContext) {
     );
 }
 
+function normalizeMysqlRows(rows) {
+    return Array.isArray(rows) ? rows : [];
+}
+
+function normalizeMysqlParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const text = String(value);
+    const trimmed = text.trim();
+    if (/^-?\d+(?:\.\d+)?$/.test(trimmed)) {
+        return Number(trimmed);
+    }
+    return text;
+}
+
 export async function invokeTool(toolName, options = {}, hostContext) {
     const connectionString = resolveConnectionString(hostContext);
-    const client = new pg.Client({ connectionString });
-    await client.connect();
+    const client = await mysql.createConnection(connectionString);
     try {
         switch (toolName) {
             case 'listFilms': {
@@ -373,11 +342,12 @@ export async function invokeTool(toolName, options = {}, hostContext) {
                     typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
                         ? Math.floor(options.offset)
                         : 0;
-                const sql = 'SELECT * FROM "film" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const sql = 'SELECT * FROM `film` LIMIT ? OFFSET ?';
+                const [rows] = await client.query(sql, [effectiveLimit, offset]);
+                const resultRows = normalizeMysqlRows(rows);
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
+                    rows: resultRows,
+                    rowCount: resultRows.length,
                     limit: effectiveLimit,
                     offset
                 };
@@ -393,31 +363,12 @@ export async function invokeTool(toolName, options = {}, hostContext) {
                     typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
                         ? Math.floor(options.offset)
                         : 0;
-                const sql = 'SELECT * FROM "actor" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const sql = 'SELECT * FROM `actor` LIMIT ? OFFSET ?';
+                const [rows] = await client.query(sql, [effectiveLimit, offset]);
+                const resultRows = normalizeMysqlRows(rows);
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'listCustomers': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "customer" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
+                    rows: resultRows,
+                    rowCount: resultRows.length,
                     limit: effectiveLimit,
                     offset
                 };
@@ -433,98 +384,51 @@ export async function invokeTool(toolName, options = {}, hostContext) {
                     typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
                         ? Math.floor(options.offset)
                         : 0;
-                const sql = 'SELECT * FROM "category" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const sql = 'SELECT * FROM `category` LIMIT ? OFFSET ?';
+                const [rows] = await client.query(sql, [effectiveLimit, offset]);
+                const resultRows = normalizeMysqlRows(rows);
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
+                    rows: resultRows,
+                    rowCount: resultRows.length,
                     limit: effectiveLimit,
                     offset
                 };
             }
-            case 'listCountries': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
+            case 'filmsByRating': {
+                const [rows] = await client.query(
+                    'SELECT film_id, title, rating FROM film WHERE rating = ? ORDER BY title LIMIT ?',
+                    [normalizeMysqlParamValue(options['param1']), normalizeMysqlParamValue(options['param2'])]
                 );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "country" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const resultRows = normalizeMysqlRows(rows);
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'listInventory': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "inventory" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'filmsByMpaaRating': {
-                const result = await client.query({
-                    text: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
-                    values: [
-                        options['param1'] !== undefined && options['param1'] !== null
-                            ? String(options['param1'])
-                            : null,
-                        options['param2'] !== undefined && options['param2'] !== null ? String(options['param2']) : null
-                    ]
-                });
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: resultRows,
+                    rowCount: resultRows.length
                 };
             }
             case 'filmsWithActorLastName': {
-                const result = await client.query({
-                    text: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
-                    values: [
-                        options['param1'] !== undefined && options['param1'] !== null
-                            ? String(options['param1'])
-                            : null,
-                        options['param2'] !== undefined && options['param2'] !== null ? String(options['param2']) : null
-                    ]
-                });
+                const [rows] = await client.query(
+                    "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name LIKE CONCAT(?, '%') ORDER BY a.last_name, f.title LIMIT ?",
+                    [normalizeMysqlParamValue(options['param1']), normalizeMysqlParamValue(options['param2'])]
+                );
+                const resultRows = normalizeMysqlRows(rows);
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: resultRows,
+                    rowCount: resultRows.length
                 };
             }
             case 'searchFilms': {
-                const result = await client.query({
-                    text: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
-                    values: [
-                        options['param1'] !== undefined && options['param1'] !== null
-                            ? String(options['param1'])
-                            : null,
-                        options['param2'] !== undefined && options['param2'] !== null ? String(options['param2']) : null
+                const [rows] = await client.query(
+                    "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title LIKE CONCAT('%', ?, '%') OR description LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?",
+                    [
+                        normalizeMysqlParamValue(options['param1']),
+                        normalizeMysqlParamValue(options['param1']),
+                        normalizeMysqlParamValue(options['param2'])
                     ]
-                });
+                );
+                const resultRows = normalizeMysqlRows(rows);
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: resultRows,
+                    rowCount: resultRows.length
                 };
             }
             default:

@@ -1,35 +1,35 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runDbMcpSmoke } from './mcp-smoke.js';
-import { ensurePagilaDocker } from '../support/pagila-docker.js';
+import { ensureSakilaDocker } from '../support/sakila-docker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cliRoot = path.resolve(__dirname, '../../..');
 const workspaceRoot = path.resolve(cliRoot, '../..');
 const demosRoot = path.join(workspaceRoot, 'packages/extension/demos');
-const pagilaSourcePath = path.join(demosRoot, 'pagila.db2ai');
+const sakilaSourcePath = path.join(demosRoot, 'sakila.db2ai');
 const tmpRoot = path.join(cliRoot, 'tmp');
 
-export async function runPagilaMcpSmoke(): Promise<void> {
-    const { connectionString } = await ensurePagilaDocker(demosRoot);
+export async function runSakilaMcpSmoke(): Promise<void> {
+    const { connectionString } = await ensureSakilaDocker(demosRoot);
     await runDbMcpSmoke({
-        label: 'Pagila',
-        sourcePath: pagilaSourcePath,
+        label: 'Sakila',
+        sourcePath: sakilaSourcePath,
         tmpRoot,
-        tmpPrefix: 'pagila-mcp-',
-        generatedToolsName: 'pagila-tools',
-        envName: 'PAGILA_DATABASE_URL',
+        tmpPrefix: 'sakila-mcp-',
+        generatedToolsName: 'sakila-tools',
+        envName: 'SAKILA_DATABASE_URL',
         connectionString,
-        toolName: 'listFilms',
+        toolName: 'searchFilms',
         toolArgs: {
-            limit: 5,
-            offset: 0
+            param1: 'ACADEMY',
+            param2: '5'
         }
     });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-    runPagilaMcpSmoke().catch((error) => {
+    runSakilaMcpSmoke().catch((error) => {
         console.error(error instanceof Error ? error.stack : String(error));
         process.exit(1);
     });

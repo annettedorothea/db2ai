@@ -9,7 +9,8 @@ vi.mock('../src/schema.js', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/schema.js')>();
     return {
         ...actual,
-        loadSchema: vi.fn(async () => ({
+        loadSchema: vi.fn(async (_connectionUrl: string, dialect: 'postgres' | 'mysql' = 'postgres') => ({
+            dialect,
             tables: ['actor', 'customer', 'film'],
             columnsByTable: {
                 actor: ['actor_id', 'first_name', 'last_name', 'last_update'],
@@ -36,14 +37,15 @@ beforeAll(async () => {
 beforeEach(() => {
     clearSchemaCache();
     process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+    process.env.SAKILA_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
 });
 
 function tableLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
-    return items.filter((i) => i.detail === 'PostgreSQL table').map((i) => String(i.label));
+    return items.filter((i) => String(i.detail).endsWith(' table')).map((i) => String(i.label));
 }
 
 function columnLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
-    return items.filter((i) => i.detail === 'PostgreSQL column').map((i) => String(i.label));
+    return items.filter((i) => String(i.detail).endsWith(' column')).map((i) => String(i.label));
 }
 
 function blockKeywordLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
@@ -121,6 +123,17 @@ describe('Completion for table name', () => {
         const labels = tableLabels(list?.items ?? []);
         expect(labels.every((l) => l.startsWith('fi'))).toBe(true);
         expect(labels).toContain('film');
+    });
+
+    test('lists tables for explicit mysql dialect', async () => {
+        const header = `database mysql env "SAKILA_DATABASE_URL"\n\nSELECT * FROM `;
+        const offset = header.length;
+
+        const list = await completionAt(header, offset);
+
+        const labels = tableLabels(list?.items ?? []);
+        expect(labels).toContain('film');
+        expect(list?.items.some((i) => i.label === 'film' && i.detail === 'MySQL table')).toBe(true);
     });
 });
 

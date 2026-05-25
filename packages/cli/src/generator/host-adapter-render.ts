@@ -37,6 +37,13 @@ function decodeJwtPayloadUnsafe(token) {
     return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
 }
 
+function isExpectedDatabaseUrl(connectionString) {
+    if (databaseDialect === 'mysql') {
+        return connectionString.startsWith('mysql://');
+    }
+    return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
+}
+
 export const mcpHostAdapter = {
     configureFromArgv(argv, envDirs) {
         let authEnv;
@@ -64,6 +71,15 @@ export const mcpHostAdapter = {
                 'Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).'
             );
         }
+        if (!isExpectedDatabaseUrl(connectionString)) {
+            throw new Error(
+                'Environment variable "' +
+                    connectionEnv +
+                    '" does not match generated database dialect "' +
+                    databaseDialect +
+                    '".'
+            );
+        }
         if (!requiresAuth) {
             return;
         }
@@ -86,6 +102,11 @@ export const mcpHostAdapter = {
                 'Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).'
             );
         }
+        if (!isExpectedDatabaseUrl(connectionString)) {
+            throw new Error(
+                'Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".'
+            );
+        }
 
         const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
         let credential = authKey ? process.env[authKey]?.trim() : undefined;${authCheck}
@@ -102,7 +123,7 @@ export const mcpHostAdapter = {
             }
         }
 
-        return { connectionString, credential, jwt };
+        return { connectionString, databaseDialect, credential, jwt };
     },
 
     envDirsForReload() {

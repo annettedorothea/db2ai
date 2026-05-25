@@ -5,13 +5,13 @@ import { isSqlQuery, isTableQuery } from './generated/ast.js';
 import type { Db2AiDslServices } from './db-2-ai-dsl-module.js';
 import { checkSqlQuery } from './db-2-ai-dsl-sql-validator.js';
 import {
-    hasColumn,
-    hasTable,
-    isPostgresqlConnectionUrl,
-    isValidEnvVarName,
-    loadSchema,
-    resolveDatabaseUrlFromEnvForDocument
-} from './schema.js';
+    databaseDialectDisplayName,
+    databaseDialectFromModel,
+    databaseSchemaDescription,
+    expectedConnectionUrlDescription,
+    isSupportedConnectionUrlForDialect
+} from './dialect.js';
+import { hasColumn, hasTable, isValidEnvVarName, loadSchema, resolveDatabaseUrlFromEnvForDocument } from './schema.js';
 
 export const DEFAULT_MAX_LIMIT_CAP = 1000;
 export const DEFAULT_PAGE_LIMIT = 100;
@@ -184,17 +184,22 @@ export class Db2AiDslValidator {
             );
             return;
         }
-        if (!isPostgresqlConnectionUrl(connectionUrl)) {
-            accept('error', `Environment variable "${String(envName)}" must be a postgresql:// or postgres:// URL.`, {
-                node: model,
-                property: 'env'
-            });
+        const dialect = databaseDialectFromModel(model);
+        if (!isSupportedConnectionUrlForDialect(dialect, connectionUrl)) {
+            accept(
+                'error',
+                `Environment variable "${String(envName)}" must be a ${expectedConnectionUrlDescription(dialect)} for ${databaseDialectDisplayName(dialect)}.`,
+                {
+                    node: model,
+                    property: 'env'
+                }
+            );
             return;
         }
 
         let loaded;
         try {
-            loaded = await loadSchema(connectionUrl);
+            loaded = await loadSchema(connectionUrl, dialect);
         } catch (error) {
             accept(
                 'warning',
@@ -216,7 +221,7 @@ export class Db2AiDslValidator {
                 return;
             }
             if (!hasTable(loaded, tableName)) {
-                accept('error', `Table "${tableName}" does not exist in the public schema.`, {
+                accept('error', `Table "${tableName}" does not exist in the ${databaseSchemaDescription(dialect)}.`, {
                     node: model,
                     property: 'entries',
                     index
@@ -236,13 +241,14 @@ export class Db2AiDslValidator {
 
         const documentUri = model.$document?.uri.toString();
         const connectionUrl = resolveDatabaseUrlFromEnvForDocument(String(envName), documentUri);
-        if (connectionUrl === undefined || !isPostgresqlConnectionUrl(connectionUrl)) {
+        const dialect = databaseDialectFromModel(model);
+        if (connectionUrl === undefined || !isSupportedConnectionUrlForDialect(dialect, connectionUrl)) {
             return;
         }
 
         let loaded;
         try {
-            loaded = await loadSchema(connectionUrl);
+            loaded = await loadSchema(connectionUrl, dialect);
         } catch {
             return;
         }
@@ -270,7 +276,7 @@ export class Db2AiDslValidator {
                 if (!hasColumn(loaded, tableName, columnName)) {
                     accept(
                         'error',
-                        `Column "${columnName}" does not exist on table "${tableName}" in the public schema.`,
+                        `Column "${columnName}" does not exist on table "${tableName}" in the ${databaseSchemaDescription(dialect)}.`,
                         {
                             node: col,
                             property: 'name'

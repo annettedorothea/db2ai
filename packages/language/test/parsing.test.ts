@@ -25,6 +25,7 @@ describe('Parsing tests', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
         expect(document.parseResult.value.env).toBe('PAGILA_DATABASE_URL');
+        expect(document.parseResult.value.dialect).toBeUndefined();
         expect(document.parseResult.value.entries).toHaveLength(1);
         const entry = document.parseResult.value.entries[0];
         expect(entry.$type).toBe('TableQuery');
@@ -32,6 +33,36 @@ describe('Parsing tests', () => {
             expect(entry.table?.name).toBe('film');
             expect(entry.toolName).toBe('listFilms');
         }
+    });
+
+    test('parses explicit postgres dialect', async () => {
+        document = await parse(`
+            database postgres env "PAGILA_DATABASE_URL"
+
+            SELECT * FROM film {
+                toolName: "listFilms"
+                intent: "list films"
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        expect(document.parseResult.value.dialect).toBe('postgres');
+        expect(document.parseResult.value.env).toBe('PAGILA_DATABASE_URL');
+    });
+
+    test('parses explicit mysql dialect', async () => {
+        document = await parse(`
+            database mysql env "SAKILA_DATABASE_URL"
+
+            SELECT * FROM film {
+                toolName: "listFilms"
+                intent: "list films"
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        expect(document.parseResult.value.dialect).toBe('mysql');
+        expect(document.parseResult.value.env).toBe('SAKILA_DATABASE_URL');
     });
 
     test('parses query with optional example, summary, and maxLimit', async () => {

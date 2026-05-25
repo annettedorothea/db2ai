@@ -1,7 +1,12 @@
 import type { Model, SqlQuery, TableQuery } from 'db-2-ai-dsl-language';
 import { DEFAULT_MAX_LIMIT_CAP, DEFAULT_PAGE_LIMIT } from 'db-2-ai-dsl-language';
 import { isSqlQuery, isTableQuery } from 'db-2-ai-dsl-language';
-import { resolveSqlParamsOrdered, type ResolvedSqlParam } from 'db-2-ai-dsl-language';
+import {
+    databaseDialectFromModel,
+    resolveSqlParamsOrdered,
+    type ResolvedDatabaseDialect,
+    type ResolvedSqlParam
+} from 'db-2-ai-dsl-language';
 
 export type JsonSchemaDict = Record<string, unknown>;
 
@@ -96,13 +101,17 @@ function buildSqlParamDescriptionLines(query: SqlQuery): string[] {
     return lines;
 }
 
-function buildTableDescription(query: TableQuery): string {
-    const intent = requireIntent(query.intent, 'table query');
+function renderTableReference(query: TableQuery, dialect: ResolvedDatabaseDialect): string {
     const table = query.table?.name ?? 'table';
+    return dialect === 'mysql' ? table : `public.${table}`;
+}
+
+function buildTableDescription(query: TableQuery, dialect: ResolvedDatabaseDialect): string {
+    const intent = requireIntent(query.intent, 'table query');
     const lines = [
         intent,
         '',
-        `Runs SELECT * FROM public.${table} with LIMIT/OFFSET.`,
+        `Runs SELECT * FROM ${renderTableReference(query, dialect)} with LIMIT/OFFSET.`,
         'Pagination: pass `limit` (default 100) and `offset` (default 0).',
         'Next page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).',
         ...buildColumnDescriptionLines(query)
@@ -137,12 +146,12 @@ function resolveMaxLimitCap(query: TableQuery): number {
     return DEFAULT_MAX_LIMIT_CAP;
 }
 
-function resolveTableTool(query: TableQuery): ResolvedTableToolCodegen {
+function resolveTableTool(query: TableQuery, dialect: ResolvedDatabaseDialect): ResolvedTableToolCodegen {
     return {
         kind: 'table',
         toolName: requireToolName(query.toolName, 'table query'),
         title: buildTableTitle(query),
-        description: buildTableDescription(query),
+        description: buildTableDescription(query, dialect),
         table: query.table?.name ?? '',
         maxLimitCap: resolveMaxLimitCap(query),
         example: query.example
@@ -169,9 +178,10 @@ function resolveSqlTool(query: SqlQuery): ResolvedSqlToolCodegen {
 
 export function resolveToolsFromModel(model: Model): ResolvedDbToolCodegen[] {
     const tools: ResolvedDbToolCodegen[] = [];
+    const dialect = databaseDialectFromModel(model);
     for (const entry of model.entries) {
         if (isTableQuery(entry)) {
-            tools.push(resolveTableTool(entry));
+            tools.push(resolveTableTool(entry, dialect));
         } else if (isSqlQuery(entry)) {
             tools.push(resolveSqlTool(entry));
         }
@@ -233,4 +243,8 @@ export function buildInputSchemaByTool(tools: ResolvedDbToolCodegen[]): Record<s
 
 export function quotePostgresIdent(ident: string): string {
     return `"${ident.replace(/"/g, '""')}"`;
+}
+
+export function quoteMysqlIdent(ident: string): string {
+    return `\`${ident.replace(/`/g, '``')}\``;
 }
