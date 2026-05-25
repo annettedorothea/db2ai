@@ -1,6 +1,6 @@
 import type { Model } from 'db-2-ai-dsl-language';
 import { createDb2AiDslServices } from 'db-2-ai-dsl-language';
-import { extractAstNode } from '@core2ai/codegen';
+import { extractAstNode } from '@core2ai/core/codegen';
 import chalk from 'chalk';
 import * as path from 'node:path';
 import { NodeFileSystem } from 'langium/node';

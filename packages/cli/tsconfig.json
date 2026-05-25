@@ -7,12 +7,6 @@
     },
     "references": [
         {
-            "path": "../../../core2ai/packages/codegen/tsconfig.json"
-        },
-        {
-            "path": "../../../core2ai/packages/mcp-host/tsconfig.json"
-        },
-        {
             "path": "../language/tsconfig.src.json"
         }
     ],

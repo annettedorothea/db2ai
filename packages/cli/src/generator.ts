@@ -9,7 +9,7 @@ import {
     resolveMcpServerIdentityFromDestination,
     writeMinimalPackageJsonIfAbsent,
     type ProjectBootstrapConfig
-} from '@core2ai/codegen';
+} from '@core2ai/core/codegen';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as url from 'node:url';

@@ -1,4 +1,4 @@
-import { readGeneratedModule } from '@core2ai/mcp-host';
+import { readGeneratedModule } from '@core2ai/core/mcp-host';
 import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';

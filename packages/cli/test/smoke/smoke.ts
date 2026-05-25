@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { loadLocalEnvFiles, readGeneratedModule } from '@core2ai/mcp-host';
+import { loadLocalEnvFiles, readGeneratedModule } from '@core2ai/core/mcp-host';
 import { applySmokeHostEnv } from './smoke-host-env.js';
 
 export type DbInvokeArgs = Record<string, unknown>;

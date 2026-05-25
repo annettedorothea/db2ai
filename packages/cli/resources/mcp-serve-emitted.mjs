@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-// ../core2ai/packages/mcp-host/src/mcp-standalone-entry.ts
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-standalone-entry.js
 import * as path2 from "node:path";
 import { pathToFileURL } from "node:url";
 
-// ../core2ai/packages/mcp-host/src/env.ts
+// node_modules/@core2ai/core/packages/mcp-host/out/env.js
 import * as fs from "node:fs";
 import * as path from "node:path";
 var LOCAL_ENV_FILES = [".env", ".env.local"];
@@ -82,7 +82,7 @@ function loadLocalEnvFiles(startDirs) {
   return loadedFiles;
 }
 
-// ../core2ai/packages/mcp-host/src/mcp-host-adapter.ts
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-host-adapter.js
 function readMcpHostAdapter(imported2) {
   const adapter = imported2.mcpHostAdapter;
   if (!adapter || typeof adapter !== "object") {
@@ -126,7 +126,7 @@ function readGeneratedModule(imported2) {
   };
 }
 
-// ../core2ai/packages/mcp-host/src/mcp-server.ts
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-server.js
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 function requireMcpServerIdentity(generated2) {
@@ -161,37 +161,29 @@ async function runMcpServer(generated2) {
   const server = new McpServer({ name, version });
   for (const tool of generated2.generatedTools) {
     const inputSchema = requireInputZodSchema(generated2.inputZodByTool, tool.toolName);
-    server.registerTool(
-      tool.toolName,
-      {
-        title: typeof tool.title === "string" && tool.title.length > 0 ? tool.title : void 0,
-        description: tool.description,
-        inputSchema
-      },
-      async (args) => {
-        reloadEnvFilesForDev(generated2);
-        const hostContext = generated2.adapter.resolveHostContext();
-        const result = await generated2.invokeTool(
-          tool.toolName,
-          args ?? {},
-          hostContext
-        );
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2)
-            }
-          ]
-        };
-      }
-    );
+    server.registerTool(tool.toolName, {
+      title: typeof tool.title === "string" && tool.title.length > 0 ? tool.title : void 0,
+      description: tool.description,
+      inputSchema
+    }, async (args) => {
+      reloadEnvFilesForDev(generated2);
+      const hostContext = generated2.adapter.resolveHostContext();
+      const result = await generated2.invokeTool(tool.toolName, args ?? {}, hostContext);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2)
+          }
+        ]
+      };
+    });
   }
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
 
-// ../core2ai/packages/mcp-host/src/mcp-standalone-entry.ts
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-standalone-entry.js
 var argv = process.argv.slice(2);
 var modulePath = argv[0];
 if (!modulePath) {

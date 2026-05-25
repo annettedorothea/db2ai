@@ -1,6 +1,6 @@
 # Command-line interface (CLI)
 
-Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files, plus **`smoke-generated`** for testing MCP tool modules. The generator emits TypeScript, ESM `.mjs`, and copies the bundled MCP host from [`@core2ai/mcp-host`](../../../core2ai/packages/mcp-host) into `generated/cli/mcp-serve.mjs`.
+Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files, plus **`smoke-generated`** for testing MCP tool modules. The generator emits TypeScript, ESM `.mjs`, and copies the bundled MCP host from `@core2ai/core/mcp-host` into `generated/cli/mcp-serve.mjs`.
 
 ## Commands
 
@@ -43,7 +43,7 @@ node ./generated/cli/mcp-serve.mjs ./generated/tools/<name>-tools.mjs --auth-env
 
 When `requiresAuth` is `true` in generated tools, `--auth-env` is required at startup. JWT payload is decoded into `hostContext.jwt` when the credential looks like a JWT.
 
-Root `npm run bundle:mcp-runtime` bundles `core2ai/packages/mcp-host/src/mcp-standalone-entry.ts` → [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs).
+Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host/standalone-entry` → [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs).
 
 ## Layout
 

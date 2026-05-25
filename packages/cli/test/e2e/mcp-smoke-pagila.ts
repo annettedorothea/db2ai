@@ -1,4 +1,4 @@
-import { runMcpStdioSmoke } from '@core2ai/mcp-host';
+import { runMcpStdioSmoke } from '@core2ai/core/mcp-host';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';

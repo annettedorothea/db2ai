@@ -1,0 +1,11 @@
+---
+description: Handle the GitHub-pinned core2ai dependency reproducibly
+alwaysApply: true
+---
+
+# GitHub Core Dependency
+
+- Keep `@core2ai/core` pinned to an explicit Git tag, not `main`, so installs stay reproducible.
+- If `npm install` fails with GitHub SSH or `known_hosts` warnings, use `npm run install:github-https`.
+- The install script rewrites GitHub SSH URLs to HTTPS for that process only. Do not modify global Git config or `~/.ssh/known_hosts` unless the user explicitly asks.
+- After bumping the core tag, update the lockfile with `npm run install:github-https`, then run `npm run build` and `npm run check`.

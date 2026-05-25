@@ -1,4 +1,4 @@
-import type { McpHostAdapter } from '@core2ai/mcp-host';
+import type { McpHostAdapter } from '@core2ai/core/mcp-host';
 
 const SMOKE_CREDENTIAL_ENV = 'MCP_HOST_CREDENTIAL';
 
