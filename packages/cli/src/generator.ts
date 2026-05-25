@@ -3,18 +3,10 @@ import { buildInputZodBlock } from '@core2ai/codegen';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as url from 'node:url';
-import {
-    buildInputSchemaByTool,
-    resolveToolsFromModel,
-    type JsonSchemaDict
-} from './db-query-codegen.js';
+import { buildInputSchemaByTool, resolveToolsFromModel, type JsonSchemaDict } from './db-query-codegen.js';
 import { renderDbMcpHostAdapterBlock } from './generator/host-adapter-render.js';
 import { renderInvokeBlockJs, renderInvokeBlockTs } from './generator/invoke-render.js';
-import {
-    renderJsModule,
-    renderMcpServerIdentityExports,
-    renderTsModule
-} from './generator/module-render.js';
+import { renderJsModule, renderMcpServerIdentityExports, renderTsModule } from './generator/module-render.js';
 import {
     copyBundledMcpServeInto,
     ensureParentDir,
@@ -61,11 +53,23 @@ export async function generateOutput(model: Model, source: string, destination: 
     const sharedRuntimePrefix = `${buildInputZodBlock(inputSchemaByTool)}\n${renderDbMcpHostAdapterBlock(authKind)}\n`;
     fs.writeFileSync(
         tsPath,
-        renderTsModule(tools, envName, mcpServerIdentityBlock, `${sharedRuntimePrefix}${renderInvokeBlockTs(tools)}`, source)
+        renderTsModule(
+            tools,
+            envName,
+            mcpServerIdentityBlock,
+            `${sharedRuntimePrefix}${renderInvokeBlockTs(tools)}`,
+            source
+        )
     );
     fs.writeFileSync(
         jsPath,
-        renderJsModule(tools, envName, mcpServerIdentityBlock, `${sharedRuntimePrefix}${renderInvokeBlockJs(tools)}`, source)
+        renderJsModule(
+            tools,
+            envName,
+            mcpServerIdentityBlock,
+            `${sharedRuntimePrefix}${renderInvokeBlockJs(tools)}`,
+            source
+        )
     );
 
     const cliDir = resolveGeneratedCliDir(tsPath);

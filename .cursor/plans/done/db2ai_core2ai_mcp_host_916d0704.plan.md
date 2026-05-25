@@ -2,21 +2,21 @@
 name: db2ai core2ai MCP Host
 overview: db2ai auf @core2ai/mcp-host umstellen. DB-Env-Key bleibt in der DSL (database env); Connection-URL in .env. JWT/User-Login wie api2ai über --auth-env. Kein Doppel-Mapping des DB-Keys in mcp.json.
 todos:
-  - id: bundle-core2ai-host
-    content: bundle:mcp-runtime auf core2ai mcp-standalone-entry; mcp-bundle/ entfernen; mcp-serve-emitted.mjs neu bauen
-    status: completed
-  - id: codegen-mcp-contract
-    content: "generator: inputZodByTool, mcpHostAdapter (DSL connectionEnv + api2ai JWT/--auth-env), hostContext, requiresAuth"
-    status: completed
-  - id: smoke-and-scripts
-    content: smoke mit loadLocalEnvFiles; Connection aus DSL connectionEnv, optional JWT; test:mcp ohne DB-Key in argv
-    status: completed
-  - id: demos-docs-regenerate
-    content: mcp.json nur optional --auth-env für JWT; README; generate:pagila + generated/*
-    status: completed
-  - id: verify-build
-    content: langium:generate && build && smoke/mcp-Tests
-    status: completed
+    - id: bundle-core2ai-host
+      content: bundle:mcp-runtime auf core2ai mcp-standalone-entry; mcp-bundle/ entfernen; mcp-serve-emitted.mjs neu bauen
+      status: completed
+    - id: codegen-mcp-contract
+      content: 'generator: inputZodByTool, mcpHostAdapter (DSL connectionEnv + api2ai JWT/--auth-env), hostContext, requiresAuth'
+      status: completed
+    - id: smoke-and-scripts
+      content: smoke mit loadLocalEnvFiles; Connection aus DSL connectionEnv, optional JWT; test:mcp ohne DB-Key in argv
+      status: completed
+    - id: demos-docs-regenerate
+      content: mcp.json nur optional --auth-env für JWT; README; generate:pagila + generated/*
+      status: completed
+    - id: verify-build
+      content: langium:generate && build && smoke/mcp-Tests
+      status: completed
 isProject: false
 ---
 
@@ -24,11 +24,11 @@ isProject: false
 
 ## Klarstellung (vorheriges Missverständnis)
 
-| Was | Wo | Rolle |
-|-----|-----|--------|
-| **Env-Key-Name** für die DB | DSL: `database env "PAGILA_DATABASE_URL"` | Single source of truth für LSP (Completion/Validierung in [`schema.ts`](file:///Users/annette/Documents/Projekte/MCP/db2ai/packages/language/src/schema.ts)), Codegen (`export const connectionEnv`), MCP Fail-fast |
-| **Connection-String (Secret)** | `.env` / `.env.local` / `mcp.json` `env` | Laufzeitwert unter dem DSL-Namen — **nie** im DSL-Text |
-| **User-Login / JWT** | MCP-Argv `--auth-env <NAME>` + Env-Wert | Wie api2ai: simuliert eingeloggten User; optional bis DSL später `requiresAuth` steuert |
+| Was                            | Wo                                        | Rolle                                                                                                                                                                                                               |
+| ------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Env-Key-Name** für die DB    | DSL: `database env "PAGILA_DATABASE_URL"` | Single source of truth für LSP (Completion/Validierung in [`schema.ts`](file:///Users/annette/Documents/Projekte/MCP/db2ai/packages/language/src/schema.ts)), Codegen (`export const connectionEnv`), MCP Fail-fast |
+| **Connection-String (Secret)** | `.env` / `.env.local` / `mcp.json` `env`  | Laufzeitwert unter dem DSL-Namen — **nie** im DSL-Text                                                                                                                                                              |
+| **User-Login / JWT**           | MCP-Argv `--auth-env <NAME>` + Env-Wert   | Wie api2ai: simuliert eingeloggten User; optional bis DSL später `requiresAuth` steuert                                                                                                                             |
 
 Der DB-Key wird **nicht** über `--auth-env` an den MCP-Host übergeben (das wäre der alte Planfehler). In `mcp.json` steht der Pagila-Key **nicht** noch einmal in `args` — nur in der `.db2ai` und im generierten `connectionEnv`.
 
@@ -60,11 +60,11 @@ flowchart TB
 
 ## Ausgangslage
 
-| Aspekt | api2ai | db2ai (heute) |
-|--------|--------|---------------|
-| MCP-Bundle | core2ai `mcp-standalone-entry` | Fork `packages/cli/mcp-bundle/` |
-| Host-Adapter | `--base-url-env` + optional `--auth-env`, JWT in `hostContext` | kein Adapter |
-| DB-Key | OpenAPI/base URL | DSL `database env` (bereits für LSP) |
+| Aspekt       | api2ai                                                         | db2ai (heute)                        |
+| ------------ | -------------------------------------------------------------- | ------------------------------------ |
+| MCP-Bundle   | core2ai `mcp-standalone-entry`                                 | Fork `packages/cli/mcp-bundle/`      |
+| Host-Adapter | `--base-url-env` + optional `--auth-env`, JWT in `hostContext` | kein Adapter                         |
+| DB-Key       | OpenAPI/base URL                                               | DSL `database env` (bereits für LSP) |
 
 ---
 
@@ -91,7 +91,7 @@ Hauptdatei: [`packages/cli/src/generator.ts`](file:///Users/annette/Documents/Pr
 Aus `model.env` (bereits in `generateOutput`):
 
 ```typescript
-export const connectionEnv = "PAGILA_DATABASE_URL"; // exakt aus DSL-STRING
+export const connectionEnv = 'PAGILA_DATABASE_URL'; // exakt aus DSL-STRING
 ```
 
 - Language/Validator: **keine DSL-Änderung** nötig — `database env` bleibt.
@@ -101,12 +101,12 @@ export const connectionEnv = "PAGILA_DATABASE_URL"; // exakt aus DSL-STRING
 
 Neue Funktion z. B. `renderDbMcpHostAdapterBlock(connectionEnvLiteral, authKind)`:
 
-| Teil | Verhalten |
-|------|-----------|
-| **`configureFromArgv`** | Nur `--auth-env <NAME>` (optional, wie api2ai). **Kein** `--base-url-env`. Unbekannte Flags wie api2ai ablehnen. |
-| **`validateAtStartup`** | **Immer:** `process.env[connectionEnv]` gesetzt (Connection — Key aus DSL-Konstante, nicht aus argv). **Zusätzlich** wenn `requiresAuth === true`: JWT-Env aus `--auth-env` (api2ai-Logik). |
-| **`resolveHostContext`** | `{ connectionString, credential?, jwt? }` — `connectionString` aus `process.env[connectionEnv]`; `credential`/`jwt` wie api2ai (`decodeJwtPayloadUnsafe` bei 3 Segmenten). |
-| **`envDirsForReload`** | wie api2ai (`MCP_HOST_ENV_DIRS`) |
+| Teil                     | Verhalten                                                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`configureFromArgv`**  | Nur `--auth-env <NAME>` (optional, wie api2ai). **Kein** `--base-url-env`. Unbekannte Flags wie api2ai ablehnen.                                                                            |
+| **`validateAtStartup`**  | **Immer:** `process.env[connectionEnv]` gesetzt (Connection — Key aus DSL-Konstante, nicht aus argv). **Zusätzlich** wenn `requiresAuth === true`: JWT-Env aus `--auth-env` (api2ai-Logik). |
+| **`resolveHostContext`** | `{ connectionString, credential?, jwt? }` — `connectionString` aus `process.env[connectionEnv]`; `credential`/`jwt` wie api2ai (`decodeJwtPayloadUnsafe` bei 3 Segmenten).                  |
+| **`envDirsForReload`**   | wie api2ai (`MCP_HOST_ENV_DIRS`)                                                                                                                                                            |
 
 `authKind: 'none' | 'credential'` wie api2ai: bei `'credential'` fehlt JWT → Fehler in `resolveHostContext`; bei `'none'` optional.
 
@@ -131,8 +131,8 @@ Neue Funktion z. B. `renderDbMcpHostAdapterBlock(connectionEnvLiteral, authKind)
 
 - `loadLocalEnvFiles` aus `@core2ai/mcp-host`.
 - `applySmokeHostEnv(adapter, { connectionString, credential? }, envDirs)`:
-  - Connection: `process.env[imported.connectionEnv]` (DSL-Key aus Modul).
-  - JWT: optional `adapter.configureFromArgv(['--auth-env', 'MCP_HOST_CREDENTIAL'], envDirs)` + Wert setzen (wie [`api2ai smoke-host-env.ts`](file:///Users/annette/Documents/Projekte/MCP/api2ai/packages/cli/test/integration/smoke-host-env.ts), ohne `--base-url-env`).
+    - Connection: `process.env[imported.connectionEnv]` (DSL-Key aus Modul).
+    - JWT: optional `adapter.configureFromArgv(['--auth-env', 'MCP_HOST_CREDENTIAL'], envDirs)` + Wert setzen (wie [`api2ai smoke-host-env.ts`](file:///Users/annette/Documents/Projekte/MCP/api2ai/packages/cli/test/integration/smoke-host-env.ts), ohne `--base-url-env`).
 
 Root `test:mcp:pagila` — **ohne** DB-Key in argv:
 

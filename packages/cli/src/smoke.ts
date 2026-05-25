@@ -15,11 +15,7 @@ function defaultSmokeArgs(toolName: string): DbInvokeArgs {
 }
 
 function resolveSmokeCredential(): string | undefined {
-    return (
-        process.env.DB2AI_USER_JWT?.trim() ||
-        process.env.DB2AI_SMOKE_CREDENTIAL?.trim() ||
-        undefined
-    );
+    return process.env.DB2AI_USER_JWT?.trim() || process.env.DB2AI_SMOKE_CREDENTIAL?.trim() || undefined;
 }
 
 export async function runSmokeGenerated(modulePath: string, toolName: string, argsJson?: string): Promise<void> {
@@ -46,9 +42,9 @@ export async function runSmokeGenerated(modulePath: string, toolName: string, ar
     applySmokeHostEnv(generated.adapter, { credential }, envDirs);
     generated.adapter.validateAtStartup(generated.requiresAuth === true);
 
-    const tool = generated.generatedTools.find(item => item.toolName === toolName);
+    const tool = generated.generatedTools.find((item) => item.toolName === toolName);
     if (!tool) {
-        const available = generated.generatedTools.map(item => item.toolName).join(', ');
+        const available = generated.generatedTools.map((item) => item.toolName).join(', ');
         console.error(chalk.red(`Tool "${toolName}" not found. Available tools: ${available}`));
         process.exit(1);
     }
@@ -56,9 +52,7 @@ export async function runSmokeGenerated(modulePath: string, toolName: string, ar
     let args: DbInvokeArgs = {};
     if (argsJson) {
         try {
-            const argsContent = argsJson.startsWith('@')
-                ? fs.readFileSync(argsJson.slice(1), 'utf-8')
-                : argsJson;
+            const argsContent = argsJson.startsWith('@') ? fs.readFileSync(argsJson.slice(1), 'utf-8') : argsJson;
             args = JSON.parse(argsContent) as DbInvokeArgs;
         } catch (error) {
             console.error(chalk.red(`Invalid args JSON: ${error instanceof Error ? error.message : String(error)}`));

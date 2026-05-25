@@ -21,7 +21,7 @@ export const smokeGeneratedAction = async (
     await runSmokeGenerated(generatedModulePath, toolName, argsJson);
 };
 
-export default function(): void {
+export default function (): void {
     const program = new Command();
     program.version(JSON.parse(packageContent).version);
 

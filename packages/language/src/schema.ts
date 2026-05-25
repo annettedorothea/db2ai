@@ -68,7 +68,7 @@ export async function loadSchema(connectionUrl: string): Promise<LoadedSchema> {
              WHERE table_schema = 'public'
              ORDER BY table_name, ordinal_position`
         );
-        const tables = tablesResult.rows.map(row => row.table_name);
+        const tables = tablesResult.rows.map((row) => row.table_name);
         const columnsByTable: Record<string, string[]> = {};
         for (const row of columnsResult.rows) {
             const list = columnsByTable[row.table_name] ?? [];

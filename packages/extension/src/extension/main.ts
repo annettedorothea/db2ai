@@ -40,19 +40,14 @@ async function startLanguageClient(context: vscode.ExtensionContext): Promise<La
         documentSelector: [{ scheme: '*', language: 'db-2-ai-dsl' }]
     };
 
-    const languageClient = new LanguageClient(
-        'db-2-ai-dsl',
-        'db2ai-dsl',
-        serverOptions,
-        clientOptions
-    );
+    const languageClient = new LanguageClient('db-2-ai-dsl', 'db2ai-dsl', serverOptions, clientOptions);
 
     await languageClient.start();
     return languageClient;
 }
 
 function registerGenerateOnSave(context: vscode.ExtensionContext): void {
-    const disposable = vscode.workspace.onDidSaveTextDocument(document => {
+    const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
         if (document.languageId !== 'db-2-ai-dsl') {
             return;
         }
@@ -101,7 +96,7 @@ function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): v
         try {
             cpSync(sourceDir, targetDir, {
                 recursive: true,
-                filter: src => shouldCopyDemoPath(sourceDir, src)
+                filter: (src) => shouldCopyDemoPath(sourceDir, src)
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -132,10 +127,9 @@ async function pickDemoWorkspaceTarget(): Promise<vscode.Uri | undefined> {
     }
     const folder = vscode.workspace.workspaceFolders?.[0];
     if (folder && !existsSync(path.join(folder.uri.fsPath, 'package.json'))) {
-        const useWorkspace = await vscode.window.showQuickPick(
-            [{ label: 'Use current workspace folder', folder }],
-            { placeHolder: 'No folder selected — use open workspace?' }
-        );
+        const useWorkspace = await vscode.window.showQuickPick([{ label: 'Use current workspace folder', folder }], {
+            placeHolder: 'No folder selected — use open workspace?'
+        });
         if (useWorkspace) {
             return useWorkspace.folder.uri;
         }
@@ -149,7 +143,7 @@ function shouldCopyDemoPath(sourceDir: string, src: string): boolean {
         return true;
     }
     const parts = relative.split(path.sep);
-    if (parts.some(part => DEMO_COPY_SKIP_DIRS.has(part))) {
+    if (parts.some((part) => DEMO_COPY_SKIP_DIRS.has(part))) {
         return false;
     }
     const base = parts[parts.length - 1];
@@ -213,7 +207,7 @@ async function generateForSourceFile(
                 void vscode.window.showInformationMessage(`db2ai: generated tools for ${path.basename(sourcePath)}.`);
             }
         })
-        .catch(error => {
+        .catch((error) => {
             const message = error instanceof Error ? error.message.trim() : String(error);
             void vscode.window.showErrorMessage(`db2ai: generate failed for ${path.basename(sourcePath)}: ${message}`);
         });

@@ -1,22 +1,22 @@
 ---
 name: Pagila Docker Setup
-overview: "Pagila in db2ai-examples ausschließlich per Docker Desktop (synthesizedio/pagila:1.2). Alle lokalen/Homebrew-/setup-pagila-Reste entfernen. Docker auf dem Mac verifiziert (Desktop 4.26.1)."
+overview: 'Pagila in db2ai-examples ausschließlich per Docker Desktop (synthesizedio/pagila:1.2). Alle lokalen/Homebrew-/setup-pagila-Reste entfernen. Docker auf dem Mac verifiziert (Desktop 4.26.1).'
 todos:
-  - id: preflight-docker
-    content: "Docker Desktop verifiziert (4.26.1, pull pagila:1.2 OK; Compose braucht POSTGRES_DB=pagila)"
-    status: completed
-  - id: compose-and-scripts
-    content: docker-compose.yml + wait-for-pagila.sh + package.json (nur db:up/down/reset/psql); setup-pagila.sh löschen
-    status: completed
-  - id: remove-local-remnants
-    content: READMEs, extension README, .gitignore (.pagila-src), SQLTools — keine brew/psql/setup-Hinweise
-    status: completed
-  - id: env-align
-    content: ".env + healthcheck: POSTGRES_DB=pagila; erste Startzeit ~50s in wait-Skript"
-    status: completed
-  - id: verify-mcp-smoke
-    content: npm run db:up + test:smoke:pagila + Cursor db2ai-Prompt
-    status: completed
+    - id: preflight-docker
+      content: 'Docker Desktop verifiziert (4.26.1, pull pagila:1.2 OK; Compose braucht POSTGRES_DB=pagila)'
+      status: completed
+    - id: compose-and-scripts
+      content: docker-compose.yml + wait-for-pagila.sh + package.json (nur db:up/down/reset/psql); setup-pagila.sh löschen
+      status: completed
+    - id: remove-local-remnants
+      content: READMEs, extension README, .gitignore (.pagila-src), SQLTools — keine brew/psql/setup-Hinweise
+      status: completed
+    - id: env-align
+      content: '.env + healthcheck: POSTGRES_DB=pagila; erste Startzeit ~50s in wait-Skript'
+      status: completed
+    - id: verify-mcp-smoke
+      content: npm run db:up + test:smoke:pagila + Cursor db2ai-Prompt
+      status: completed
 isProject: false
 ---
 
@@ -24,21 +24,21 @@ isProject: false
 
 ## Docker-Check auf deinem Mac (erledigt)
 
-| Prüfung | Ergebnis |
-|---------|----------|
-| Docker Client | 24.0.7, Context `desktop-linux` |
-| Docker Server | **Docker Desktop 4.26.1** — Daemon läuft |
-| Docker Compose | v2.23.3-desktop.2 |
-| `docker pull synthesizedio/pagila:1.2` | OK |
-| Container-Start | OK mit `POSTGRES_DB=pagila` (siehe unten) |
-| Daten | `SELECT count(*) FROM film` → **1000** (nach ~50s Init) |
+| Prüfung                                | Ergebnis                                                |
+| -------------------------------------- | ------------------------------------------------------- |
+| Docker Client                          | 24.0.7, Context `desktop-linux`                         |
+| Docker Server                          | **Docker Desktop 4.26.1** — Daemon läuft                |
+| Docker Compose                         | v2.23.3-desktop.2                                       |
+| `docker pull synthesizedio/pagila:1.2` | OK                                                      |
+| Container-Start                        | OK mit `POSTGRES_DB=pagila` (siehe unten)               |
+| Daten                                  | `SELECT count(*) FROM film` → **1000** (nach ~50s Init) |
 
 **Wichtig für Compose:** Ohne `POSTGRES_DB=pagila` legt das Image nur die DB `postgres` an; Tabellen stehen dann dort, aber [packages/extension/demos/.env](packages/extension/demos/.env) zeigt auf `/pagila` → Verbindung schlägt fehl. Im `docker-compose.yml` zwingend:
 
 ```yaml
 environment:
-  POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: pagila
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_DB: pagila
 ```
 
 Healthcheck: `pg_isready -U postgres -d pagila`.
@@ -79,21 +79,21 @@ flowchart LR
 
 ```yaml
 services:
-  pagila:
-    image: synthesizedio/pagila:1.2
-    container_name: db2ai-pagila
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pagila
-    ports:
-      - "${PAGILA_HOST_PORT:-5432}:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d pagila"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 60s
-    restart: unless-stopped
+    pagila:
+        image: synthesizedio/pagila:1.2
+        container_name: db2ai-pagila
+        environment:
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: pagila
+        ports:
+            - '${PAGILA_HOST_PORT:-5432}:5432'
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d pagila']
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 60s
+        restart: unless-stopped
 ```
 
 `db:reset`: `docker compose down -v` + `db:up` (falls Named Volume ergänzt wird; bei reinem Container-Recreate ggf. nur `down` + `up`).
@@ -108,16 +108,16 @@ services:
 
 ## 2. Entfernen (keine lokalen Reste)
 
-| Aktion | Datei / Stelle |
-|--------|----------------|
-| **Löschen** | [packages/extension/demos/scripts/setup-pagila.sh](packages/extension/demos/scripts/setup-pagila.sh) |
-| **Entfernen aus package.json** | `db:setup`, altes `db:reset`/`db:psql` mit host-`psql` |
-| **Neu in package.json** | `db:up`, `db:down`, `db:reset`, `db:psql` (nur Docker) |
-| **README** | [packages/extension/demos/README.md](packages/extension/demos/README.md): gesamter Homebrew/`db:setup`-Block streichen |
-| **README** | [README.md](../README.md): nur `npm run db:up`, kein lokales Postgres |
-| **Extension** | [packages/extension/README.md](packages/extension/README.md): „Docker: cd packages/extension/demos && npm run db:up“ statt lokales Pagila |
-| **.gitignore** | Eintrag `packages/extension/demos/.pagila-src/` entfernen (Ordner nicht mehr genutzt) |
-| **Optional löschen** | Lokaler Ordner `packages/extension/demos/.pagila-src/` auf der Platte (gitignored, manuell) |
+| Aktion                         | Datei / Stelle                                                                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Löschen**                    | [packages/extension/demos/scripts/setup-pagila.sh](packages/extension/demos/scripts/setup-pagila.sh)                                      |
+| **Entfernen aus package.json** | `db:setup`, altes `db:reset`/`db:psql` mit host-`psql`                                                                                    |
+| **Neu in package.json**        | `db:up`, `db:down`, `db:reset`, `db:psql` (nur Docker)                                                                                    |
+| **README**                     | [packages/extension/demos/README.md](packages/extension/demos/README.md): gesamter Homebrew/`db:setup`-Block streichen                    |
+| **README**                     | [README.md](../README.md): nur `npm run db:up`, kein lokales Postgres                                                                     |
+| **Extension**                  | [packages/extension/README.md](packages/extension/README.md): „Docker: cd packages/extension/demos && npm run db:up“ statt lokales Pagila |
+| **.gitignore**                 | Eintrag `packages/extension/demos/.pagila-src/` entfernen (Ordner nicht mehr genutzt)                                                     |
+| **Optional löschen**           | Lokaler Ordner `packages/extension/demos/.pagila-src/` auf der Platte (gitignored, manuell)                                               |
 
 Kein „Optional: lokales PostgreSQL“, kein `db:setup`-Alias, keine Colima-Erwähnung.
 

@@ -5,7 +5,7 @@ import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CompletionParams } from 'vscode-languageserver';
 import { clearSchemaCache } from '../src/schema.js';
 
-vi.mock('../src/schema.js', async importOriginal => {
+vi.mock('../src/schema.js', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/schema.js')>();
     return {
         ...actual,
@@ -39,23 +39,17 @@ beforeEach(() => {
 });
 
 function tableLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
-    return items
-        .filter(i => i.detail === 'PostgreSQL table')
-        .map(i => String(i.label));
+    return items.filter((i) => i.detail === 'PostgreSQL table').map((i) => String(i.label));
 }
 
 function columnLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
-    return items
-        .filter(i => i.detail === 'PostgreSQL column')
-        .map(i => String(i.label));
+    return items.filter((i) => i.detail === 'PostgreSQL column').map((i) => String(i.label));
 }
 
 function blockKeywordLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
     return items
-        .filter(
-            i => i.detail === 'Query block property' || i.detail === 'SQL block property'
-        )
-        .map(i => String(i.label));
+        .filter((i) => i.detail === 'Query block property' || i.detail === 'SQL block property')
+        .map((i) => String(i.label));
 }
 
 async function completionAt(content: string, offset: number) {
@@ -118,7 +112,7 @@ describe('Completion for table name', () => {
         const list = await completionAt(content, offset);
 
         const labels = tableLabels(list?.items ?? []);
-        expect(labels.every(l => l.startsWith('fi'))).toBe(true);
+        expect(labels.every((l) => l.startsWith('fi'))).toBe(true);
         expect(labels).toContain('film');
     });
 });

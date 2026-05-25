@@ -4,7 +4,7 @@ import { parseHelper, type ParseHelperOptions } from 'langium/test';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { clearSchemaCache } from '../src/schema.js';
 
-vi.mock('../src/schema.js', async importOriginal => {
+vi.mock('../src/schema.js', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/schema.js')>();
     return {
         ...actual,
@@ -46,9 +46,7 @@ function parseValidated(input: string) {
 }
 
 function errorMessages(doc: LangiumDocument<Model>): string[] {
-    return (doc.diagnostics ?? [])
-        .filter(d => d.severity === 1)
-        .map(d => d.message);
+    return (doc.diagnostics ?? []).filter((d) => d.severity === 1).map((d) => d.message);
 }
 
 describe('Validating', () => {
@@ -75,7 +73,7 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('not_a_table'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('not_a_table'))).toBe(true);
     });
 
     test('requires toolName and intent', async () => {
@@ -88,8 +86,8 @@ describe('Validating', () => {
         `);
 
         const messages = errorMessages(document);
-        expect(messages.some(m => m.includes('toolName'))).toBe(true);
-        expect(messages.some(m => m.includes('intent'))).toBe(true);
+        expect(messages.some((m) => m.includes('toolName'))).toBe(true);
+        expect(messages.some((m) => m.includes('intent'))).toBe(true);
     });
 
     test('rejects duplicate toolName keys in block', async () => {
@@ -103,7 +101,7 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('Duplicate key "toolName"'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('Duplicate key "toolName"'))).toBe(true);
     });
 
     test('rejects invalid env var name', async () => {
@@ -116,7 +114,7 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('environment variable name'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('environment variable name'))).toBe(true);
     });
 
     test('rejects non-postgresql value in env var', async () => {
@@ -130,7 +128,7 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('postgresql'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('postgresql'))).toBe(true);
     });
 
     test('accepts valid columns map', async () => {
@@ -163,7 +161,7 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('not_a_column'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('not_a_column'))).toBe(true);
     });
 
     test('rejects duplicate column keys in columns map', async () => {
@@ -180,7 +178,7 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('Duplicate column key'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('Duplicate column key'))).toBe(true);
     });
 
     test('rejects non-positive maxLimit', async () => {
@@ -194,6 +192,6 @@ describe('Validating', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('maxLimit'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('maxLimit'))).toBe(true);
     });
 });

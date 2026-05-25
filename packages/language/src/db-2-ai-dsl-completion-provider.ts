@@ -168,8 +168,7 @@ function usedColumnKeys(query: TableQuery, excludeName?: string): Set<string> {
 }
 
 function cursorInsideColumnDescriptionValue(root: CstNode, offset: number): boolean {
-    const leaf =
-        CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
+    const leaf = CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
     if (!leaf) {
         return false;
     }
@@ -221,7 +220,7 @@ function columnItemsForQuery(
     }
     const allColumns = columnsForTable(loaded, tableName);
     const used = usedColumnKeys(query);
-    const candidates = allColumns.filter(c => !used.has(c));
+    const candidates = allColumns.filter((c) => !used.has(c));
     if (candidates.length === 0) {
         return [];
     }
@@ -233,12 +232,11 @@ function columnItemsForQuery(
             start: textDoc.positionAt(nameLeaf.offset),
             end: textDoc.positionAt(prefixEnd)
         });
-        let filtered =
-            typedPrefix.length === 0 ? candidates : candidates.filter(c => c.startsWith(typedPrefix));
+        let filtered = typedPrefix.length === 0 ? candidates : candidates.filter((c) => c.startsWith(typedPrefix));
         if (filtered.length === 0 && candidates.length > 0) {
             filtered = candidates;
         }
-        return filtered.map(column => ({
+        return filtered.map((column) => ({
             label: column,
             kind: CompletionItemKind.Property,
             detail: 'PostgreSQL column',
@@ -249,7 +247,7 @@ function columnItemsForQuery(
     }
 
     if (cursorAwaitingColumnName(query, offset)) {
-        return candidates.map(column => ({
+        return candidates.map((column) => ({
             label: column,
             kind: CompletionItemKind.Property,
             detail: 'PostgreSQL column',
@@ -343,14 +341,11 @@ function tableItemsForQuery(
             start: textDoc.positionAt(tableLeaf.offset),
             end: textDoc.positionAt(prefixEnd)
         });
-        let filtered =
-            typedPrefix.length === 0
-                ? candidates
-                : candidates.filter(t => t.startsWith(typedPrefix));
+        let filtered = typedPrefix.length === 0 ? candidates : candidates.filter((t) => t.startsWith(typedPrefix));
         if (filtered.length === 0 && candidates.length > 0) {
             filtered = candidates;
         }
-        return filtered.map(table => ({
+        return filtered.map((table) => ({
             label: table,
             kind: CompletionItemKind.Value,
             detail: 'PostgreSQL table',
@@ -361,7 +356,7 @@ function tableItemsForQuery(
     }
 
     if (cursorAwaitingTableName(query, offset, textDoc, position) && candidates.length > 0) {
-        return candidates.map(table => ({
+        return candidates.map((table) => ({
             label: table,
             kind: CompletionItemKind.Value,
             detail: 'PostgreSQL table',
@@ -455,8 +450,7 @@ function cursorInsideToolBlockStringValue(root: CstNode, offset: number, entry: 
     if (isTableQuery(entry) && offsetInsideColumnMap(entry, offset)) {
         return cursorInsideColumnDescriptionValue(root, offset);
     }
-    const leaf =
-        CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
+    const leaf = CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
     if (!leaf || !isLeafCstNode(leaf)) {
         return false;
     }
@@ -467,7 +461,7 @@ function cursorInsideToolBlockStringValue(root: CstNode, offset: number, entry: 
 }
 
 function matchesBlockKeywordPrefix(text: string, keys: readonly string[]): boolean {
-    return keys.some(key => key.startsWith(text) || text.startsWith(key));
+    return keys.some((key) => key.startsWith(text) || text.startsWith(key));
 }
 
 function blockKeywordLeafAtOffset(entry: ModelEntry, offset: number, keys: readonly string[]): LeafCstNode | undefined {
@@ -481,8 +475,7 @@ function blockKeywordLeafAtOffset(entry: ModelEntry, offset: number, keys: reado
     if (!cst) {
         return undefined;
     }
-    const leaf =
-        CstUtils.findLeafNodeAtOffset(cst, offset) ?? CstUtils.findLeafNodeBeforeOffset(cst, offset);
+    const leaf = CstUtils.findLeafNodeAtOffset(cst, offset) ?? CstUtils.findLeafNodeBeforeOffset(cst, offset);
     if (!leaf || !isLeafCstNode(leaf)) {
         return undefined;
     }
@@ -527,7 +520,7 @@ function blockKeywordItemsForEntry(
         return [];
     }
 
-    let candidates = keys.filter(key => !used.has(key));
+    let candidates = keys.filter((key) => !used.has(key));
 
     const keywordLeaf = blockKeywordLeafAtOffset(entry, offset, keys);
     if (keywordLeaf) {
@@ -536,11 +529,11 @@ function blockKeywordItemsForEntry(
             start: textDoc.positionAt(keywordLeaf.offset),
             end: textDoc.positionAt(prefixEnd)
         });
-        candidates = candidates.filter(key => key.startsWith(typedPrefix));
+        candidates = candidates.filter((key) => key.startsWith(typedPrefix));
         if (candidates.length === 0) {
             return [];
         }
-        return candidates.map(key => ({
+        return candidates.map((key) => ({
             label: key,
             kind: CompletionItemKind.Keyword,
             detail: isSql ? 'SQL block property' : 'Query block property',
@@ -555,7 +548,7 @@ function blockKeywordItemsForEntry(
         return [];
     }
 
-    return candidates.map(key => ({
+    return candidates.map((key) => ({
         label: key,
         kind: CompletionItemKind.Keyword,
         detail: isSql ? 'SQL block property' : 'Query block property',
@@ -566,10 +559,7 @@ function blockKeywordItemsForEntry(
     }));
 }
 
-function buildBlockKeywordCompletionItems(
-    document: LangiumDocument,
-    position: Position
-): CompletionItem[] {
+function buildBlockKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
     const root = document.parseResult.value?.$cstNode;
     const model = document.parseResult.value;
     if (!root || !isModel(model)) {
@@ -589,9 +579,7 @@ function buildBlockKeywordCompletionItems(
 function resolveModelEntryAtOffset(model: Model, root: CstNode, offset: number): ModelEntry | undefined {
     let entry: ModelEntry | undefined = findTableQueryForTableCompletion(model, offset);
     if (!entry) {
-        const leafAt =
-            CstUtils.findLeafNodeAtOffset(root, offset) ??
-            CstUtils.findLeafNodeBeforeOffset(root, offset);
+        const leafAt = CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
         if (leafAt) {
             const table = AstUtils.getContainerOfType(leafAt.astNode as AstNode, isTableQuery);
             if (table) {
@@ -667,10 +655,7 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         return buildItems(query, loaded, offset);
     }
 
-    private async buildColumnCompletionItems(
-        document: LangiumDocument,
-        position: Position
-    ): Promise<CompletionItem[]> {
+    private async buildColumnCompletionItems(document: LangiumDocument, position: Position): Promise<CompletionItem[]> {
         const root = document.parseResult.value?.$cstNode;
         if (!root) {
             return [];
@@ -689,10 +674,7 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         });
     }
 
-    private async buildTableCompletionItems(
-        document: LangiumDocument,
-        position: Position
-    ): Promise<CompletionItem[]> {
+    private async buildTableCompletionItems(document: LangiumDocument, position: Position): Promise<CompletionItem[]> {
         const textDoc = document.textDocument;
         const offset = textDoc.offsetAt(position);
 

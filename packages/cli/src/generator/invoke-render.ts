@@ -31,7 +31,7 @@ function renderTableInvokeCase(tool: ResolvedTableToolCodegen): string {
 function renderSqlInvokeCase(tool: ResolvedSqlToolCodegen): string {
     const valueExprs = tool.params
         .map(
-            p =>
+            (p) =>
                 `options[${JSON.stringify(p.propertyName)}] !== undefined && options[${JSON.stringify(p.propertyName)}] !== null ? String(options[${JSON.stringify(p.propertyName)}]) : null`
         )
         .join(', ');
@@ -46,7 +46,7 @@ function renderSqlInvokeCase(tool: ResolvedSqlToolCodegen): string {
 
 function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[]): string {
     return tools
-        .map(tool => (tool.kind === 'table' ? renderTableInvokeCase(tool) : renderSqlInvokeCase(tool)))
+        .map((tool) => (tool.kind === 'table' ? renderTableInvokeCase(tool) : renderSqlInvokeCase(tool)))
         .join('\n');
 }
 

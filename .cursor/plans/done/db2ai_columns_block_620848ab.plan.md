@@ -1,22 +1,22 @@
 ---
 name: db2ai columns block
-overview: "Erweiterung der db2ai-DSL um optionalen Block `columns: { spalte: \"Beschreibung\" }` im Tool-Metadaten-Objekt. Spaltennamen werden per Schema-Introspection (information_schema.columns) validiert und per Autocomplete vorgeschlagen — Kontext ist die Tabelle aus `SELECT * FROM …`. `SELECT *` und generiertes SQL bleiben unverändert; die Map fließt in die MCP-Tool-Beschreibung."
+overview: 'Erweiterung der db2ai-DSL um optionalen Block `columns: { spalte: "Beschreibung" }` im Tool-Metadaten-Objekt. Spaltennamen werden per Schema-Introspection (information_schema.columns) validiert und per Autocomplete vorgeschlagen — Kontext ist die Tabelle aus `SELECT * FROM …`. `SELECT *` und generiertes SQL bleiben unverändert; die Map fließt in die MCP-Tool-Beschreibung.'
 todos:
-  - id: schema-columns-by-table
-    content: "schema.ts: information_schema.columns → columnsByTable, hasColumn/columnsForTable, Cache + Test-Mocks"
-    status: completed
-  - id: grammar-columns-block
-    content: "Langium: columns + ColumnDescriptions/ColumnDescriptionEntry; langium:generate; Parsing-Tests"
-    status: completed
-  - id: validator-column-keys
-    content: "Validator: unbekannte/doppelte Spalten-Keys; QUERY_BLOCK_KEYS + columns"
-    status: completed
-  - id: completion-column-keys
-    content: "Completion: tabellenbezogene Spalten-Keys in columns-Map, minus bereits gesetzte Keys"
-    status: completed
-  - id: codegen-description-columns
-    content: buildDescription + pagila.db2ai + README; build/smoke
-    status: completed
+    - id: schema-columns-by-table
+      content: 'schema.ts: information_schema.columns → columnsByTable, hasColumn/columnsForTable, Cache + Test-Mocks'
+      status: completed
+    - id: grammar-columns-block
+      content: 'Langium: columns + ColumnDescriptions/ColumnDescriptionEntry; langium:generate; Parsing-Tests'
+      status: completed
+    - id: validator-column-keys
+      content: 'Validator: unbekannte/doppelte Spalten-Keys; QUERY_BLOCK_KEYS + columns'
+      status: completed
+    - id: completion-column-keys
+      content: 'Completion: tabellenbezogene Spalten-Keys in columns-Map, minus bereits gesetzte Keys'
+      status: completed
+    - id: codegen-description-columns
+      content: buildDescription + pagila.db2ai + README; build/smoke
+      status: completed
 isProject: false
 ---
 
@@ -46,11 +46,11 @@ SELECT * FROM actor {
 
 ## Abgrenzung zu anderen Plänen
 
-| Thema | Dieser Plan | [`db2ai_select_spalten`](../../api2ai/.cursor/plans/db2ai_select_spalten_9549000c.plan.md) | [`db2ai_hybrid_sql`](../../api2ai/.cursor/plans/db2ai_hybrid_sql_d922a1c7.plan.md) |
-|--------|-------------|------------------------|------------------|
-| Spalten in DSL | Metadaten-Map im `{ }`-Block | `SELECT col1, col2 FROM t` | `columnsDoc: "..."` (ein String) |
-| SQL zur Laufzeit | weiter `SELECT *` | dynamische Spaltenliste | je nach Tool-Typ |
-| Autocomplete | Keys in `columns: { }` | zwischen `SELECT` und `FROM` | — |
+| Thema            | Dieser Plan                  | [`db2ai_select_spalten`](../../api2ai/.cursor/plans/db2ai_select_spalten_9549000c.plan.md) | [`db2ai_hybrid_sql`](../../api2ai/.cursor/plans/db2ai_hybrid_sql_d922a1c7.plan.md) |
+| ---------------- | ---------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Spalten in DSL   | Metadaten-Map im `{ }`-Block | `SELECT col1, col2 FROM t`                                                                 | `columnsDoc: "..."` (ein String)                                                   |
+| SQL zur Laufzeit | weiter `SELECT *`            | dynamische Spaltenliste                                                                    | je nach Tool-Typ                                                                   |
+| Autocomplete     | Keys in `columns: { }`       | zwischen `SELECT` und `FROM`                                                               | —                                                                                  |
 
 Die Pläne können später kombiniert werden; dieser Schritt braucht **kein** `SelectList` in der Grammar.
 
@@ -142,11 +142,11 @@ Datei: [`db-2-ai-dsl-validator.ts`](../../packages/language/src/db-2-ai-dsl-vali
 
 Neue Methode `checkColumnKeysExist` (in `checkModel`, nach `checkTablesExist` oder darin gebündelt):
 
-| Regel | Schwere | Bedingung |
-|--------|---------|-----------|
-| Unbekannte Spalte | `error` | `columns` gesetzt, Block `{` da, DB/Schema OK, `hasColumn(loaded, query.table.name, entry.name)` false |
-| Doppelter Key in Map | `error` | zwei `entries` mit gleichem `name` |
-| Leere Map | optional `warning` | `columns: { }` — kann weggelassen (PoC) |
+| Regel                | Schwere            | Bedingung                                                                                              |
+| -------------------- | ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Unbekannte Spalte    | `error`            | `columns` gesetzt, Block `{` da, DB/Schema OK, `hasColumn(loaded, query.table.name, entry.name)` false |
+| Doppelter Key in Map | `error`            | zwei `entries` mit gleichem `name`                                                                     |
+| Leere Map            | optional `warning` | `columns: { }` — kann weggelassen (PoC)                                                                |
 
 Gleiche **Graceful-Degradation** wie bei Tabellen: kein Env / DB nicht erreichbar → keine Spalten-Errors, nur bestehende Warnings; kein Block `{` → keine Spaltenprüfung.
 
@@ -166,9 +166,9 @@ Datei: [`db-2-ai-dsl-completion-provider.ts`](../../packages/language/src/db-2-a
 
 - Cursor innerhalb `ColumnDescriptions`-CST der aktuellen `Query`
 - Situationen:
-  - direkt nach `columns: {` (neuer Key)
-  - nach Zeilenumbruch/Komma vor `:` (neuer Key)
-  - auf/teilweise im `ID`-Leaf eines Eintrags (Prefix-Filter + `TextEdit.replace`, analog [`tableNameLeaf`](../../packages/language/src/db-2-ai-dsl-completion-provider.ts))
+    - direkt nach `columns: {` (neuer Key)
+    - nach Zeilenumbruch/Komma vor `:` (neuer Key)
+    - auf/teilweise im `ID`-Leaf eines Eintrags (Prefix-Filter + `TextEdit.replace`, analog [`tableNameLeaf`](../../packages/language/src/db-2-ai-dsl-completion-provider.ts))
 
 **Kandidaten:** `columnsForTable(loaded, query.table.name)` minus bereits verwendete Keys in derselben `columns`-Map (andere `entries[].name`).
 
@@ -191,7 +191,7 @@ Dateien: [`packages/cli/src/db-query-codegen.ts`](../../packages/cli/src/db-quer
 `buildDescription(query)` erweitern:
 
 - Wenn `query.columns?.entries.length`:
-  - Abschnitt z. B. `Columns returned:` mit Bullet-Liste `column_name — description`
+    - Abschnitt z. B. `Columns returned:` mit Bullet-Liste `column_name — description`
 - SQL-Text in der Description bleibt `SELECT * FROM public.<table> …` (kein Schema-Zugriff im CLI nötig)
 
 **Runtime-SQL** in [`generator.ts`](../../packages/cli/src/generator.ts): unverändert `SELECT * FROM …`.
@@ -220,9 +220,9 @@ cd db2ai && npm run langium:generate && npm run build
 
 ## Umsetzungsreihenfolge
 
-1. `schema.ts` + `columnsByTable` + Tests-Mocks  
-2. Grammar + `langium:generate` + Parsing-Tests  
-3. Validator (Map-Duplikate + `hasColumn`)  
-4. Completion (Spalten-Keys, Filter bereits genutzter Keys)  
-5. Codegen `buildDescription` + `pagila.db2ai` + README  
+1. `schema.ts` + `columnsByTable` + Tests-Mocks
+2. Grammar + `langium:generate` + Parsing-Tests
+3. Validator (Map-Duplikate + `hasColumn`)
+4. Completion (Spalten-Keys, Filter bereits genutzter Keys)
+5. Codegen `buildDescription` + `pagila.db2ai` + README
 6. `langium:generate && build` + Smoke

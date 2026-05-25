@@ -35,18 +35,18 @@ function withConfig<T>(generatorImplementationDir: string, fn: (config: ProjectB
 export { ensureParentDir, resolveBootstrapProjectRootFromSource, resolveGeneratedCliDir };
 
 export function copyBundledMcpServeInto(cliDir: string, generatorImplementationDir: string): string {
-    return withConfig(generatorImplementationDir, config => copyCoreBundledMcpServeInto(cliDir, config));
+    return withConfig(generatorImplementationDir, (config) => copyCoreBundledMcpServeInto(cliDir, config));
 }
 
 export function resolveMcpServerIdentityFromDestination(
     destinationTsPath: string,
     generatorImplementationDir: string
 ): { name: string; version: string } {
-    return withConfig(generatorImplementationDir, config =>
+    return withConfig(generatorImplementationDir, (config) =>
         resolveCoreMcpServerIdentityFromDestination(destinationTsPath, config)
     );
 }
 
 export function writeMinimalPackageJsonIfAbsent(projectRoot: string, generatorImplementationDir: string): void {
-    withConfig(generatorImplementationDir, config => writeCoreMinimalPackageJsonIfAbsent(projectRoot, config));
+    withConfig(generatorImplementationDir, (config) => writeCoreMinimalPackageJsonIfAbsent(projectRoot, config));
 }

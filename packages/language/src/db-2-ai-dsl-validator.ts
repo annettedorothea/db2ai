@@ -111,8 +111,7 @@ export class Db2AiDslValidator {
             if (!isTableQuery(entry) || entry.maxLimit === undefined) {
                 continue;
             }
-            const maxLimit =
-                typeof entry.maxLimit === 'number' ? entry.maxLimit : Number(entry.maxLimit);
+            const maxLimit = typeof entry.maxLimit === 'number' ? entry.maxLimit : Number(entry.maxLimit);
             if (!Number.isFinite(maxLimit) || maxLimit < 1) {
                 accept('error', '`maxLimit` must be a positive integer.', {
                     node: entry,

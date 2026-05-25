@@ -12,11 +12,11 @@ function loadEnvForDocumentUri(documentUri: string): void {
     loadLocalEnvFiles(workspaceDirsForDocumentUri(documentUri));
 }
 
-connection.onDidOpenTextDocument(params => {
+connection.onDidOpenTextDocument((params) => {
     loadEnvForDocumentUri(params.textDocument.uri);
 });
 
-connection.onDidChangeTextDocument(params => {
+connection.onDidChangeTextDocument((params) => {
     loadEnvForDocumentUri(params.textDocument.uri);
 });
 

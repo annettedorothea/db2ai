@@ -15,12 +15,15 @@
         "langium:watch": "npm run --workspace packages/language langium:watch",
         "generate:pagila": "npm run generate:pagila --prefix ./packages/extension/demos",
         "test": "npm run --workspace packages/language test",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
         "test:smoke:pagila": "node ./packages/cli/bin/cli.js smoke-generated ./packages/extension/demos/generated/tools/pagila-tools.mjs listFilms",
         "test:mcp:pagila": "node ./packages/extension/demos/generated/cli/mcp-serve.mjs ./packages/extension/demos/generated/tools/pagila-tools.mjs"
     },
     "devDependencies": {
         "@types/node": "~20.17.48",
         "esbuild": "^0.25.12",
+        "prettier": "^3.8.3",
         "shx": "~0.4.0",
         "typescript": "~5.8.3"
     },

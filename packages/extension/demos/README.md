@@ -35,12 +35,12 @@ Prerequisites: **Node.js 20+**, **Docker Desktop** (running), **db2ai** extensio
 npm run db:up
 ```
 
-| Script | Action |
-|--------|--------|
-| `db:up` | Start container (`docker compose up -d --wait` until healthcheck passes) |
-| `db:down` | Stop container |
-| `db:reset` | Remove container/volumes and start fresh |
-| `db:psql` | Interactive `psql` inside the container |
+| Script     | Action                                                                   |
+| ---------- | ------------------------------------------------------------------------ |
+| `db:up`    | Start container (`docker compose up -d --wait` until healthcheck passes) |
+| `db:down`  | Stop container                                                           |
+| `db:reset` | Remove container/volumes and start fresh                                 |
+| `db:psql`  | Interactive `psql` inside the container                                  |
 
 Image: [synthesizedio/pagila:1.2](https://hub.docker.com/r/synthesizedio/pagila) (PostgreSQL with Pagila sample data). Upstream project: [devrimgunduz/pagila](https://github.com/devrimgunduz/pagila).
 
@@ -55,10 +55,10 @@ Image: [synthesizedio/pagila:1.2](https://hub.docker.com/r/synthesizedio/pagila)
 1. Workspace = this folder, MCP **`db2ai-pagila`** on.
 2. Prompts start with **`db2ai`** ([`./.cursor/rules/mcp-db2ai-only.mdc`](./.cursor/rules/mcp-db2ai-only.mdc)).
 
-| Check | Prompt |
-|-------|--------|
-| MPAA filter | `db2ai gib mir 20 R rated filme` |
-| Search | `db2ai suche in den Filmen nach grace` |
+| Check         | Prompt                                                 |
+| ------------- | ------------------------------------------------------ |
+| MPAA filter   | `db2ai gib mir 20 R rated filme`                       |
+| Search        | `db2ai suche in den Filmen nach grace`                 |
 | Actor ↔ films | `db2ai in welchen Filmen spielt Penelope Guiness mit?` |
 
 After DSL changes: `npm run generate:pagila`, save the file, or **Generate tool code**, then reload MCP.
@@ -73,8 +73,8 @@ After DSL changes: `npm run generate:pagila`, save the file, or **Generate tool 
 
 ## MCP server
 
-| Server | Auth | Prerequisite |
-|--------|------|--------------|
+| Server         | Auth                  | Prerequisite                                    |
+| -------------- | --------------------- | ----------------------------------------------- |
 | `db2ai-pagila` | PostgreSQL URL in env | `db:up`, generated tools, `PAGILA_DATABASE_URL` |
 
 ## Demo prompts

@@ -17,29 +17,41 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "db-2-ai-dsl",
-            "aliases": ["db2ai-dsl", "db-2-ai-dsl"],
-            "extensions": [".db2ai"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "db-2-ai-dsl",
-            "scopeName": "source.db-2-ai-dsl",
-            "path": "syntaxes/db-2-ai-dsl.tmLanguage.json"
-        }],
+        "languages": [
+            {
+                "id": "db-2-ai-dsl",
+                "aliases": [
+                    "db2ai-dsl",
+                    "db-2-ai-dsl"
+                ],
+                "extensions": [
+                    ".db2ai"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "db-2-ai-dsl",
+                "scopeName": "source.db-2-ai-dsl",
+                "path": "syntaxes/db-2-ai-dsl.tmLanguage.json"
+            }
+        ],
         "configurationDefaults": {
             "[db-2-ai-dsl]": {
                 "editor.wordBasedSuggestions": "off"
             }
         },
-        "commands": [{
-            "command": "db2ai.generateTools",
-            "title": "Generate tool code (.ts + .mjs + MCP host)"
-        }, {
-            "command": "db2ai.createDemoWorkspace",
-            "title": "db2ai: Create demo workspace (MCP examples)"
-        }]
+        "commands": [
+            {
+                "command": "db2ai.generateTools",
+                "title": "Generate tool code (.ts + .mjs + MCP host)"
+            },
+            {
+                "command": "db2ai.createDemoWorkspace",
+                "title": "db2ai: Create demo workspace (MCP examples)"
+            }
+        ]
     },
     "activationEvents": [
         "onLanguage:db-2-ai-dsl",
@@ -69,6 +81,6 @@
         "esbuild": "~0.25.5"
     },
     "vsce": {
-      "dependencies": false
+        "dependencies": false
     }
 }

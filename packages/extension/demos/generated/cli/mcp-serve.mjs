@@ -146,9 +146,7 @@ function requireInputZodSchema(inputZodByTool, toolName) {
   }
   const schema = inputZodByTool[toolName];
   if (!schema || typeof schema !== "object") {
-    throw new Error(
-      `Generated module inputZodByTool has no schema for tool "${toolName}". Regenerate tool code.`
-    );
+    throw new Error(`Generated module inputZodByTool has no schema for tool "${toolName}". Regenerate tool code.`);
   }
   return schema;
 }

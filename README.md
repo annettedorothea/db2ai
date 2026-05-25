@@ -43,36 +43,36 @@ MCP demos and chat tests: **[`./packages/extension/demos/README.md`](./packages/
 
 ## Project layout
 
-| Path | Role |
-|------|------|
-| `packages/language` | Langium grammar, SQL/schema validation, completion |
-| `packages/cli` | `generate`, smoke tests, MCP bundle |
+| Path                 | Role                                                     |
+| -------------------- | -------------------------------------------------------- |
+| `packages/language`  | Langium grammar, SQL/schema validation, completion       |
+| `packages/cli`       | `generate`, smoke tests, MCP bundle                      |
 | `packages/extension` | VS Code / Cursor extension (VSIX); includes **`demos/`** |
 
 Package notes: [`./packages/language/README.md`](./packages/language/README.md) · [`./packages/cli/README.md`](./packages/cli/README.md)
 
 ## npm scripts (repository root)
 
-| Script | Purpose |
-|--------|---------|
-| `langium:generate` | Regenerate Langium AST/grammar from `packages/language` |
-| `langium:watch` | Watch grammar and regenerate on change |
-| `build` | TypeScript build (workspaces) + `bundle:mcp-runtime` |
-| `build:clean` | `clean` then `build` |
-| `watch` | TypeScript watch on the monorepo build graph |
-| `clean` | Clean all workspace build outputs |
+| Script               | Purpose                                                      |
+| -------------------- | ------------------------------------------------------------ |
+| `langium:generate`   | Regenerate Langium AST/grammar from `packages/language`      |
+| `langium:watch`      | Watch grammar and regenerate on change                       |
+| `build`              | TypeScript build (workspaces) + `bundle:mcp-runtime`         |
+| `build:clean`        | `clean` then `build`                                         |
+| `watch`              | TypeScript watch on the monorepo build graph                 |
+| `clean`              | Clean all workspace build outputs                            |
 | `bundle:mcp-runtime` | Bundle standalone `mcp-serve` into `packages/cli/resources/` |
-| `generate:pagila` | Regenerate Pagila example tools |
-| `test` | Language package unit tests |
-| `test:smoke:pagila` | Smoke-call `listFilms` on generated tools |
-| `test:mcp:pagila` | Start MCP server manually (Pagila tools) |
+| `generate:pagila`    | Regenerate Pagila example tools                              |
+| `test`               | Language package unit tests                                  |
+| `test:smoke:pagila`  | Smoke-call `listFilms` on generated tools                    |
+| `test:mcp:pagila`    | Start MCP server manually (Pagila tools)                     |
 
 ## Launch configurations ([`./.vscode/launch.json`](./.vscode/launch.json))
 
-| Configuration | What it does |
-|---------------|----------------|
-| **Run db2ai Extension** | Extension Development Host with workspace `packages/extension/demos/`. Pre-launch task **Build db-2-ai-dsl**. |
-| **Attach: db2ai Language Server (6010)** | Attach debugger to the language server (port **6010**; api2ai uses 6009). |
+| Configuration                            | What it does                                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Run db2ai Extension**                  | Extension Development Host with workspace `packages/extension/demos/`. Pre-launch task **Build db-2-ai-dsl**. |
+| **Attach: db2ai Language Server (6010)** | Attach debugger to the language server (port **6010**; api2ai uses 6009).                                     |
 
 Pre-launch task **Build db-2-ai-dsl** in [`./.vscode/tasks.json`](./.vscode/tasks.json) (`langium:generate` + `build`).
 

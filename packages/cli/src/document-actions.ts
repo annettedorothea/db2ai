@@ -45,7 +45,7 @@ export async function validateAction(file: string): Promise<void> {
         }
         process.exit(1);
     }
-    const diagnostics = (document.diagnostics ?? []).filter(d => d.severity === 1);
+    const diagnostics = (document.diagnostics ?? []).filter((d) => d.severity === 1);
     if (diagnostics.length > 0) {
         for (const diagnostic of diagnostics) {
             console.error(chalk.red(diagnostic.message));

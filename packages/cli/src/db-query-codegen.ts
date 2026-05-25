@@ -86,7 +86,7 @@ function buildSqlParamDescriptionLines(query: SqlQuery): string[] {
     }
     const sqlText = query.query !== undefined ? String(query.query) : '';
     const ordered = resolveSqlParamsOrdered(
-        entries.map(e => ({ placeholder: String(e.placeholder), label: String(e.label) })),
+        entries.map((e) => ({ placeholder: String(e.placeholder), label: String(e.label) })),
         sqlText
     );
     const lines = ['', 'Parameters:'];
@@ -153,7 +153,7 @@ function resolveSqlTool(query: SqlQuery): ResolvedSqlToolCodegen {
     const sqlText = query.query !== undefined ? String(query.query) : '';
     const entries = query.params?.entries ?? [];
     const params = resolveSqlParamsOrdered(
-        entries.map(e => ({ placeholder: String(e.placeholder), label: String(e.label) })),
+        entries.map((e) => ({ placeholder: String(e.placeholder), label: String(e.label) })),
         sqlText
     );
     return {

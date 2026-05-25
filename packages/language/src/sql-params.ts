@@ -27,10 +27,8 @@ export type ResolvedSqlParam = {
     propertyName: string;
 };
 
-export function resolveSqlParams(
-    entries: Array<{ placeholder: string; label: string }>
-): ResolvedSqlParam[] {
-    return entries.map(entry => {
+export function resolveSqlParams(entries: Array<{ placeholder: string; label: string }>): ResolvedSqlParam[] {
+    return entries.map((entry) => {
         const index = Number.parseInt(entry.placeholder.replace(/^\$/, ''), 10);
         const label = entry.label.trim();
         const propertyName = isValidMcpPropertyName(label) ? label : `param${index}`;
@@ -49,6 +47,6 @@ export function resolveSqlParamsOrdered(
 ): ResolvedSqlParam[] {
     const resolved = resolveSqlParams(entries);
     const order = extractPlaceholderNumbers(sql);
-    const byIndex = new Map(resolved.map(p => [p.index, p]));
-    return order.map(n => byIndex.get(n)).filter((p): p is ResolvedSqlParam => p !== undefined);
+    const byIndex = new Map(resolved.map((p) => [p.index, p]));
+    return order.map((n) => byIndex.get(n)).filter((p): p is ResolvedSqlParam => p !== undefined);
 }

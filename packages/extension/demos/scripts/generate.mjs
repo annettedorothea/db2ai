@@ -20,7 +20,7 @@ function findInstalledExtensionCli() {
     const roots = [
         path.join(home, '.cursor', 'extensions'),
         path.join(home, '.vscode', 'extensions'),
-        path.join(home, '.vscode-insiders', 'extensions'),
+        path.join(home, '.vscode-insiders', 'extensions')
     ];
     const candidates = [];
     for (const root of roots) {
@@ -34,13 +34,11 @@ function findInstalledExtensionCli() {
             if (!entry.name.startsWith('db2ai.vscode-db2ai-')) {
                 continue;
             }
-            candidates.push(
-                path.join(root, entry.name, 'out', 'embed-db2ai', 'cli.cjs')
-            );
+            candidates.push(path.join(root, entry.name, 'out', 'embed-db2ai', 'cli.cjs'));
         }
     }
     candidates.sort();
-    return candidates.filter(candidate => existsSync(candidate)).at(-1);
+    return candidates.filter((candidate) => existsSync(candidate)).at(-1);
 }
 
 function resolveCliSpawn() {
@@ -58,7 +56,7 @@ function resolveCliSpawn() {
     if (installedCli) {
         return {
             scriptPath: installedCli,
-            embedHome: resolveEmbedHome(installedCli),
+            embedHome: resolveEmbedHome(installedCli)
         };
     }
 
@@ -67,7 +65,7 @@ function resolveCliSpawn() {
             'db2ai CLI not found.',
             '• Install the db2ai VS Code/Cursor extension (VSIX), or',
             '• Run from the db2ai monorepo with packages/extension/demos as cwd, or',
-            '• Set DB2AI_CLI to cli.js / cli.cjs.',
+            '• Set DB2AI_CLI to cli.js / cli.cjs.'
         ].join('\n')
     );
 }
@@ -86,5 +84,5 @@ const env = embedHome ? { ...process.env, DB2AI_EMBED_HOME: embedHome } : proces
 execFileSync(process.execPath, [scriptPath, 'generate', dslPath, outPath], {
     stdio: 'inherit',
     cwd: workspaceRoot,
-    env,
+    env
 });

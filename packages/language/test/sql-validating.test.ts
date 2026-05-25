@@ -27,9 +27,7 @@ function parseValidated(input: string) {
 }
 
 function errorMessages(doc: LangiumDocument<Model>): string[] {
-    return (doc.diagnostics ?? [])
-        .filter(d => d.severity === 1)
-        .map(d => d.message);
+    return (doc.diagnostics ?? []).filter((d) => d.severity === 1).map((d) => d.message);
 }
 
 describe('SQL tool validation', () => {
@@ -63,9 +61,7 @@ describe('SQL tool validation', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('params') || m.includes('$1'))).toBe(
-            true
-        );
+        expect(errorMessages(document).some((m) => m.includes('params') || m.includes('$1'))).toBe(true);
     });
 
     test('rejects unused param key', async () => {
@@ -82,7 +78,7 @@ describe('SQL tool validation', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('not used'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('not used'))).toBe(true);
     });
 
     test('rejects duplicate param keys', async () => {
@@ -100,6 +96,6 @@ describe('SQL tool validation', () => {
             }
         `);
 
-        expect(errorMessages(document).some(m => m.includes('Duplicate param'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('Duplicate param'))).toBe(true);
     });
 });

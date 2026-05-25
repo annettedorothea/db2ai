@@ -30,11 +30,11 @@ await esbuild.build({
     sourcemap: false,
     logLevel: 'warning',
     logOverride: {
-        'empty-import-meta': 'silent',
+        'empty-import-meta': 'silent'
     },
     define: {
         __DB2AI_CLI_BUNDLE_VERSION__: JSON.stringify(cliVersion)
-    },
+    }
     // Bundle LSP/jsonrpc deps so cli.cjs works from the terminal (npm run generate:*), not only inside the extension host.
 });
 

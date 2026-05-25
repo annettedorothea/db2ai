@@ -15,16 +15,18 @@ function padZeroes(i) {
     return i.toString().padStart(2, '0');
 }
 
-const plugins = [{
-    name: 'watch-plugin',
-    setup(build) {
-        build.onEnd(result => {
-            if (result.errors.length === 0) {
-                console.log(getTime() + success);
-            }
-        });
-    },
-}];
+const plugins = [
+    {
+        name: 'watch-plugin',
+        setup(build) {
+            build.onEnd((result) => {
+                if (result.errors.length === 0) {
+                    console.log(getTime() + success);
+                }
+            });
+        }
+    }
+];
 
 const ctx = await esbuild.context({
     entryPoints: ['src/extension/main.ts', 'src/language/main.ts'],
