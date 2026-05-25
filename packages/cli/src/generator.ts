@@ -1,9 +1,9 @@
 import type { Model } from 'db-2-ai-dsl-language';
 import { DEFAULT_MAX_LIMIT_CAP, DEFAULT_PAGE_LIMIT } from 'db-2-ai-dsl-language';
+import { extractDestinationAndName } from '@core2ai/codegen';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as url from 'node:url';
-import { extractDestinationAndName } from './util.js';
 import {
     buildInputSchemaByTool,
     quotePostgresIdent,
