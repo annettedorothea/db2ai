@@ -9,6 +9,7 @@
     },
     "files": [
         "bin",
+        "e2e",
         "out",
         "resources",
         "smoke",

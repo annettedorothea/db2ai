@@ -15,7 +15,7 @@ node ./packages/cli/bin/cli.js smoke-generated <path-to-*-tools.mjs> <toolName> 
 
 Prefer root `package.json` scripts: `generate:pagila`, `test:smoke:pagila`, `test:mcp:pagila`.
 
-`npm run check` includes a Pagila direct-invoke integration test. It reuses a healthy `db2ai-pagila` Docker container when available; otherwise it starts one via the demo Docker Compose setup. Newly started containers default to `PAGILA_HOST_PORT=55432` unless the variable is set explicitly.
+`npm test` includes a Pagila direct-invoke integration test and the MCP stdio smoke. Both reuse a healthy `db2ai-pagila` Docker container when available; otherwise they start one via the demo Docker Compose setup. Newly started containers default to `PAGILA_HOST_PORT=55432` unless the variable is set explicitly. `npm run check` intentionally skips tests so pre-commit stays fast.
 
 ## Database env (DSL)
 
@@ -53,7 +53,9 @@ Root `npm run bundle:mcp-runtime` bundles `core2ai/packages/mcp-host/src/mcp-sta
 - [`src/db-query-codegen.ts`](./src/db-query-codegen.ts) — SQL / table tool schemas
 - [`src/generator/`](./src/generator/) — generated module renderers and project bootstrap
 - [`smoke/smoke.ts`](./smoke/smoke.ts) — smoke runner
+- [`e2e/mcp-smoke-pagila.ts`](./e2e/mcp-smoke-pagila.ts) — MCP stdio end-to-end smoke runner for Pagila
 - [`test/integration/`](./test/integration/) — Vitest integration tests, including Pagila direct invoke
+- [`test/support/`](./test/support/) — shared test helpers, including Pagila Docker setup
 - [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs) — bundled MCP host
 
 ---

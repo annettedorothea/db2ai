@@ -16,16 +16,18 @@
         "langium:generate": "npm run --workspace packages/language langium:generate",
         "langium:watch": "npm run --workspace packages/language langium:watch",
         "generate:pagila": "npm run generate:pagila --prefix ./packages/extension/demos",
-        "test": "npm run --workspace packages/language test && npm run --workspace packages/cli test",
+        "test": "npm run langium:generate && npm run build && npm run test:unit && npm run test:e2e",
+        "test:unit": "npm run --workspace packages/language test && npm run --workspace packages/cli test",
+        "test:e2e": "npm run test:mcp:pagila",
         "test:coverage": "npm run --workspace packages/language test:coverage && npm run --workspace packages/cli test:coverage",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "typecheck": "npm --prefix ../core2ai run typecheck && tsc -b tsconfig.build.json --pretty false",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "check": "npm run format:check && npm run typecheck && npm run lint && npm run test",
+        "check": "npm run format:check && npm run typecheck && npm run lint",
         "test:smoke:pagila": "node ./packages/cli/bin/cli.js smoke-generated ./packages/extension/demos/generated/tools/pagila-tools.mjs listFilms",
-        "test:mcp:pagila": "node ./packages/extension/demos/generated/cli/mcp-serve.mjs ./packages/extension/demos/generated/tools/pagila-tools.mjs"
+        "test:mcp:pagila": "node ./packages/cli/out/e2e/mcp-smoke-pagila.js"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

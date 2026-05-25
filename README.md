@@ -63,9 +63,9 @@ Package notes: [`./packages/language/README.md`](./packages/language/README.md) 
 | `clean`              | Clean all workspace build outputs                            |
 | `bundle:mcp-runtime` | Bundle standalone `mcp-serve` into `packages/cli/resources/` |
 | `generate:pagila`    | Regenerate Pagila example tools                              |
-| `test`               | Language package unit tests                                  |
+| `test`               | All automated tests, including Pagila MCP stdio smoke        |
 | `test:smoke:pagila`  | Smoke-call `listFilms` on generated tools                    |
-| `test:mcp:pagila`    | Start MCP server manually (Pagila tools)                     |
+| `test:mcp:pagila`    | Smoke Pagila through generated MCP stdio host                |
 
 ## Launch configurations ([`./.vscode/launch.json`](./.vscode/launch.json))
 
