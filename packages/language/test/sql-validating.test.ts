@@ -17,7 +17,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
     clearSchemaCache();
-    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/pagila';
+    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
 });
 
 function parseValidated(input: string) {

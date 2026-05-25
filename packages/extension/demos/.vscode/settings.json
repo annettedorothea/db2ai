@@ -6,7 +6,7 @@
             "server": "localhost",
             "driver": "PostgreSQL",
             "name": "Pagila",
-            "connectString": "postgresql://postgres:postgres@localhost:5432/pagila"
+            "connectString": "postgresql://postgres:postgres@localhost:55432/pagila"
         }
     ]
 }

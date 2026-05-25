@@ -11,6 +11,7 @@
         "bin",
         "out",
         "resources",
+        "smoke",
         "src"
     ],
     "bin": {
@@ -19,7 +20,9 @@
     "scripts": {
         "clean": "shx rm -fr *.tsbuildinfo out",
         "build": "echo 'No build step'",
-        "build:clean": "npm run clean && npm run build"
+        "build:clean": "npm run clean && npm run build",
+        "test": "vitest run",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@core2ai/codegen": "file:../../../core2ai/packages/codegen",
@@ -31,5 +34,8 @@
         "pg": "~8.16.0",
         "prettier": "^3.8.3",
         "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "vitest": "~3.1.3"
     }
 }

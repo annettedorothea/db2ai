@@ -17,3 +17,4 @@ packages/extension/demos/.env.local
 packages/extension/demos/node_modules/
 packages/extension/demos/tmp/
 packages/extension/demos/.pagila-src/
+packages/cli/tmp/

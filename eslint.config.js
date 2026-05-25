@@ -28,6 +28,7 @@ export default [
             '**/syntaxes/**',
             'packages/cli/resources/mcp-serve-emitted.mjs',
             '**/generated/cli/mcp-serve.mjs',
+            'packages/cli/tmp/**',
             'packages/extension/demos/generated/**',
             'packages/extension/demos/tmp/**',
             'packages/extension/demos/.pagila-src/**'

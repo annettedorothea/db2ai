@@ -6,10 +6,10 @@ import * as url from 'node:url';
 import { generateAction } from './generate-command.js';
 import { loadLocalEnvFiles } from './env.js';
 import { parseAction, validateAction } from './document-actions.js';
-import { runSmokeGenerated } from './smoke.js';
+import { runSmokeGenerated } from '../smoke/smoke.js';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
-const packagePath = path.resolve(__dirname, '..', 'package.json');
+const packagePath = path.resolve(__dirname, '..', '..', 'package.json');
 const packageContent = await fs.readFile(packagePath, 'utf-8');
 
 export const smokeGeneratedAction = async (

@@ -69,7 +69,7 @@ export const generatedTools = [
         title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
         description:
             'list films with a given MPAA age rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): MPAA rating (G, PG, PG-13, R, or NC-17)\n- param2 ($2): max rows to return\n\nExample: MPAA rating PG-13, max 20 rows',
-        sqlText: 'SELECT film_id, title, rating FROM film WHERE rating = $1::mpaa_rating ORDER BY title LIMIT $2',
+        sqlText: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
         params: [
             {
                 placeholder: '$1',
@@ -457,7 +457,7 @@ export async function invokeTool(toolName, options = {}, hostContext) {
             }
             case 'filmsByMpaaRating': {
                 const result = await client.query({
-                    text: 'SELECT film_id, title, rating FROM film WHERE rating = $1::mpaa_rating ORDER BY title LIMIT $2',
+                    text: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
                     values: [
                         options['param1'] !== undefined && options['param1'] !== null
                             ? String(options['param1'])

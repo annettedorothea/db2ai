@@ -24,7 +24,7 @@ Prerequisites: **Node.js 20+**, **Docker Desktop** (running), **db2ai** extensio
 1. Open **this folder** as the workspace (so `.cursor/mcp.json` applies).
 2. `npm install`
 3. Start Pagila: `npm run db:up` (first start can take about a minute)
-4. Set `PAGILA_DATABASE_URL` in [`.env`](./.env) (default: `postgresql://postgres:postgres@localhost:5432/pagila`; see [`.env.example`](./.env.example))
+4. Set `PAGILA_DATABASE_URL` in [`.env`](./.env) (default: `postgresql://postgres:postgres@localhost:55432/pagila`; see [`.env.example`](./.env.example))
 5. Generate tool code: `npm run generate:pagila`, or save [`./pagila.db2ai`](./pagila.db2ai), or Command Palette → **Generate tool code**
 6. **Cursor:** Tools & MCP → enable **`db2ai-pagila`** → reload MCP / **Developer: Reload Window**
 
@@ -46,7 +46,7 @@ Image: [synthesizedio/pagila:1.2](https://hub.docker.com/r/synthesizedio/pagila)
 
 ### Troubleshooting
 
-- **Port 5432 in use:** `PAGILA_HOST_PORT=5433 npm run db:up` and set `PAGILA_DATABASE_URL` to `…@localhost:5433/pagila` in `.env`.
+- **Port 55432 in use:** `PAGILA_HOST_PORT=55433 npm run db:up` and set `PAGILA_DATABASE_URL` to `…@localhost:55433/pagila` in `.env`.
 - **Timeout on first start:** healthcheck allows ~60s start period; check `docker compose logs pagila`.
 - **MCP errors:** ensure `npm run db:up` succeeded and this folder is the workspace root.
 

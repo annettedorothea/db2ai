@@ -35,7 +35,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
     clearSchemaCache();
-    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/pagila';
+    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
 });
 
 function tableLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
@@ -91,7 +91,7 @@ describe('Completion for table name', () => {
         fs.mkdirSync(envDir, { recursive: true });
         fs.writeFileSync(
             path.join(envDir, '.env'),
-            'PAGILA_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pagila\n'
+            'PAGILA_DATABASE_URL=postgresql://postgres:postgres@localhost:55432/pagila\n'
         );
         delete process.env.PAGILA_DATABASE_URL;
 

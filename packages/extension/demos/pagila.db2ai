@@ -66,7 +66,7 @@ SELECT * FROM inventory {
 SQL {
     toolName: "filmsByMpaaRating"
     intent: "list films with a given MPAA age rating"
-    query: "SELECT film_id, title, rating FROM film WHERE rating = $1::mpaa_rating ORDER BY title LIMIT $2"
+    query: "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2"
     summary: "Films by MPAA rating (G, PG, PG-13, R, NC-17)"
     example: "MPAA rating PG-13, max 20 rows"
     params: {

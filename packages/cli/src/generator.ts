@@ -48,6 +48,13 @@ function createBootstrapConfig(): ProjectBootstrapConfig {
             zod: '^4.4.3',
             pg: '^8.16.0'
         },
+        resolvePackageRoot(dir) {
+            const oneUp = path.resolve(dir, '..');
+            if (fs.existsSync(path.join(oneUp, 'package.json'))) {
+                return oneUp;
+            }
+            return path.resolve(dir, '..', '..');
+        },
         bundledMcpMissingMessage(src) {
             return `Bundled MCP host missing (${src}). Run npm run bundle:mcp-runtime from the db2ai workspace root.`;
         },

@@ -67,7 +67,7 @@ Weitere Skripte: `db:down`, `db:reset`, `db:psql` (alles über `docker compose` 
 flowchart LR
   dev[Entwickler] -->|"npm run db:up"| compose[docker compose]
   compose --> img["synthesizedio/pagila:1.2"]
-  img -->|":5432"| host[localhost:5432/pagila]
+  img -->|":55432"| host[localhost:55432/pagila]
   host --> mcp[db2ai-pagila MCP]
 ```
 
@@ -86,7 +86,7 @@ services:
             POSTGRES_PASSWORD: postgres
             POSTGRES_DB: pagila
         ports:
-            - '${PAGILA_HOST_PORT:-5432}:5432'
+            - '${PAGILA_HOST_PORT:-55432}:5432'
         healthcheck:
             test: ['CMD-SHELL', 'pg_isready -U postgres -d pagila']
             interval: 5s
@@ -102,7 +102,7 @@ services:
 
 - Prüft `docker` / `docker compose`
 - Wartet auf `healthy` oder `pg_isready` via `docker compose exec`
-- Klare Fehler: Docker Desktop nicht gestartet, Port 5432 belegt
+- Klare Fehler: Docker Desktop nicht gestartet, Port 55432 belegt
 
 ---
 
@@ -137,13 +137,13 @@ Getting started:
 
 Troubleshooting:
 
-- Port 5432 belegt → `PAGILA_HOST_PORT=5433` + `.env` anpassen
+- Port 55432 belegt → `PAGILA_HOST_PORT=55433` + `.env` anpassen
 - Erster Start langsam (~1 Min.)
 - Image-Quelle: [synthesizedio/pagila](https://hub.docker.com/r/synthesizedio/pagila) Tag `1.2`
 
 ### [packages/extension/demos/.env.example](packages/extension/demos/.env.example) (neu)
 
-`PAGILA_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pagila`
+`PAGILA_DATABASE_URL=postgresql://postgres:postgres@localhost:55432/pagila`
 
 ---
 
@@ -171,4 +171,4 @@ Cursor: `db2ai gib mir 5 filme`
 
 1. Keine Datei/Skript/Doku mehr für lokales PostgreSQL oder `setup-pagila.sh`.
 2. `npm run db:up` allein reicht auf deinem Mac (Docker Desktop 4.26.1).
-3. MCP-Tools verbinden zu `localhost:5432/pagila` mit Daten.
+3. MCP-Tools verbinden zu `localhost:55432/pagila` mit Daten.
