@@ -7,7 +7,7 @@ alwaysApply: true
 
 After code changes in this repository, run:
 
-`npm run langium:generate && npm run build`
+`npm run langium:generate && npm run build && npm run check`
 
 Exception: If all changed files are inside `packages/extension/demos/`, skip these commands.
 

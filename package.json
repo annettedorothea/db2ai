@@ -7,6 +7,8 @@
     "private": true,
     "scripts": {
         "clean": "npm run clean --workspaces",
+        "postinstall": "node scripts/install-git-hooks.mjs",
+        "install:hooks": "node scripts/install-git-hooks.mjs",
         "watch": "tsc -b tsconfig.build.json --watch",
         "build": "npm --prefix ../core2ai run build && tsc -b tsconfig.build.json && npm run bundle:mcp-runtime && npm run build --workspaces",
         "bundle:mcp-runtime": "esbuild ../core2ai/packages/mcp-host/src/mcp-standalone-entry.ts --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=packages/cli/resources/mcp-serve-emitted.mjs --external:@modelcontextprotocol/sdk --external:zod --external:pg",
@@ -17,15 +19,22 @@
         "test": "npm run --workspace packages/language test",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
+        "typecheck": "npm --prefix ../core2ai run typecheck && tsc -b tsconfig.build.json --pretty false",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "check": "npm run format:check && npm run typecheck && npm run lint && npm run test",
         "test:smoke:pagila": "node ./packages/cli/bin/cli.js smoke-generated ./packages/extension/demos/generated/tools/pagila-tools.mjs listFilms",
         "test:mcp:pagila": "node ./packages/extension/demos/generated/cli/mcp-serve.mjs ./packages/extension/demos/generated/tools/pagila-tools.mjs"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@types/node": "~20.17.48",
         "esbuild": "^0.25.12",
+        "eslint": "^10.4.0",
         "prettier": "^3.8.3",
         "shx": "~0.4.0",
-        "typescript": "~5.8.3"
+        "typescript": "~5.8.3",
+        "typescript-eslint": "^8.59.4"
     },
     "workspaces": [
         "packages/language",

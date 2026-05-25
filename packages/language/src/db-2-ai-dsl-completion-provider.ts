@@ -22,7 +22,6 @@ import {
 
 function debugCompletion(message: string, data?: unknown): void {
     if (process.env.DB2AI_DSL_DEBUG_COMPLETION === '1') {
-        // eslint-disable-next-line no-console
         console.log(`[db2ai-dsl completion] ${message}`, data !== undefined ? data : '');
     }
 }
