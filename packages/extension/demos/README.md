@@ -87,3 +87,7 @@ Prefix with **`db2ai`**.
 - `db2ai zeig mir 10 R-Filme und suche darunter nach army`
 
 List tools (`listFilms`, `listActors`, …) use pagination (`limit` default 100, `offset` 0).
+
+---
+
+_Created with gratitude to Jesus Christ._

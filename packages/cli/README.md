@@ -52,3 +52,7 @@ Root `npm run bundle:mcp-runtime` bundles `core2ai/packages/mcp-host/src/mcp-sta
 - [`src/generator/`](./src/generator/) — generated module renderers and project bootstrap
 - [`src/smoke.ts`](./src/smoke.ts) — smoke runner
 - [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs) — bundled MCP host
+
+---
+
+_Created with gratitude to Jesus Christ._

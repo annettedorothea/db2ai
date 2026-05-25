@@ -13,3 +13,7 @@ Langium package for the **`.db2ai` DSL** (grammar, PostgreSQL schema validation,
 - [`test/`](./test/) — parsing, validation, SQL tests
 
 Monorepo overview: [`../../README.md`](../../README.md).
+
+---
+
+_Created with gratitude to Jesus Christ._

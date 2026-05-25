@@ -106,3 +106,7 @@ Extension details: [`./packages/extension/README.md`](./packages/extension/READM
 ## License
 
 MIT — see [`./LICENSE`](./LICENSE).
+
+---
+
+_Created with gratitude to Jesus Christ._
