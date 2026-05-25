@@ -16,6 +16,6 @@
             "path": "../language/tsconfig.src.json"
         }
     ],
-    "include": ["src/**/*.ts", "smoke/**/*.ts", "e2e/**/*.ts", "test/**/*.ts"],
+    "include": ["src/**/*.ts", "test/**/*.ts"],
     "exclude": ["src/vscode-bundle-cli-entry.ts"]
 }

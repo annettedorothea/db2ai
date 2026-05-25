@@ -27,7 +27,7 @@
         "lint:fix": "eslint . --fix",
         "check": "npm run format:check && npm run typecheck && npm run lint",
         "test:smoke:pagila": "node ./packages/cli/bin/cli.js smoke-generated ./packages/extension/demos/generated/tools/pagila-tools.mjs listFilms",
-        "test:mcp:pagila": "node ./packages/cli/out/e2e/mcp-smoke-pagila.js"
+        "test:mcp:pagila": "node ./packages/cli/out/test/e2e/mcp-smoke-pagila.js"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

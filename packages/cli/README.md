@@ -52,8 +52,8 @@ Root `npm run bundle:mcp-runtime` bundles `core2ai/packages/mcp-host/src/mcp-sta
 - [`src/generator.ts`](./src/generator.ts) — code generation
 - [`src/db-query-codegen.ts`](./src/db-query-codegen.ts) — SQL / table tool schemas
 - [`src/generator/`](./src/generator/) — generated module renderers and project bootstrap
-- [`smoke/smoke.ts`](./smoke/smoke.ts) — smoke runner
-- [`e2e/mcp-smoke-pagila.ts`](./e2e/mcp-smoke-pagila.ts) — MCP stdio end-to-end smoke runner for Pagila
+- [`test/smoke/smoke.ts`](./test/smoke/smoke.ts) — smoke runner
+- [`test/e2e/mcp-smoke-pagila.ts`](./test/e2e/mcp-smoke-pagila.ts) — MCP stdio end-to-end smoke runner for Pagila
 - [`test/integration/`](./test/integration/) — Vitest integration tests, including Pagila direct invoke
 - [`test/support/`](./test/support/) — shared test helpers, including Pagila Docker setup
 - [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs) — bundled MCP host

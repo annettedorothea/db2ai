@@ -1,12 +1,12 @@
+import { runMcpStdioSmoke } from '@core2ai/mcp-host';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateAction } from '../src/generate-command.js';
-import { runMcpStdioSmoke } from './mcp-stdio-smoke.js';
-import { ensurePagilaDocker } from '../test/support/pagila-docker.js';
+import { generateAction } from '../../src/generate-command.js';
+import { ensurePagilaDocker } from '../support/pagila-docker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const cliRoot = path.resolve(__dirname, '../..');
+const cliRoot = path.resolve(__dirname, '../../..');
 const workspaceRoot = path.resolve(cliRoot, '../..');
 const demosRoot = path.join(workspaceRoot, 'packages/extension/demos');
 const pagilaSourcePath = path.join(demosRoot, 'pagila.db2ai');

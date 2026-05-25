@@ -9,11 +9,10 @@
     },
     "files": [
         "bin",
-        "e2e",
         "out",
         "resources",
-        "smoke",
-        "src"
+        "src",
+        "test"
     ],
     "bin": {
         "db-2-ai-dsl-cli": "./bin/cli.js"
