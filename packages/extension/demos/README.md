@@ -9,8 +9,8 @@ Use the **db2ai** extension (VSIX or Extension Development Host). This folder is
 1. Install the **db2ai** VSIX.
 2. Command Palette → **db2ai: Create demo workspace (MCP examples)** → choose an empty folder.
 3. In that folder: `npm install` → copy [`.env.example`](./.env.example) to `.env`.
-4. PostgreSQL demo: `npm run db:up` → `npm run generate:pagila`; MySQL demo: `npm run db:sakila:up` → `npm run generate:sakila`.
-5. Open the folder as workspace → enable MCP server **`db2ai-pagila`** or **`db2ai-sakila`** in `.cursor/mcp.json`.
+4. Both demos: `npm run db:up:all` → `npm run generate:all`. PostgreSQL only: `npm run db:pagila:up` → `npm run generate:pagila`; MySQL only: `npm run db:sakila:up` → `npm run generate:sakila`.
+5. Open the folder as workspace → Cursor Settings → **Tools & MCP** → enable MCP server **`db2ai-pagila`** or **`db2ai-sakila`**.
 
 ## What you can do here
 
@@ -25,23 +25,32 @@ Prerequisites: **Node.js 20+**, **Docker Desktop** (running), **db2ai** extensio
 1. Open **this folder** as the workspace (so `.cursor/mcp.json` applies).
 2. `npm install`
 3. Copy [`.env.example`](./.env.example) to `.env`.
-4. Start Pagila: `npm run db:up` (first start can take about a minute), or start Sakila: `npm run db:sakila:up`.
-5. Generate tool code: `npm run generate:pagila` / `npm run generate:sakila`, or save a `.db2ai` file, or Command Palette → **Generate tool code**.
+4. Start both demos: `npm run db:up:all` (first start can take about a minute), or start one demo with `npm run db:pagila:up` / `npm run db:sakila:up`.
+5. Generate tool code: `npm run generate:all`, `npm run generate:pagila`, or `npm run generate:sakila`; alternatively save a `.db2ai` file or use Command Palette → **Generate tool code**.
 6. **Cursor:** Tools & MCP → enable **`db2ai-pagila`** or **`db2ai-sakila`** → reload MCP / **Developer: Reload Window**.
+
+### Common scripts
+
+| Script         | Action                                  |
+| -------------- | --------------------------------------- |
+| `db:up:all`    | Start both Pagila and Sakila containers |
+| `db:down`      | Stop all demo containers                |
+| `generate:all` | Generate Pagila and Sakila tools        |
 
 ### Pagila in Docker
 
 ```bash
 # Docker Desktop must be running
-npm run db:up
+npm run db:pagila:up
 ```
 
-| Script     | Action                                                                   |
-| ---------- | ------------------------------------------------------------------------ |
-| `db:up`    | Start container (`docker compose up -d --wait` until healthcheck passes) |
-| `db:down`  | Stop container                                                           |
-| `db:reset` | Remove container/volumes and start fresh                                 |
-| `db:psql`  | Interactive `psql` inside the container                                  |
+| Script              | Action                                                                   |
+| ------------------- | ------------------------------------------------------------------------ |
+| `db:pagila:up`      | Start container (`docker compose up -d --wait` until healthcheck passes) |
+| `db:pagila:reset`   | Remove container/volumes and start fresh                                 |
+| `db:pagila:psql`    | Interactive `psql` inside the container                                  |
+| `generate:pagila`   | Generate `generated/tools/pagila-tools.*` from DSL                       |
+| `db:up`, `db:reset` | Backward-compatible Pagila aliases                                       |
 
 Image: [synthesizedio/pagila:1.2](https://hub.docker.com/r/synthesizedio/pagila) (PostgreSQL with Pagila sample data). Upstream project: [devrimgunduz/pagila](https://github.com/devrimgunduz/pagila).
 
@@ -57,17 +66,17 @@ npm run generate:sakila
 | ----------------- | -------------------------------------------------- |
 | `db:sakila:up`    | Start Sakila MySQL container until healthy         |
 | `db:sakila:reset` | Remove the Sakila container and start fresh        |
-| `db:mysql`        | Interactive `mysql` shell inside the container     |
+| `db:sakila:mysql` | Interactive `mysql` shell inside the container     |
 | `generate:sakila` | Generate `generated/tools/sakila-tools.*` from DSL |
 
 Image: [sakiladb/mysql:8](https://hub.docker.com/r/sakiladb/mysql) (MySQL with Sakila sample data).
 
 ### Troubleshooting
 
-- **Port 55432 in use:** `PAGILA_HOST_PORT=55433 npm run db:up` and set `PAGILA_DATABASE_URL` to `…@localhost:55433/pagila` in `.env`.
+- **Port 55432 in use:** `PAGILA_HOST_PORT=55433 npm run db:pagila:up` and set `PAGILA_DATABASE_URL` to `…@localhost:55433/pagila` in `.env`.
 - **Port 53306 in use:** `SAKILA_HOST_PORT=53307 npm run db:sakila:up` and set `SAKILA_DATABASE_URL` to `…@localhost:53307/sakila` in `.env`.
 - **Timeout on first start:** healthcheck allows ~60s start period; check `docker compose logs pagila` or `docker compose logs sakila`.
-- **MCP errors:** ensure the matching `db:*:up` and `generate:*` scripts succeeded and this folder is the workspace root.
+- **MCP errors:** ensure the matching `db:*:up` / `generate:*` scripts succeeded and this folder is the workspace root.
 
 ## Test in Cursor
 
@@ -94,7 +103,7 @@ After DSL changes: run the matching `generate:*` script, save the file, or **Gen
 
 | Server         | Auth                  | Prerequisite                                           |
 | -------------- | --------------------- | ------------------------------------------------------ |
-| `db2ai-pagila` | PostgreSQL URL in env | `db:up`, generated tools, `PAGILA_DATABASE_URL`        |
+| `db2ai-pagila` | PostgreSQL URL in env | `db:pagila:up`, generated tools, `PAGILA_DATABASE_URL` |
 | `db2ai-sakila` | MySQL URL in env      | `db:sakila:up`, generated tools, `SAKILA_DATABASE_URL` |
 
 ## Demo prompts

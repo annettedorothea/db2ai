@@ -14,6 +14,8 @@
         "build": "tsc -b tsconfig.build.json && npm run bundle:mcp-runtime && npm run build --workspaces",
         "bundle:mcp-runtime": "esbuild @core2ai/core/mcp-host/standalone-entry --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=packages/cli/resources/mcp-serve-emitted.mjs --external:@modelcontextprotocol/sdk --external:zod --external:pg",
         "build:clean": "npm run clean && npm run build",
+        "extension:vsix": "npm run --workspace packages/extension extension:vsix",
+        "extension:release:vsix": "NAME=$(node -p \"require('./packages/extension/package.json').name\") && VERSION=$(node -p \"require('./packages/extension/package.json').version\") && gh release create \"${NAME}-${VERSION}\" \"packages/extension/${NAME}-${VERSION}.vsix\" --title \"${NAME} ${VERSION}\" --notes \"Internal test build of the db2ai Cursor/VS Code extension.\" --prerelease",
         "langium:generate": "npm run --workspace packages/language langium:generate",
         "langium:watch": "npm run --workspace packages/language langium:watch",
         "generate:pagila": "npm run generate:pagila --prefix ./packages/extension/demos",

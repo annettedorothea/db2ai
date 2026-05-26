@@ -3,19 +3,24 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "db:up": "docker compose up -d --wait pagila",
+        "db:pagila:up": "docker compose up -d --wait pagila",
         "db:sakila:up": "docker compose up -d --wait sakila",
+        "db:up:all": "docker compose up -d --wait pagila sakila",
         "db:down": "docker compose down",
-        "db:reset": "docker compose down -v --remove-orphans; docker rm -f db2ai-pagila 2>/dev/null || true; npm run db:up",
+        "db:pagila:reset": "docker rm -f db2ai-pagila 2>/dev/null || true; npm run db:pagila:up",
         "db:sakila:reset": "docker rm -f db2ai-sakila 2>/dev/null || true; npm run db:sakila:up",
-        "db:psql": "docker compose exec pagila psql -U postgres -d pagila",
-        "db:mysql": "docker compose exec sakila mysql -u sakila -pp_ssW0rd sakila",
+        "db:pagila:psql": "docker compose exec pagila psql -U postgres -d pagila",
+        "db:sakila:mysql": "docker compose exec sakila mysql -u sakila -pp_ssW0rd sakila",
+        "db:up": "npm run db:pagila:up",
+        "db:reset": "npm run db:pagila:reset",
+        "db:psql": "npm run db:pagila:psql",
+        "db:mysql": "npm run db:sakila:mysql",
         "generate:pagila": "node ./scripts/generate.mjs pagila.db2ai generated/tools/pagila-tools.ts",
-        "generate:sakila": "node ./scripts/generate.mjs sakila.db2ai generated/tools/sakila-tools.ts"
+        "generate:sakila": "node ./scripts/generate.mjs sakila.db2ai generated/tools/sakila-tools.ts",
+        "generate:all": "npm run generate:pagila && npm run generate:sakila"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
-        "mysql2": "^3.22.3",
         "mysql2": "^3.22.3",
         "pg": "~8.16.0",
         "zod": "^4.4.3"
