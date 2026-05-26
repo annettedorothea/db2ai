@@ -38,6 +38,26 @@ Connection strings belong in `.env` / MCP host config, not in the DSL.
 
 See the generated **`README.md`** in your demo folder for prompts and Docker scripts.
 
+## Share a VSIX build
+
+From the repository root:
+
+```bash
+npm run release:vsix
+```
+
+This runs tests, checks, packages the VSIX, creates a GitHub prerelease, and uploads the matching `.vsix` as a release asset. The release/tag name uses the extension `name` and `version` from [`package.json`](./package.json), for example `vscode-db2ai-0.0.1`. It requires the GitHub CLI (`gh`) to be installed and authenticated.
+
+`db2ai` release verification runs MCP smoke tests against the Pagila and Sakila demo databases, so Docker Desktop must be running.
+
+For a future version, bump the extension package first from the repository root:
+
+```bash
+npm run version:patch
+```
+
+Use `version:minor` or `version:major` when appropriate, then commit the version change before publishing.
+
 ## License
 
 BUSL-1.1 - Copyright (c) 2026 Annette Pohl. Full license text is included in the VSIX (`LICENSE` file, copied from the db2ai repository root when you run `npm run extension:vsix`).

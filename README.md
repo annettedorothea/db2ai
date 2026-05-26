@@ -88,7 +88,7 @@ Pre-launch task **Build db-2-ai-dsl** in [`./.vscode/tasks.json`](./.vscode/task
 
 ## Extension (VSIX)
 
-Build (maintainers), in **`packages/extension/`**:
+Build (maintainers), from the repository root:
 
 ```bash
 npm run extension:vsix
@@ -96,7 +96,25 @@ npm run extension:vsix
 
 Output: `./packages/extension/vscode-db2ai-<version>.vsix` (**version** from [`./packages/extension/package.json`](./packages/extension/package.json); gitignored via `*.vsix`).
 
-From repo root: `npm run extension:vsix -w packages/extension`
+### Release to GitHub
+
+For a full prerelease from the repository root:
+
+```bash
+npm run release:vsix
+```
+
+This runs `npm run test`, `npm run check`, packages the VSIX, then creates a GitHub prerelease and uploads the matching VSIX asset. The release/tag name is derived from the extension package `name` and `version`, for example `vscode-db2ai-0.0.1`.
+
+`db2ai` release verification runs MCP smoke tests against the Pagila and Sakila demo databases, so Docker Desktop must be running.
+
+For a future version, bump the extension package first:
+
+```bash
+npm run version:patch
+```
+
+Use `version:minor` or `version:major` when appropriate. Commit the version change before publishing the release.
 
 ### Install in Cursor / VS Code (test)
 
