@@ -44,7 +44,7 @@ node ./generated/cli/mcp-serve.mjs ./generated/tools/<name>-tools.mjs --auth-env
 
 When `requiresAuth` is `true` in generated tools, `--auth-env` is required at startup. JWT payload is decoded into `hostContext.jwt` when the credential looks like a JWT.
 
-Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host/standalone-entry` → [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs).
+Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host/standalone-entry` into [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs).
 
 ## Layout
 
@@ -61,4 +61,4 @@ Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host/standalone-ent
 
 ---
 
-_Created with gratitude to Jesus Christ._
+#Col3:23

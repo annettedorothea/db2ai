@@ -2,7 +2,7 @@
 
 Editor support for the **`.db2ai` DSL**: syntax highlighting, validation, schema-aware completion, and **generate on save** (TypeScript/ESM tool modules + MCP host).
 
-The full project (DSL, CLI, demos) lives in the [db2ai](https://github.com/annettodorothea/db2ai) repository. Sibling: [api2ai](https://github.com/annettodorothea/api2ai) (OpenAPI → MCP).
+The full project (DSL, CLI, demos) lives in the [db2ai](https://github.com/annettodorothea/db2ai) repository. Sibling: [api2ai](https://github.com/annettodorothea/api2ai) (OpenAPI to MCP).
 
 ## Requirements
 
@@ -22,10 +22,19 @@ Connection strings belong in `.env` / MCP host config, not in the DSL.
 ## MCP demos without cloning the repo
 
 1. Install this extension (VSIX).
-2. Command Palette → **db2ai: Create demo workspace (MCP examples)** → pick an empty folder.
-3. In that folder: `npm install` → copy `.env.example` to `.env` → `npm run db:up` / `npm run db:sakila:up` → `npm run generate:pagila` / `npm run generate:sakila` (or save the `.db2ai` files / **Generate tool code**).
-4. **File → Open Folder** on the demo workspace.
-5. Cursor/VS Code: enable MCP server **`db2ai-pagila`** or **`db2ai-sakila`** in `.cursor/mcp.json` (Settings → Tools & MCP).
+2. Create a demo workspace:
+    - Open the Command Palette.
+    - Run **db2ai: Create demo workspace (MCP examples)**.
+    - Pick an empty folder.
+3. Prepare the demo folder:
+    - Run `npm install`.
+    - Copy `.env.example` to `.env`.
+    - Start databases with `npm run db:up:all`.
+    - Generate tools with `npm run generate:all`.
+4. Open and enable:
+    - Open the demo folder as the workspace.
+    - In Cursor Settings, open **Tools & MCP**.
+    - Enable **`db2ai-pagila`** or **`db2ai-sakila`**.
 
 See the generated **`README.md`** in your demo folder for prompts and Docker scripts.
 
@@ -35,4 +44,4 @@ BUSL-1.1 - Copyright (c) 2026 Annette Pohl. Full license text is included in the
 
 ---
 
-_Created with gratitude to Jesus Christ._
+#Col3:23

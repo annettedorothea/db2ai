@@ -2,7 +2,7 @@
 
 **db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares tables or SQL plus AI-facing metadata (intent, examples, tool names, optional column docs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL/MySQL schemas).
 
-Sibling project: [api2ai](https://github.com/annettodorothea/api2ai) (OpenAPI → MCP).
+Sibling project: [api2ai](https://github.com/annettodorothea/api2ai) (OpenAPI to MCP).
 
 Keywords: **DSL** · **SQL** · **PostgreSQL** · **MySQL** · **code generator** · **MCP** · **Langium**
 
@@ -27,18 +27,25 @@ Use `database mysql env "SAKILA_DATABASE_URL"` for MySQL; omitted dialect remain
 
 Bundled demos and walkthrough: **[`./packages/extension/demos/`](./packages/extension/demos/)** — see **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**. Start PostgreSQL: `cd packages/extension/demos && npm run db:up`; start MySQL: `npm run db:sakila:up`.
 
-**Without cloning the repo:** install the VSIX, then Command Palette → **db2ai: Create demo workspace (MCP examples)**. Details: [`./packages/extension/README.md`](./packages/extension/README.md).
+**Without cloning the repo:** install the VSIX, then run **db2ai: Create demo workspace (MCP examples)** from the Command Palette. Details: [`./packages/extension/README.md`](./packages/extension/README.md).
 
 ## Getting started (DSL / monorepo)
 
 Prerequisite: **Node.js 20+**.
 
-- Clone the repo
-- Repository root: `npm install` → `npm run langium:generate` → `npm run build`
-- Open the **`db2ai`** repository root in Cursor/VS Code
-- Edit or create a `.db2ai` file (e.g. under `./packages/extension/demos/`)
-- **Extension dev:** Run and Debug → **Run db2ai Extension** (opens `packages/extension/demos/` in an Extension Development Host; save regenerates tools)
-- **CLI only:** `node ./packages/cli/bin/cli.js generate <file.db2ai> <out-tools.ts>`
+1. Prepare the repository:
+    - Clone the repo.
+    - From the repository root, run:
+        ```bash
+        npm install
+        npm run langium:generate
+        npm run build
+        ```
+2. Open the **`db2ai`** repository root in Cursor/VS Code.
+3. Edit or create a `.db2ai` file, for example under `./packages/extension/demos/`.
+4. Generate tools with one of these options:
+    - **Extension dev:** Run **Run db2ai Extension** from Run and Debug. The Extension Development Host opens `packages/extension/demos/`; saving a `.db2ai` file regenerates tools.
+    - **CLI only:** `node ./packages/cli/bin/cli.js generate <file.db2ai> <out-tools.ts>`.
 
 MCP demos and chat tests: **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**.
 
@@ -87,13 +94,13 @@ Build (maintainers), in **`packages/extension/`**:
 npm run extension:vsix
 ```
 
-→ `./packages/extension/vscode-db2ai-<version>.vsix` (**version** from [`./packages/extension/package.json`](./packages/extension/package.json); gitignored via `*.vsix`).
+Output: `./packages/extension/vscode-db2ai-<version>.vsix` (**version** from [`./packages/extension/package.json`](./packages/extension/package.json); gitignored via `*.vsix`).
 
 From repo root: `npm run extension:vsix -w packages/extension`
 
 ### Install in Cursor / VS Code (test)
 
-1. `Cmd+Shift+P` → **`Install from VSIX`** or **`vsix`**
+1. Press `Cmd+Shift+P` and search for **`Install from VSIX`** or **`vsix`**
 2. **`Extensions: Install from VSIX`**
 3. Select `./packages/extension/vscode-db2ai-<version>.vsix`
 4. **`Developer: Reload Window`**
@@ -112,4 +119,4 @@ BUSL-1.1 - see [`./LICENSE`](./LICENSE).
 
 ---
 
-_Created with gratitude to Jesus Christ._
+#Col3:23
