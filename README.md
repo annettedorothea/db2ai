@@ -96,7 +96,7 @@ npm run extension:vsix
 
 Output: `./packages/extension/vscode-db2ai-<version>.vsix` (**version** from [`./packages/extension/package.json`](./packages/extension/package.json); gitignored via `*.vsix`).
 
-### Release to GitHub
+### Share a VSIX build
 
 For a full prerelease from the repository root:
 
