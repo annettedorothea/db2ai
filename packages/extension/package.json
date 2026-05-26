@@ -4,7 +4,7 @@
     "description": "Language support and code generation for the .db2ai DSL (PostgreSQL → MCP tools).",
     "version": "0.0.1",
     "publisher": "db2ai",
-    "license": "MIT",
+    "license": "BUSL-1.1",
     "icon": "icon.png",
     "author": {
         "name": "Annette Pohl"

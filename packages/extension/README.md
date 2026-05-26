@@ -31,7 +31,7 @@ See the generated **`README.md`** in your demo folder for prompts and Docker scr
 
 ## License
 
-MIT — Copyright (c) Annette Pohl. Full license text is included in the VSIX (`LICENSE` file, copied from the db2ai repository root when you run `npm run extension:vsix`).
+BUSL-1.1 - Copyright (c) 2026 Annette Pohl. Full license text is included in the VSIX (`LICENSE` file, copied from the db2ai repository root when you run `npm run extension:vsix`).
 
 ---
 
