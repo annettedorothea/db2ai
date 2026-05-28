@@ -1,6 +1,7 @@
 import type { ValidationAcceptor } from 'langium';
-import type { SqlQuery } from './generated/ast.js';
+import type { SqlParamEntry, SqlQuery } from './generated/ast.js';
 import { extractPlaceholderNumbers } from './sql-params.js';
+import { RESERVED_SQL_PARAM_NAMES, parseExampleAsType, parseSqlParamSpec } from './sql-param-spec.js';
 
 export function checkSqlQuery(sqlQuery: SqlQuery, accept: ValidationAcceptor): void {
     checkSqlRequiredKeys(sqlQuery, accept);
@@ -23,6 +24,60 @@ function checkSqlRequiredKeys(sqlQuery: SqlQuery, accept: ValidationAcceptor): v
     }
 }
 
+function checkSqlParamSpec(entry: SqlParamEntry, accept: ValidationAcceptor): void {
+    const spec = entry.spec;
+    if (!spec) {
+        accept('error', 'Param requires a spec block `{ name: …, description: "…" }`.', {
+            node: entry,
+            property: 'spec'
+        });
+        return;
+    }
+
+    const parsed = parseSqlParamSpec(spec);
+    if (parsed.name === undefined || parsed.name.length === 0) {
+        accept('error', 'Param spec requires `name: identifier`.', { node: spec, property: 'fields' });
+    } else if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(parsed.name)) {
+        accept('error', `Param name "${parsed.name}" must be a valid identifier.`, { node: spec, property: 'fields' });
+    } else if (RESERVED_SQL_PARAM_NAMES.has(parsed.name)) {
+        accept('error', `Param name "${parsed.name}" is reserved (use a different name).`, {
+            node: spec,
+            property: 'fields'
+        });
+    }
+
+    if (parsed.description === undefined || parsed.description.trim().length === 0) {
+        accept('error', 'Param spec requires `description: "..."`.', { node: spec, property: 'fields' });
+    }
+
+    if (parsed.example !== undefined) {
+        const typeError = parseExampleAsType(parsed.example, parsed.paramType);
+        if (typeError) {
+            accept('error', typeError, { node: spec, property: 'fields' });
+        }
+    }
+}
+
+function checkUniqueParamNames(entries: SqlParamEntry[], accept: ValidationAcceptor): void {
+    const seen = new Map<string, SqlParamEntry>();
+    for (const entry of entries) {
+        const parsed = parseSqlParamSpec(entry.spec);
+        const name = parsed.name;
+        if (!name) {
+            continue;
+        }
+        const prior = seen.get(name);
+        if (prior) {
+            accept('error', `Duplicate param name "${name}". Names must be unique within this SQL tool.`, {
+                node: entry,
+                property: 'spec'
+            });
+        } else {
+            seen.set(name, entry);
+        }
+    }
+}
+
 function checkSqlParamMap(sqlQuery: SqlQuery, accept: ValidationAcceptor): void {
     const queryText = sqlQuery.query !== undefined ? String(sqlQuery.query) : '';
     const placeholdersInQuery = extractPlaceholderNumbers(queryText);
@@ -38,6 +93,8 @@ function checkSqlParamMap(sqlQuery: SqlQuery, accept: ValidationAcceptor): void 
 
     const seenPlaceholders = new Set<string>();
     for (const entry of entries) {
+        checkSqlParamSpec(entry, accept);
+
         const ph = entry.placeholder;
         if (ph === undefined || ph.trim().length === 0) {
             continue;
@@ -59,6 +116,8 @@ function checkSqlParamMap(sqlQuery: SqlQuery, accept: ValidationAcceptor): void 
             });
         }
     }
+
+    checkUniqueParamNames(entries, accept);
 
     for (const n of placeholdersInQuery) {
         const ph = `$${n}`;

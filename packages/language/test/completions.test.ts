@@ -200,7 +200,7 @@ describe('Completion for query block keywords', () => {
         const list = await completionAt(header, offset);
 
         const labels = sortedBlockKeywordLabels(list?.items ?? []);
-        expect(labels).toEqual(['toolName', 'intent', 'query', 'summary', 'example', 'params']);
+        expect(labels).toEqual(['toolName', 'intent', 'query', 'summary', 'params']);
     });
 
     test('lists block keywords without database env value', async () => {

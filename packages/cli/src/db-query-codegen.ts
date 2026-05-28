@@ -3,6 +3,7 @@ import { DEFAULT_MAX_LIMIT_CAP, DEFAULT_PAGE_LIMIT } from 'db-2-ai-dsl-language'
 import { isSqlQuery, isTableQuery } from 'db-2-ai-dsl-language';
 import {
     databaseDialectFromModel,
+    jsonSchemaExampleValue,
     resolveSqlParamsOrdered,
     type ResolvedDatabaseDialect,
     type ResolvedSqlParam
@@ -27,7 +28,6 @@ export type ResolvedSqlToolCodegen = {
     description: string;
     sqlText: string;
     params: ResolvedSqlParam[];
-    example?: string;
 };
 
 export type ResolvedDbToolCodegen = ResolvedTableToolCodegen | ResolvedSqlToolCodegen;
@@ -84,21 +84,29 @@ function buildColumnDescriptionLines(query: TableQuery): string[] {
     return lines;
 }
 
-function buildSqlParamDescriptionLines(query: SqlQuery): string[] {
-    const entries = query.params?.entries;
-    if (!entries || entries.length === 0) {
+function buildSqlParamDescriptionLines(params: ResolvedSqlParam[]): string[] {
+    if (params.length === 0) {
         return [];
     }
-    const sqlText = query.query !== undefined ? String(query.query) : '';
-    const ordered = resolveSqlParamsOrdered(
-        entries.map((e) => ({ placeholder: String(e.placeholder), label: String(e.label) })),
-        sqlText
-    );
     const lines = ['', 'Parameters:'];
-    for (const p of ordered) {
-        lines.push(`- ${p.propertyName} (${p.placeholder}): ${p.label}`);
+    for (const p of params) {
+        let line = `- ${p.propertyName} (${p.placeholder}): ${p.description}`;
+        if (p.example !== undefined && p.example.trim().length > 0) {
+            line += ` (example: ${p.example.trim()})`;
+        }
+        lines.push(line);
     }
     return lines;
+}
+
+function buildSqlExampleCallLine(params: ResolvedSqlParam[]): string | undefined {
+    const parts = params
+        .filter((p) => p.example !== undefined && p.example.trim().length > 0)
+        .map((p) => `${p.propertyName}=${p.example!.trim()}`);
+    if (parts.length === 0) {
+        return undefined;
+    }
+    return `Example call: ${parts.join(', ')}`;
 }
 
 function renderTableReference(query: TableQuery, dialect: ResolvedDatabaseDialect): string {
@@ -122,16 +130,17 @@ function buildTableDescription(query: TableQuery, dialect: ResolvedDatabaseDiale
     return lines.join('\n');
 }
 
-function buildSqlDescription(query: SqlQuery): string {
+function buildSqlDescription(query: SqlQuery, params: ResolvedSqlParam[]): string {
     const intent = requireIntent(query.intent, 'SQL tool');
     const lines = [
         intent,
         '',
         'Runs a prepared SQL statement. Pass parameter values by name (see input schema).',
-        ...buildSqlParamDescriptionLines(query)
+        ...buildSqlParamDescriptionLines(params)
     ];
-    if (query.example?.trim()) {
-        lines.push('', `Example: ${query.example.trim()}`);
+    const exampleCall = buildSqlExampleCallLine(params);
+    if (exampleCall) {
+        lines.push('', exampleCall);
     }
     return lines.join('\n');
 }
@@ -161,18 +170,14 @@ function resolveTableTool(query: TableQuery, dialect: ResolvedDatabaseDialect): 
 function resolveSqlTool(query: SqlQuery): ResolvedSqlToolCodegen {
     const sqlText = query.query !== undefined ? String(query.query) : '';
     const entries = query.params?.entries ?? [];
-    const params = resolveSqlParamsOrdered(
-        entries.map((e) => ({ placeholder: String(e.placeholder), label: String(e.label) })),
-        sqlText
-    );
+    const params = resolveSqlParamsOrdered(entries, sqlText);
     return {
         kind: 'sql',
         toolName: requireToolName(query.toolName, 'SQL tool'),
         title: buildSqlTitle(query),
-        description: buildSqlDescription(query),
+        description: buildSqlDescription(query, params),
         sqlText,
-        params,
-        example: query.example
+        params
     };
 }
 
@@ -215,10 +220,14 @@ function buildSqlInputSchema(tool: ResolvedSqlToolCodegen): JsonSchemaDict {
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
     for (const p of tool.params) {
-        properties[p.propertyName] = {
-            type: 'string',
-            description: `${p.label} (SQL ${p.placeholder})`
+        const prop: Record<string, unknown> = {
+            type: p.jsonSchemaType,
+            description: `${p.description} (SQL ${p.placeholder})`
         };
+        if (p.example !== undefined && p.example.trim().length > 0) {
+            prop.examples = [jsonSchemaExampleValue(p.example, p.jsonSchemaType)];
+        }
+        properties[p.propertyName] = prop;
         required.push(p.propertyName);
     }
     return {

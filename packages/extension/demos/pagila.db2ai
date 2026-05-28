@@ -68,10 +68,18 @@ SQL {
     intent: "list films with a given MPAA age rating"
     query: "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2"
     summary: "Films by MPAA rating (G, PG, PG-13, R, NC-17)"
-    example: "MPAA rating PG-13, max 20 rows"
     params: {
-        $1: "MPAA rating (G, PG, PG-13, R, or NC-17)"
-        $2: "max rows to return"
+        $1: {
+            name: rating
+            description: "MPAA rating (G, PG, PG-13, R, or NC-17)"
+            example: "PG-13"
+        }
+        $2: {
+            name: maxRows
+            description: "max rows to return"
+            example: "20"
+            type: integer
+        }
     }
 }
 
@@ -80,10 +88,18 @@ SQL {
     intent: "which films feature actors whose last name starts with a given prefix"
     query: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2"
     summary: "Actor–film cast via film_actor join"
-    example: "Last name prefix GAR (e.g. Gardner), limit 25"
     params: {
-        $1: "actor last name prefix (e.g. GAR, BER, HOP)"
-        $2: "max rows to return"
+        $1: {
+            name: lastNamePrefix
+            description: "actor last name prefix (e.g. GAR, BER, HOP)"
+            example: "GAR"
+        }
+        $2: {
+            name: maxRows
+            description: "max rows to return"
+            example: "25"
+            type: integer
+        }
     }
 }
 
@@ -92,9 +108,17 @@ SQL {
     intent: "search films by free text in title or description"
     query: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2"
     summary: "Film full-text style search (title and description)"
-    example: "Search dragon, limit 15"
     params: {
-        $1: "search text (matched in title or description)"
-        $2: "max rows to return"
+        $1: {
+            name: searchText
+            description: "search text (matched in title or description)"
+            example: "dog"
+        }
+        $2: {
+            name: maxRows
+            description: "max rows to return"
+            example: "15"
+            type: integer
+        }
     }
 }

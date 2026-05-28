@@ -10,28 +10,56 @@ import type { LoadedSchema } from './schema.js';
 import {
     isColumnDescriptionEntry,
     isModel,
+    isSqlParamEntry,
+    isSqlParamSpec,
     isSqlQuery,
     isTableQuery,
     type ColumnDescriptionEntry,
     type Model,
     type ModelEntry,
+    type SqlParamEntry,
+    type SqlParamSpec,
     type SqlQuery,
     type TableQuery
 } from './generated/ast.js';
+import { usedSqlParamSpecFieldKinds } from './sql-param-spec.js';
 
 const TABLE_BLOCK_KEYS = ['toolName', 'intent', 'summary', 'example', 'maxLimit', 'columns'] as const;
 type TableBlockKey = (typeof TABLE_BLOCK_KEYS)[number];
-const SQL_BLOCK_KEYS = ['toolName', 'intent', 'query', 'summary', 'example', 'params'] as const;
+const SQL_BLOCK_KEYS = ['toolName', 'intent', 'query', 'summary', 'params'] as const;
 type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
-const KEYWORD_SORT: Record<TableBlockKey | SqlBlockKey, string> = {
+const SQL_PARAM_SPEC_KEYS = ['name', 'description', 'example', 'type'] as const;
+type SqlParamSpecKey = (typeof SQL_PARAM_SPEC_KEYS)[number];
+
+const TABLE_KEYWORD_SORT: Record<TableBlockKey, string> = {
+    toolName: '0100',
+    intent: '0101',
+    summary: '0103',
+    example: '0104',
+    maxLimit: '0105',
+    columns: '0106'
+};
+
+const SQL_KEYWORD_SORT: Record<SqlBlockKey, string> = {
     toolName: '0100',
     intent: '0101',
     query: '0102',
     summary: '0103',
-    example: '0104',
-    maxLimit: '0105',
-    columns: '0106',
     params: '0107'
+};
+
+const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
+    name: '0200',
+    description: '0201',
+    example: '0202',
+    type: '0203'
+};
+
+const SQL_PARAM_SPEC_INSERT: Record<SqlParamSpecKey, string> = {
+    name: 'name: $1$0',
+    description: 'description: "$1"$0',
+    example: 'example: "$1"$0',
+    type: 'type: $1$0'
 };
 
 function debugCompletion(message: string, data?: unknown): void {
@@ -399,8 +427,7 @@ const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     intent: 'intent: "$1"$0',
     query: 'query: "$1"$0',
     summary: 'summary: "$1"$0',
-    example: 'example: "$1"$0',
-    params: 'params: {\n    $1: "$2"\n}$0'
+    params: 'params: {\n    $1: {\n        name: $2\n        description: "$3"\n        example: "$4"\n        type: $5\n    }\n}$0'
 };
 
 function usedTableBlockKeys(query: TableQuery): Set<string> {
@@ -434,9 +461,6 @@ function usedSqlBlockKeys(query: SqlQuery): Set<string> {
     if (query.intent !== undefined) {
         used.add('intent');
     }
-    if (query.example !== undefined) {
-        used.add('example');
-    }
     if (query.summary !== undefined) {
         used.add('summary');
     }
@@ -447,6 +471,175 @@ function usedSqlBlockKeys(query: SqlQuery): Set<string> {
         used.add('params');
     }
     return used;
+}
+
+function sqlParamSpecCst(entry: SqlParamEntry): CstNode | undefined {
+    return entry.spec?.$cstNode;
+}
+
+function offsetInsideSqlParamSpec(entry: SqlParamEntry, offset: number): boolean {
+    const cst = sqlParamSpecCst(entry);
+    if (!cst) {
+        return false;
+    }
+    const open = openingBraceLeaf(cst);
+    if (!open || offset <= open.offset) {
+        return false;
+    }
+    const close = closingBraceLeaf(cst);
+    if (close && offset >= close.offset) {
+        return false;
+    }
+    return true;
+}
+
+function sqlParamMapCst(query: SqlQuery): CstNode | undefined {
+    return query.params?.$cstNode;
+}
+
+function offsetInsideSqlParamMap(query: SqlQuery, offset: number): boolean {
+    const cst = sqlParamMapCst(query);
+    if (!cst) {
+        return false;
+    }
+    const open = openingBraceLeaf(cst);
+    if (!open || offset <= open.offset) {
+        return false;
+    }
+    const close = closingBraceLeaf(cst);
+    if (close && offset >= close.offset) {
+        return false;
+    }
+    return true;
+}
+
+function findSqlParamEntryAtOffset(query: SqlQuery, root: CstNode, offset: number): SqlParamEntry | undefined {
+    for (const entry of query.params?.entries ?? []) {
+        if (offsetInsideSqlParamSpec(entry, offset)) {
+            return entry;
+        }
+    }
+    const leaf = CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
+    if (leaf) {
+        const spec = AstUtils.getContainerOfType(leaf.astNode as AstNode, isSqlParamSpec);
+        if (spec && isSqlParamSpec(spec)) {
+            const parent = spec.$container;
+            if (isSqlParamEntry(parent)) {
+                return parent;
+            }
+        }
+    }
+    return undefined;
+}
+
+function nextSqlParamSpecKey(used: Set<string>): SqlParamSpecKey | undefined {
+    for (const key of SQL_PARAM_SPEC_KEYS) {
+        if (!used.has(key)) {
+            return key;
+        }
+    }
+    return undefined;
+}
+
+function paramSpecKeywordLeafAtOffset(
+    spec: SqlParamSpec,
+    offset: number,
+    keys: readonly SqlParamSpecKey[]
+): LeafCstNode | undefined {
+    const cst = spec.$cstNode;
+    if (!cst) {
+        return undefined;
+    }
+    const leaf = CstUtils.findLeafNodeAtOffset(cst, offset) ?? CstUtils.findLeafNodeBeforeOffset(cst, offset);
+    if (!leaf || !isLeafCstNode(leaf)) {
+        return undefined;
+    }
+    if (keys.includes(leaf.text as SqlParamSpecKey)) {
+        return leaf;
+    }
+    if (matchesBlockKeywordPrefix(leaf.text, keys)) {
+        return leaf;
+    }
+    return undefined;
+}
+
+function cursorInsideParamSpecStringValue(root: CstNode, offset: number, spec: SqlParamSpec): boolean {
+    const leaf = CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
+    if (!leaf || !isLeafCstNode(leaf)) {
+        return false;
+    }
+    if (!(leaf.text.startsWith('"') || leaf.text.startsWith("'"))) {
+        return false;
+    }
+    const specCst = spec.$cstNode;
+    if (!specCst) {
+        return false;
+    }
+    return offset >= leaf.offset && offset <= leaf.offset + leaf.text.length;
+}
+
+function buildSqlParamSpecCompletionItems(
+    spec: SqlParamSpec,
+    root: CstNode,
+    offset: number,
+    textDoc: LangiumDocument['textDocument'],
+    position: Position
+): CompletionItem[] {
+    const used = usedSqlParamSpecFieldKinds(spec);
+    const nextKey = nextSqlParamSpecKey(used);
+    if (!nextKey) {
+        return [];
+    }
+
+    if (cursorInsideParamSpecStringValue(root, offset, spec)) {
+        return [];
+    }
+
+    const keywordLeaf = paramSpecKeywordLeafAtOffset(spec, offset, SQL_PARAM_SPEC_KEYS);
+    if (keywordLeaf) {
+        const prefixEnd = Math.min(offset, keywordLeaf.offset + keywordLeaf.text.length);
+        const typedPrefix = textDoc.getText({
+            start: textDoc.positionAt(keywordLeaf.offset),
+            end: textDoc.positionAt(prefixEnd)
+        });
+        const candidates = SQL_PARAM_SPEC_KEYS.filter((key) => key.startsWith(typedPrefix) && !used.has(key));
+        if (candidates.length === 0) {
+            return [];
+        }
+        const ordered = candidates.filter((k) => k === nextKey);
+        const keysToOffer = ordered.length > 0 ? ordered : [nextKey];
+        return keysToOffer.map((key) => ({
+            label: key,
+            kind: CompletionItemKind.Keyword,
+            detail: 'SQL param property',
+            insertTextFormat: InsertTextFormat.Snippet,
+            sortText: SQL_PARAM_SPEC_SORT[key],
+            textEdit: TextEdit.replace(keywordLeaf.range, SQL_PARAM_SPEC_INSERT[key]),
+            insertText: SQL_PARAM_SPEC_INSERT[key]
+        }));
+    }
+
+    const specCst = spec.$cstNode;
+    const open = openingBraceLeaf(specCst);
+    if (!open || offset <= open.offset) {
+        return [];
+    }
+    const close = closingBraceLeaf(specCst);
+    if (close && offset >= close.offset) {
+        return [];
+    }
+
+    return [
+        {
+            label: nextKey,
+            kind: CompletionItemKind.Keyword,
+            detail: 'SQL param property',
+            insertTextFormat: InsertTextFormat.Snippet,
+            sortText: SQL_PARAM_SPEC_SORT[nextKey],
+            insertText: SQL_PARAM_SPEC_INSERT[nextKey],
+            textEdit: TextEdit.insert(position, SQL_PARAM_SPEC_INSERT[nextKey])
+        }
+    ];
 }
 
 function offsetInsideToolBlock(entry: ModelEntry, offset: number): boolean {
@@ -465,6 +658,12 @@ function offsetInsideToolBlock(entry: ModelEntry, offset: number): boolean {
 function cursorInsideToolBlockStringValue(root: CstNode, offset: number, entry: ModelEntry): boolean {
     if (isTableQuery(entry) && offsetInsideColumnMap(entry, offset)) {
         return cursorInsideColumnDescriptionValue(root, offset);
+    }
+    if (isSqlQuery(entry)) {
+        const paramEntry = findSqlParamEntryAtOffset(entry, root, offset);
+        if (paramEntry?.spec && offsetInsideSqlParamSpec(paramEntry, offset)) {
+            return cursorInsideParamSpecStringValue(root, offset, paramEntry.spec);
+        }
     }
     const leaf = CstUtils.findLeafNodeAtOffset(root, offset) ?? CstUtils.findLeafNodeBeforeOffset(root, offset);
     if (!leaf || !isLeafCstNode(leaf)) {
@@ -532,6 +731,15 @@ function blockKeywordItemsForEntry(
     if (isTableQuery(entry) && offsetInsideColumnMap(entry, offset)) {
         return [];
     }
+    if (isSqlQuery(entry)) {
+        const paramEntry = findSqlParamEntryAtOffset(entry, root, offset);
+        if (paramEntry?.spec && offsetInsideSqlParamSpec(paramEntry, offset)) {
+            return buildSqlParamSpecCompletionItems(paramEntry.spec, root, offset, textDoc, position);
+        }
+        if (offsetInsideSqlParamMap(entry, offset)) {
+            return [];
+        }
+    }
     if (cursorInsideToolBlockStringValue(root, offset, entry)) {
         return [];
     }
@@ -554,7 +762,7 @@ function blockKeywordItemsForEntry(
             kind: CompletionItemKind.Keyword,
             detail: isSql ? 'SQL block property' : 'Query block property',
             insertTextFormat: InsertTextFormat.Snippet,
-            sortText: KEYWORD_SORT[key as keyof typeof KEYWORD_SORT],
+            sortText: isSql ? SQL_KEYWORD_SORT[key as SqlBlockKey] : TABLE_KEYWORD_SORT[key as TableBlockKey],
             textEdit: TextEdit.replace(keywordLeaf.range, inserts[key as keyof typeof inserts]),
             insertText: inserts[key as keyof typeof inserts]
         }));
@@ -569,7 +777,7 @@ function blockKeywordItemsForEntry(
         kind: CompletionItemKind.Keyword,
         detail: isSql ? 'SQL block property' : 'Query block property',
         insertTextFormat: InsertTextFormat.Snippet,
-        sortText: KEYWORD_SORT[key as keyof typeof KEYWORD_SORT],
+        sortText: isSql ? SQL_KEYWORD_SORT[key as SqlBlockKey] : TABLE_KEYWORD_SORT[key as TableBlockKey],
         insertText: inserts[key as keyof typeof inserts],
         textEdit: TextEdit.insert(position, inserts[key as keyof typeof inserts])
     }));

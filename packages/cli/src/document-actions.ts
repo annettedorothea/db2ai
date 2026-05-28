@@ -1,4 +1,9 @@
-import { Db2AiDslLanguageMetaData, createDb2AiDslServices } from 'db-2-ai-dsl-language';
+import {
+    Db2AiDslLanguageMetaData,
+    createDb2AiDslServices,
+    isModel,
+    validateSqlBlocksWithExamples
+} from 'db-2-ai-dsl-language';
 import chalk from 'chalk';
 import { NodeFileSystem } from 'langium/node';
 import * as path from 'node:path';
@@ -45,12 +50,23 @@ export async function validateAction(file: string): Promise<void> {
         }
         process.exit(1);
     }
-    const diagnostics = (document.diagnostics ?? []).filter((d) => d.severity === 1);
-    if (diagnostics.length > 0) {
-        for (const diagnostic of diagnostics) {
+    const allDiagnostics = [...(document.diagnostics ?? [])];
+    const model = document.parseResult.value;
+    if (isModel(model)) {
+        const sqlDbDiags = await validateSqlBlocksWithExamples(model, document.uri.toString());
+        allDiagnostics.push(...sqlDbDiags);
+    }
+
+    const errors = allDiagnostics.filter((d) => d.severity === 1);
+    const warnings = allDiagnostics.filter((d) => d.severity === 2);
+    if (errors.length > 0) {
+        for (const diagnostic of errors) {
             console.error(chalk.red(diagnostic.message));
         }
         process.exit(1);
+    }
+    for (const diagnostic of warnings) {
+        console.error(chalk.yellow(diagnostic.message));
     }
     console.log(chalk.green(`Validated ${file} successfully.`));
 }

@@ -32,13 +32,13 @@ describe('Sakila generated module direct invocation', () => {
                 expect(films.rows).toBeInstanceOf(Array);
 
                 const ratedFilms = asRecord(
-                    await generated.invokeTool('filmsByRating', { param1: 'PG', param2: '3' }, hostContext)
+                    await generated.invokeTool('filmsByRating', { rating: 'PG', maxRows: 3 }, hostContext)
                 );
                 expect(ratedFilms.rowCount).toBeGreaterThan(0);
                 expect(ratedFilms.rows).toBeInstanceOf(Array);
 
                 const searchResults = asRecord(
-                    await generated.invokeTool('searchFilms', { param1: 'ACADEMY', param2: '5' }, hostContext)
+                    await generated.invokeTool('searchFilms', { searchText: 'ACADEMY', maxRows: 5 }, hostContext)
                 );
                 expect(searchResults.rowCount).toBeGreaterThan(0);
                 expect(searchResults.rows).toBeInstanceOf(Array);

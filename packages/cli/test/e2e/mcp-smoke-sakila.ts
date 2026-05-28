@@ -22,8 +22,8 @@ export async function runSakilaMcpSmoke(): Promise<void> {
         connectionString,
         toolName: 'searchFilms',
         toolArgs: {
-            param1: 'ACADEMY',
-            param2: '5'
+            searchText: 'ACADEMY',
+            maxRows: 5
         }
     });
 }

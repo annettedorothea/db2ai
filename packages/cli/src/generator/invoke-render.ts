@@ -1,4 +1,9 @@
-import { DEFAULT_MAX_LIMIT_CAP, DEFAULT_PAGE_LIMIT, type ResolvedDatabaseDialect } from 'db-2-ai-dsl-language';
+import {
+    DEFAULT_MAX_LIMIT_CAP,
+    DEFAULT_PAGE_LIMIT,
+    type ResolvedDatabaseDialect,
+    type SqlParamType
+} from 'db-2-ai-dsl-language';
 import {
     quoteMysqlIdent,
     quotePostgresIdent,
@@ -11,10 +16,23 @@ function quoteDatabaseIdent(ident: string, dialect: ResolvedDatabaseDialect): st
     return dialect === 'mysql' ? quoteMysqlIdent(ident) : quotePostgresIdent(ident);
 }
 
-function renderOptionValueExpression(propertyName: string, dialect: ResolvedDatabaseDialect): string {
+function renderOptionValueExpression(
+    propertyName: string,
+    dialect: ResolvedDatabaseDialect,
+    paramType: SqlParamType
+): string {
     const optionAccess = `options[${JSON.stringify(propertyName)}]`;
     if (dialect === 'mysql') {
+        if (paramType === 'boolean') {
+            return `normalizeMysqlBooleanParamValue(${optionAccess})`;
+        }
         return `normalizeMysqlParamValue(${optionAccess})`;
+    }
+    if (paramType === 'integer' || paramType === 'number') {
+        return `normalizePostgresNumericParamValue(${optionAccess})`;
+    }
+    if (paramType === 'boolean') {
+        return `normalizePostgresBooleanParamValue(${optionAccess})`;
     }
     return `${optionAccess} !== undefined && ${optionAccess} !== null ? String(${optionAccess}) : null`;
 }
@@ -55,24 +73,16 @@ function rewriteLogicalPlaceholdersForMysql(sqlText: string): string {
     return sqlText.replace(/\$[0-9]+/g, '?');
 }
 
-function resolveMysqlParamValueExpressions(tool: ResolvedSqlToolCodegen): string[] {
-    const paramsByPlaceholder = new Map(tool.params.map((p) => [p.placeholder, p]));
-    return Array.from(tool.sqlText.matchAll(/\$[0-9]+/g), (match) => {
-        const placeholder = match[0];
-        const param = paramsByPlaceholder.get(placeholder);
-        if (!param) {
-            throw new Error(`Codegen: SQL query references ${placeholder}, but no matching param was resolved.`);
-        }
-        return renderOptionValueExpression(param.propertyName, 'mysql');
-    });
-}
-
 function renderSqlInvokeCase(tool: ResolvedSqlToolCodegen, dialect: ResolvedDatabaseDialect): string {
-    const valueExprs = (
-        dialect === 'mysql'
-            ? resolveMysqlParamValueExpressions(tool)
-            : tool.params.map((p) => renderOptionValueExpression(p.propertyName, dialect))
-    ).join(', ');
+    const paramsByPlaceholder = new Map(tool.params.map((p) => [p.placeholder, p]));
+    const orderedExprs = Array.from(tool.sqlText.matchAll(/\$[0-9]+/g), (match) => {
+        const param = paramsByPlaceholder.get(match[0]);
+        if (!param) {
+            throw new Error(`Codegen: SQL query references ${match[0]}, but no matching param was resolved.`);
+        }
+        return renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType);
+    });
+    const valueExprs = orderedExprs.join(', ');
     if (dialect === 'mysql') {
         return `        case ${JSON.stringify(tool.toolName)}: {
             const [rows] = await client.query(${JSON.stringify(rewriteLogicalPlaceholdersForMysql(tool.sqlText))}, [${valueExprs}]);
@@ -92,6 +102,35 @@ function renderSqlInvokeCase(tool: ResolvedSqlToolCodegen, dialect: ResolvedData
         }`;
 }
 
+type InvokeParamHelperFlags = {
+    postgresNumeric: boolean;
+    postgresBoolean: boolean;
+    mysqlBoolean: boolean;
+};
+
+function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokeParamHelperFlags {
+    const flags: InvokeParamHelperFlags = {
+        postgresNumeric: false,
+        postgresBoolean: false,
+        mysqlBoolean: false
+    };
+    for (const tool of tools) {
+        if (tool.kind !== 'sql') {
+            continue;
+        }
+        for (const param of tool.params) {
+            if (param.jsonSchemaType === 'integer' || param.jsonSchemaType === 'number') {
+                flags.postgresNumeric = true;
+            }
+            if (param.jsonSchemaType === 'boolean') {
+                flags.postgresBoolean = true;
+                flags.mysqlBoolean = true;
+            }
+        }
+    }
+    return flags;
+}
+
 function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[], dialect: ResolvedDatabaseDialect): string {
     return tools
         .map((tool) =>
@@ -100,7 +139,110 @@ function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[], dialect: Resolv
         .join('\n');
 }
 
-function renderPostgresInvokeBlockTs(toolCases: string): string {
+const POSTGRES_NUMERIC_HELPER_TS = `
+function normalizePostgresNumericParamValue(value: unknown): number | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+`.trim();
+
+const POSTGRES_BOOLEAN_HELPER_TS = `
+function normalizePostgresBooleanParamValue(value: unknown): boolean | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+const POSTGRES_NUMERIC_HELPER_JS = `
+function normalizePostgresNumericParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+`.trim();
+
+const POSTGRES_BOOLEAN_HELPER_JS = `
+function normalizePostgresBooleanParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+const MYSQL_BOOLEAN_HELPER_TS = `
+function normalizeMysqlBooleanParamValue(value: unknown): boolean | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+const MYSQL_BOOLEAN_HELPER_JS = `
+function normalizeMysqlBooleanParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+function renderPostgresInvokeBlockTs(toolCases: string, flags: InvokeParamHelperFlags): string {
+    const helpers = [
+        flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_TS : '',
+        flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_TS : ''
+    ]
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = helpers.length > 0 ? `\n\n${helpers}` : '';
     return `
 import pg from 'pg';
 
@@ -122,7 +264,7 @@ function resolveConnectionString(hostContext: unknown): string {
     throw new Error(
         'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
     );
-}
+}${helperSection}
 
 export async function invokeTool(
     toolName: string,
@@ -145,7 +287,14 @@ ${toolCases}
 `.trim();
 }
 
-function renderPostgresInvokeBlockJs(toolCases: string): string {
+function renderPostgresInvokeBlockJs(toolCases: string, flags: InvokeParamHelperFlags): string {
+    const helpers = [
+        flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_JS : '',
+        flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_JS : ''
+    ]
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = helpers.length > 0 ? `\n\n${helpers}` : '';
     return `
 import pg from 'pg';
 
@@ -162,7 +311,7 @@ function resolveConnectionString(hostContext) {
     throw new Error(
         'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
     );
-}
+}${helperSection}
 
 export async function invokeTool(toolName, options = {}, hostContext) {
     const connectionString = resolveConnectionString(hostContext);
@@ -181,7 +330,8 @@ ${toolCases}
 `.trim();
 }
 
-function renderMysqlInvokeBlockTs(toolCases: string): string {
+function renderMysqlInvokeBlockTs(toolCases: string, flags: InvokeParamHelperFlags): string {
+    const helperSection = flags.mysqlBoolean ? `\n\n${MYSQL_BOOLEAN_HELPER_TS}` : '';
     return `
 import mysql from 'mysql2/promise';
 
@@ -219,7 +369,7 @@ function normalizeMysqlParamValue(value: unknown): string | number | null {
         return Number(trimmed);
     }
     return text;
-}
+}${helperSection}
 
 export async function invokeTool(
     toolName: string,
@@ -241,7 +391,8 @@ ${toolCases}
 `.trim();
 }
 
-function renderMysqlInvokeBlockJs(toolCases: string): string {
+function renderMysqlInvokeBlockJs(toolCases: string, flags: InvokeParamHelperFlags): string {
+    const helperSection = flags.mysqlBoolean ? `\n\n${MYSQL_BOOLEAN_HELPER_JS}` : '';
     return `
 import mysql from 'mysql2/promise';
 
@@ -274,7 +425,7 @@ function normalizeMysqlParamValue(value) {
         return Number(trimmed);
     }
     return text;
-}
+}${helperSection}
 
 export async function invokeTool(toolName, options = {}, hostContext) {
     const connectionString = resolveConnectionString(hostContext);
@@ -294,10 +445,16 @@ ${toolCases}
 
 export function renderInvokeBlockTs(tools: ResolvedDbToolCodegen[], dialect: ResolvedDatabaseDialect): string {
     const toolCases = renderInvokeSwitchCases(tools, dialect);
-    return dialect === 'mysql' ? renderMysqlInvokeBlockTs(toolCases) : renderPostgresInvokeBlockTs(toolCases);
+    const flags = resolveInvokeParamHelperFlags(tools);
+    return dialect === 'mysql'
+        ? renderMysqlInvokeBlockTs(toolCases, flags)
+        : renderPostgresInvokeBlockTs(toolCases, flags);
 }
 
 export function renderInvokeBlockJs(tools: ResolvedDbToolCodegen[], dialect: ResolvedDatabaseDialect): string {
     const toolCases = renderInvokeSwitchCases(tools, dialect);
-    return dialect === 'mysql' ? renderMysqlInvokeBlockJs(toolCases) : renderPostgresInvokeBlockJs(toolCases);
+    const flags = resolveInvokeParamHelperFlags(tools);
+    return dialect === 'mysql'
+        ? renderMysqlInvokeBlockJs(toolCases, flags)
+        : renderPostgresInvokeBlockJs(toolCases, flags);
 }

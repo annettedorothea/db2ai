@@ -70,71 +70,86 @@ export const generatedTools = [
         toolName: 'filmsByMpaaRating',
         title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
         description:
-            'list films with a given MPAA age rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): MPAA rating (G, PG, PG-13, R, or NC-17)\n- param2 ($2): max rows to return\n\nExample: MPAA rating PG-13, max 20 rows',
+            'list films with a given MPAA age rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating ($1): MPAA rating (G, PG, PG-13, R, or NC-17) (example: PG-13)\n- maxRows ($2): max rows to return (example: 20)\n\nExample call: rating=PG-13, maxRows=20',
         sqlText: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
         params: [
             {
                 placeholder: '$1',
                 index: 1,
-                label: 'MPAA rating (G, PG, PG-13, R, or NC-17)',
-                propertyName: 'param1'
+                name: 'rating',
+                propertyName: 'rating',
+                description: 'MPAA rating (G, PG, PG-13, R, or NC-17)',
+                example: 'PG-13',
+                jsonSchemaType: 'string'
             },
             {
                 placeholder: '$2',
                 index: 2,
-                label: 'max rows to return',
-                propertyName: 'param2'
+                name: 'maxRows',
+                propertyName: 'maxRows',
+                description: 'max rows to return',
+                example: '20',
+                jsonSchemaType: 'integer'
             }
-        ],
-        example: 'MPAA rating PG-13, max 20 rows'
+        ]
     },
     {
         kind: 'sql',
         toolName: 'filmsWithActorLastName',
         title: 'Actor–film cast via film_actor join',
         description:
-            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): actor last name prefix (e.g. GAR, BER, HOP)\n- param2 ($2): max rows to return\n\nExample: Last name prefix GAR (e.g. Gardner), limit 25',
+            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix ($1): actor last name prefix (e.g. GAR, BER, HOP) (example: GAR)\n- maxRows ($2): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         sqlText:
             "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
         params: [
             {
                 placeholder: '$1',
                 index: 1,
-                label: 'actor last name prefix (e.g. GAR, BER, HOP)',
-                propertyName: 'param1'
+                name: 'lastNamePrefix',
+                propertyName: 'lastNamePrefix',
+                description: 'actor last name prefix (e.g. GAR, BER, HOP)',
+                example: 'GAR',
+                jsonSchemaType: 'string'
             },
             {
                 placeholder: '$2',
                 index: 2,
-                label: 'max rows to return',
-                propertyName: 'param2'
+                name: 'maxRows',
+                propertyName: 'maxRows',
+                description: 'max rows to return',
+                example: '25',
+                jsonSchemaType: 'integer'
             }
-        ],
-        example: 'Last name prefix GAR (e.g. Gardner), limit 25'
+        ]
     },
     {
         kind: 'sql',
         toolName: 'searchFilms',
         title: 'Film full-text style search (title and description)',
         description:
-            'search films by free text in title or description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- param1 ($1): search text (matched in title or description)\n- param2 ($2): max rows to return\n\nExample: Search dragon, limit 15',
+            'search films by free text in title or description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText ($1): search text (matched in title or description) (example: dog)\n- maxRows ($2): max rows to return (example: 15)\n\nExample call: searchText=dog, maxRows=15',
         sqlText:
             "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
         params: [
             {
                 placeholder: '$1',
                 index: 1,
-                label: 'search text (matched in title or description)',
-                propertyName: 'param1'
+                name: 'searchText',
+                propertyName: 'searchText',
+                description: 'search text (matched in title or description)',
+                example: 'dog',
+                jsonSchemaType: 'string'
             },
             {
                 placeholder: '$2',
                 index: 2,
-                label: 'max rows to return',
-                propertyName: 'param2'
+                name: 'maxRows',
+                propertyName: 'maxRows',
+                description: 'max rows to return',
+                example: '15',
+                jsonSchemaType: 'integer'
             }
-        ],
-        example: 'Search dragon, limit 15'
+        ]
     }
 ];
 
@@ -184,20 +199,20 @@ export const inputZodByTool = {
         .strict(),
     filmsByMpaaRating: z
         .object({
-            param1: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)'),
-            param2: z.string().describe('max rows to return (SQL $2)')
+            rating: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)'),
+            maxRows: z.number().describe('max rows to return (SQL $2)')
         })
         .strict(),
     filmsWithActorLastName: z
         .object({
-            param1: z.string().describe('actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)'),
-            param2: z.string().describe('max rows to return (SQL $2)')
+            lastNamePrefix: z.string().describe('actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)'),
+            maxRows: z.number().describe('max rows to return (SQL $2)')
         })
         .strict(),
     searchFilms: z
         .object({
-            param1: z.string().describe('search text (matched in title or description) (SQL $1)'),
-            param2: z.string().describe('max rows to return (SQL $2)')
+            searchText: z.string().describe('search text (matched in title or description) (SQL $1)'),
+            maxRows: z.number().describe('max rows to return (SQL $2)')
         })
         .strict()
 };
@@ -356,6 +371,14 @@ function resolveConnectionString(hostContext) {
     );
 }
 
+function normalizePostgresNumericParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+
 export async function invokeTool(toolName, options = {}, hostContext) {
     const connectionString = resolveConnectionString(hostContext);
     const client = new pg.Client({ connectionString });
@@ -486,10 +509,10 @@ export async function invokeTool(toolName, options = {}, hostContext) {
                 const result = await client.query({
                     text: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
                     values: [
-                        options['param1'] !== undefined && options['param1'] !== null
-                            ? String(options['param1'])
+                        options['rating'] !== undefined && options['rating'] !== null
+                            ? String(options['rating'])
                             : null,
-                        options['param2'] !== undefined && options['param2'] !== null ? String(options['param2']) : null
+                        normalizePostgresNumericParamValue(options['maxRows'])
                     ]
                 });
                 return {
@@ -501,10 +524,10 @@ export async function invokeTool(toolName, options = {}, hostContext) {
                 const result = await client.query({
                     text: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
                     values: [
-                        options['param1'] !== undefined && options['param1'] !== null
-                            ? String(options['param1'])
+                        options['lastNamePrefix'] !== undefined && options['lastNamePrefix'] !== null
+                            ? String(options['lastNamePrefix'])
                             : null,
-                        options['param2'] !== undefined && options['param2'] !== null ? String(options['param2']) : null
+                        normalizePostgresNumericParamValue(options['maxRows'])
                     ]
                 });
                 return {
@@ -516,10 +539,13 @@ export async function invokeTool(toolName, options = {}, hostContext) {
                 const result = await client.query({
                     text: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
                     values: [
-                        options['param1'] !== undefined && options['param1'] !== null
-                            ? String(options['param1'])
+                        options['searchText'] !== undefined && options['searchText'] !== null
+                            ? String(options['searchText'])
                             : null,
-                        options['param2'] !== undefined && options['param2'] !== null ? String(options['param2']) : null
+                        options['searchText'] !== undefined && options['searchText'] !== null
+                            ? String(options['searchText'])
+                            : null,
+                        normalizePostgresNumericParamValue(options['maxRows'])
                     ]
                 });
                 return {

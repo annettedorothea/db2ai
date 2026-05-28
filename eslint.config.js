@@ -29,7 +29,6 @@ export default [
             'packages/cli/resources/mcp-serve-emitted.mjs',
             '**/generated/cli/mcp-serve.mjs',
             'packages/cli/tmp/**',
-            'packages/extension/demos/generated/**',
             'packages/extension/demos/tmp/**',
             'packages/extension/demos/.pagila-src/**'
         ]
@@ -48,6 +47,20 @@ export default [
         files: ['**/*.{ts,tsx}'],
         rules: {
             'no-undef': 'off',
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_'
+                }
+            ]
+        }
+    },
+    {
+        files: ['packages/extension/demos/generated/**/*.{ts,mjs}', '**/generated/cli/mcp-serve.mjs'],
+        rules: {
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [
                 'error',

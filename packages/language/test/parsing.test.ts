@@ -158,8 +158,17 @@ describe('Parsing tests', () => {
                 intent: "films with minimum rating"
                 query: "SELECT film_id, title FROM film WHERE rating >= $1 LIMIT $2"
                 params: {
-                    $1: "minimum rating"
-                    $2: "max rows"
+                    $1: {
+                        name: rating
+                        description: "minimum rating"
+                        example: "PG"
+                    }
+                    $2: {
+                        name: maxRows
+                        description: "max rows"
+                        example: "10"
+                        type: integer
+                    }
                 }
             }
         `);
@@ -172,6 +181,7 @@ describe('Parsing tests', () => {
             expect(entry.query).toContain('$1');
             expect(entry.params?.entries).toHaveLength(2);
             expect(entry.params?.entries[0].placeholder).toBe('$1');
+            expect(entry.params?.entries[0].spec?.fields.some((f) => f.name === 'rating')).toBe(true);
         }
     });
 });

@@ -26,7 +26,6 @@ SqlQuery:
         ('intent' ':' intent=STRING)?
         ('query' ':' query=STRING)?
         ('summary' ':' summary=STRING)?
-        ('example' ':' example=STRING)?
         ('params' ':' params=SqlParamMap)?
     '}';
 
@@ -40,7 +39,19 @@ SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';
 
 SqlParamEntry:
-    placeholder=PARAM_REF ':' label=STRING;
+    placeholder=PARAM_REF ':' spec=SqlParamSpec;
+
+SqlParamSpec:
+    '{' (fields += SqlParamSpecField)* '}';
+
+SqlParamSpecField:
+    'name' ':' name=ID |
+    'description' ':' description=STRING |
+    'example' ':' example=STRING |
+    'type' ':' paramType=SqlParamType;
+
+SqlParamType returns string:
+    'string' | 'integer' | 'number' | 'boolean';
 
 TableName:
     name=ID;

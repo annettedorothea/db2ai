@@ -30,7 +30,7 @@ describe('Pagila generated module direct invocation', () => {
                 expect(films.rows).toBeInstanceOf(Array);
 
                 const ratedFilms = asRecord(
-                    await generated.invokeTool('filmsByMpaaRating', { param1: 'PG', param2: '3' }, hostContext)
+                    await generated.invokeTool('filmsByMpaaRating', { rating: 'PG', maxRows: 3 }, hostContext)
                 );
                 expect(ratedFilms.rowCount).toBeGreaterThan(0);
                 expect(ratedFilms.rows).toBeInstanceOf(Array);
