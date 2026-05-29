@@ -1,20 +1,5 @@
-import {
-    DEFAULT_MAX_LIMIT_CAP,
-    DEFAULT_PAGE_LIMIT,
-    type ResolvedDatabaseDialect,
-    type SqlParamType
-} from 'db-2-ai-dsl-language';
-import {
-    quoteMysqlIdent,
-    quotePostgresIdent,
-    type ResolvedDbToolCodegen,
-    type ResolvedSqlToolCodegen,
-    type ResolvedTableToolCodegen
-} from '../db-query-codegen.js';
-
-function quoteDatabaseIdent(ident: string, dialect: ResolvedDatabaseDialect): string {
-    return dialect === 'mysql' ? quoteMysqlIdent(ident) : quotePostgresIdent(ident);
-}
+import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
+import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
 
 function renderOptionValueExpression(
     propertyName: string,
@@ -35,38 +20,6 @@ function renderOptionValueExpression(
         return `normalizePostgresBooleanParamValue(${optionAccess})`;
     }
     return `${optionAccess} !== undefined && ${optionAccess} !== null ? String(${optionAccess}) : null`;
-}
-
-function renderTableInvokeCase(tool: ResolvedTableToolCodegen, dialect: ResolvedDatabaseDialect): string {
-    const quotedTable = quoteDatabaseIdent(tool.table, dialect);
-    const limitPlaceholder = dialect === 'mysql' ? '?' : '$1';
-    const offsetPlaceholder = dialect === 'mysql' ? '?' : '$2';
-    const queryCall =
-        dialect === 'mysql'
-            ? `const [rows] = await client.query(sql, [effectiveLimit, offset]);
-            const resultRows = normalizeMysqlRows(rows);`
-            : `const result = await client.query(sql, [effectiveLimit, offset]);`;
-    const rowsExpression = dialect === 'mysql' ? 'resultRows' : 'result.rows';
-    const rowCountExpression = dialect === 'mysql' ? 'resultRows.length' : 'result.rowCount ?? result.rows.length';
-    const tableSql = `SELECT * FROM ${quotedTable} LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder}`;
-    return `        case ${JSON.stringify(tool.toolName)}: {
-            const effectiveLimit = Math.min(
-                typeof options.limit === 'number' && Number.isFinite(options.limit) ? options.limit : DEFAULT_PAGE_LIMIT,
-                ${tool.maxLimitCap}
-            );
-            const offset =
-                typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                    ? Math.floor(options.offset)
-                    : 0;
-            const sql = ${JSON.stringify(tableSql)};
-            ${queryCall}
-            return {
-                rows: ${rowsExpression},
-                rowCount: ${rowCountExpression},
-                limit: effectiveLimit,
-                offset
-            };
-        }`;
 }
 
 function rewriteLogicalPlaceholdersForMysql(sqlText: string): string {
@@ -115,9 +68,6 @@ function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokePa
         mysqlBoolean: false
     };
     for (const tool of tools) {
-        if (tool.kind !== 'sql') {
-            continue;
-        }
         for (const param of tool.params) {
             if (param.jsonSchemaType === 'integer' || param.jsonSchemaType === 'number') {
                 flags.postgresNumeric = true;
@@ -132,11 +82,7 @@ function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokePa
 }
 
 function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[], dialect: ResolvedDatabaseDialect): string {
-    return tools
-        .map((tool) =>
-            tool.kind === 'table' ? renderTableInvokeCase(tool, dialect) : renderSqlInvokeCase(tool, dialect)
-        )
-        .join('\n');
+    return tools.map((tool) => renderSqlInvokeCase(tool, dialect)).join('\n');
 }
 
 const POSTGRES_NUMERIC_HELPER_TS = `
@@ -246,13 +192,7 @@ function renderPostgresInvokeBlockTs(toolCases: string, flags: InvokeParamHelper
     return `
 import pg from 'pg';
 
-export const DEFAULT_PAGE_LIMIT = ${DEFAULT_PAGE_LIMIT};
-export const DEFAULT_MAX_LIMIT_CAP = ${DEFAULT_MAX_LIMIT_CAP};
-
-export type InvokeOptions = Record<string, unknown> & {
-    limit?: number;
-    offset?: number;
-};
+export type InvokeOptions = Record<string, unknown>;
 
 function resolveConnectionString(hostContext: unknown): string {
     if (hostContext && typeof hostContext === 'object' && 'connectionString' in hostContext) {
@@ -298,9 +238,6 @@ function renderPostgresInvokeBlockJs(toolCases: string, flags: InvokeParamHelper
     return `
 import pg from 'pg';
 
-export const DEFAULT_PAGE_LIMIT = ${DEFAULT_PAGE_LIMIT};
-export const DEFAULT_MAX_LIMIT_CAP = ${DEFAULT_MAX_LIMIT_CAP};
-
 function resolveConnectionString(hostContext) {
     if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
         const cs = String(hostContext.connectionString).trim();
@@ -335,13 +272,7 @@ function renderMysqlInvokeBlockTs(toolCases: string, flags: InvokeParamHelperFla
     return `
 import mysql from 'mysql2/promise';
 
-export const DEFAULT_PAGE_LIMIT = ${DEFAULT_PAGE_LIMIT};
-export const DEFAULT_MAX_LIMIT_CAP = ${DEFAULT_MAX_LIMIT_CAP};
-
-export type InvokeOptions = Record<string, unknown> & {
-    limit?: number;
-    offset?: number;
-};
+export type InvokeOptions = Record<string, unknown>;
 
 function resolveConnectionString(hostContext: unknown): string {
     if (hostContext && typeof hostContext === 'object' && 'connectionString' in hostContext) {
@@ -395,9 +326,6 @@ function renderMysqlInvokeBlockJs(toolCases: string, flags: InvokeParamHelperFla
     const helperSection = flags.mysqlBoolean ? `\n\n${MYSQL_BOOLEAN_HELPER_JS}` : '';
     return `
 import mysql from 'mysql2/promise';
-
-export const DEFAULT_PAGE_LIMIT = ${DEFAULT_PAGE_LIMIT};
-export const DEFAULT_MAX_LIMIT_CAP = ${DEFAULT_MAX_LIMIT_CAP};
 
 function resolveConnectionString(hostContext) {
     if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {

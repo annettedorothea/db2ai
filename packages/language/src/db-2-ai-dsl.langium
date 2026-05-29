@@ -2,23 +2,10 @@ grammar Db2AiDsl
 
 entry Model:
     'database' (dialect=DatabaseDialect)? 'env' env=STRING
-    (entries += ModelEntry)*;
+    (entries += SqlQuery)*;
 
 DatabaseDialect returns string:
     'postgres' | 'postgresql' | 'mysql';
-
-ModelEntry:
-    TableQuery | SqlQuery;
-
-TableQuery:
-    'SELECT' '*' 'FROM' table=TableName '{'
-        ('toolName' ':' toolName=STRING)?
-        ('intent' ':' intent=STRING)?
-        ('summary' ':' summary=STRING)?
-        ('example' ':' example=STRING)?
-        ('maxLimit' ':' maxLimit=INT)?
-        ('columns' ':' columns=ColumnDescriptions)?
-    '}';
 
 SqlQuery:
     'SQL' '{'
@@ -28,12 +15,6 @@ SqlQuery:
         ('summary' ':' summary=STRING)?
         ('params' ':' params=SqlParamMap)?
     '}';
-
-ColumnDescriptions:
-    '{' (entries += ColumnDescriptionEntry)* '}';
-
-ColumnDescriptionEntry:
-    name=ID ':' description=STRING;
 
 SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';
@@ -53,11 +34,7 @@ SqlParamSpecField:
 SqlParamType returns string:
     'string' | 'integer' | 'number' | 'boolean';
 
-TableName:
-    name=ID;
-
 terminal PARAM_REF: /\$[0-9]+/;
-terminal INT: /[0-9]+/;
 terminal ID: /[a-zA-Z_][a-zA-Z0-9_]*/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
 hidden terminal WS: /\s+/;

@@ -12,7 +12,7 @@ const pagilaSourcePath = path.join(demosRoot, 'pagila.db2ai');
 const tmpRoot = path.join(cliRoot, 'tmp');
 
 describe('Pagila generated module direct invocation', () => {
-    it('ensures Pagila in Docker, generates tools, and invokes table and SQL tools', async () => {
+    it('ensures Pagila in Docker, generates tools, and invokes SQL tools', async () => {
         const { connectionString } = await ensurePagilaDocker(demosRoot);
         await withGeneratedDirectInvokeFixture(
             {

@@ -13,13 +13,14 @@ beforeAll(async () => {
 });
 
 describe('Parsing tests', () => {
-    test('parses database env and one query', async () => {
+    test('parses database env and one SQL tool', async () => {
         document = await parse(`
             database env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "listFilms"
                 intent: "list films"
+                query: "SELECT * FROM film LIMIT $1 OFFSET $2"
             }
         `);
 
@@ -28,20 +29,18 @@ describe('Parsing tests', () => {
         expect(document.parseResult.value.dialect).toBeUndefined();
         expect(document.parseResult.value.entries).toHaveLength(1);
         const entry = document.parseResult.value.entries[0];
-        expect(entry.$type).toBe('TableQuery');
-        if (entry.$type === 'TableQuery') {
-            expect(entry.table?.name).toBe('film');
-            expect(entry.toolName).toBe('listFilms');
-        }
+        expect(entry.$type).toBe('SqlQuery');
+        expect(entry.toolName).toBe('listFilms');
     });
 
     test('parses explicit postgres dialect', async () => {
         document = await parse(`
             database postgres env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "listFilms"
                 intent: "list films"
+                query: "SELECT 1"
             }
         `);
 
@@ -54,9 +53,10 @@ describe('Parsing tests', () => {
         document = await parse(`
             database mysql env "SAKILA_DATABASE_URL"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "listFilms"
                 intent: "list films"
+                query: "SELECT 1"
             }
         `);
 
@@ -65,88 +65,52 @@ describe('Parsing tests', () => {
         expect(document.parseResult.value.env).toBe('SAKILA_DATABASE_URL');
     });
 
-    test('parses query with optional example, summary, and maxLimit', async () => {
+    test('parses SQL tool with summary and params', async () => {
         document = await parse(`
             database env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM actor {
+            SQL {
                 toolName: "listActors"
                 intent: "list actors"
+                query: "SELECT * FROM actor LIMIT $1 OFFSET $2"
                 summary: "Actors"
-                example: "All actors"
-                maxLimit: 200
-            }
-        `);
-
-        expect(document.parseResult.parserErrors).toHaveLength(0);
-        const q = document.parseResult.value.entries[0];
-        expect(q.$type).toBe('TableQuery');
-        if (q.$type !== 'TableQuery') {
-            return;
-        }
-        expect(q.table?.name).toBe('actor');
-        expect(q.summary).toBe('Actors');
-        expect(q.example).toBe('All actors');
-        expect(q.maxLimit).toBe(200);
-    });
-
-    test('rejects query properties outside the canonical order', async () => {
-        document = await parse(`
-            database env "PAGILA_DATABASE_URL"
-
-            SELECT * FROM actor {
-                summary: "Actors"
-                toolName: "listActors"
-                intent: "list actors"
-            }
-        `);
-
-        expect(document.parseResult.parserErrors.length).toBeGreaterThan(0);
-    });
-
-    test('parses columns map in query block', async () => {
-        document = await parse(`
-            database env "PAGILA_DATABASE_URL"
-
-            SELECT * FROM actor {
-                toolName: "listActors"
-                intent: "list actors"
-                columns: {
-                    actor_id: "Primary key"
-                    first_name: "Given name"
+                params: {
+                    $1: {
+                        name: limit
+                        description: "max rows"
+                        example: "100"
+                        type: integer
+                    }
+                    $2: {
+                        name: offset
+                        description: "skip rows"
+                        example: "0"
+                        type: integer
+                    }
                 }
             }
         `);
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
         const q = document.parseResult.value.entries[0];
-        expect(q.$type).toBe('TableQuery');
-        if (q.$type !== 'TableQuery') {
-            return;
-        }
-        expect(q.columns?.entries).toHaveLength(2);
-        expect(q.columns?.entries[0].name).toBe('actor_id');
-        expect(q.columns?.entries[0].description).toBe('Primary key');
-        expect(q.columns?.entries[1].name).toBe('first_name');
+        expect(q.$type).toBe('SqlQuery');
+        expect(q.summary).toBe('Actors');
+        expect(q.params?.entries).toHaveLength(2);
     });
 
-    test('parses empty columns map', async () => {
+    test('rejects SQL properties outside the canonical order', async () => {
         document = await parse(`
             database env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM actor {
+            SQL {
+                summary: "Actors"
                 toolName: "listActors"
                 intent: "list actors"
-                columns: {}
+                query: "SELECT 1"
             }
         `);
 
-        expect(document.parseResult.parserErrors).toHaveLength(0);
-        const empty = document.parseResult.value.entries[0];
-        expect(empty.$type).toBe('TableQuery');
-        if (empty.$type === 'TableQuery') {
-            expect(empty.columns?.entries).toHaveLength(0);
-        }
+        expect(document.parseResult.parserErrors.length).toBeGreaterThan(0);
     });
 
     test('parses SQL tool with query and params', async () => {

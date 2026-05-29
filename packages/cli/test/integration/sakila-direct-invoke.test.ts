@@ -12,7 +12,7 @@ const sakilaSourcePath = path.join(demosRoot, 'sakila.db2ai');
 const tmpRoot = path.join(cliRoot, 'tmp');
 
 describe('Sakila generated module direct invocation', () => {
-    it('ensures Sakila in Docker, generates MySQL tools, and invokes table and SQL tools', async () => {
+    it('ensures Sakila in Docker, generates MySQL tools, and invokes SQL tools', async () => {
         const { connectionString } = await ensureSakilaDocker(demosRoot);
         await withGeneratedDirectInvokeFixture(
             {

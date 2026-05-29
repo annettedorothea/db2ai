@@ -1,25 +1,8 @@
 import path from 'node:path';
 import { EmptyFileSystem, type LangiumDocument } from 'langium';
 import { parseHelper, type ParseHelperOptions } from 'langium/test';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { clearSchemaCache } from '../src/schema.js';
-
-vi.mock('../src/schema.js', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../src/schema.js')>();
-    return {
-        ...actual,
-        loadSchema: vi.fn(async (_connectionUrl: string, dialect: 'postgres' | 'mysql' = 'postgres') => ({
-            dialect,
-            tables: ['film', 'actor', 'customer'],
-            columnsByTable: {
-                film: ['film_id', 'title'],
-                actor: ['actor_id', 'first_name', 'last_name'],
-                customer: ['customer_id']
-            }
-        }))
-    };
-});
-
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
 import type { Model } from '../src/generated/ast.js';
 
@@ -52,53 +35,47 @@ function errorMessages(doc: LangiumDocument<Model>): string[] {
 }
 
 describe('Validating', () => {
-    test('accepts query when table exists in schema', async () => {
+    test('accepts SQL tool with valid env', async () => {
         document = await parseValidated(`
             database env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "listFilms"
                 intent: "list films"
+                query: "SELECT * FROM film LIMIT $1 OFFSET $2"
+                params: {
+                    $1: { name: limit description: "max rows" example: "100" type: integer }
+                    $2: { name: offset description: "skip rows" example: "0" type: integer }
+                }
             }
         `);
 
         expect(errorMessages(document)).toHaveLength(0);
     });
 
-    test('rejects unknown table', async () => {
+    test('requires toolName, intent, and query', async () => {
         document = await parseValidated(`
             database env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM not_a_table {
-                toolName: "x"
-                intent: "y"
-            }
-        `);
-
-        expect(errorMessages(document).some((m) => m.includes('not_a_table'))).toBe(true);
-    });
-
-    test('requires toolName and intent', async () => {
-        document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
-
-            SELECT * FROM film {
-                example: "x"
+            SQL {
+                summary: "x"
             }
         `);
 
         const messages = errorMessages(document);
         expect(messages.some((m) => m.includes('toolName'))).toBe(true);
         expect(messages.some((m) => m.includes('intent'))).toBe(true);
+        expect(messages.some((m) => m.includes('query'))).toBe(true);
     });
 
     test('rejects invalid env var name', async () => {
         document = await parseValidated(`
             database env "not-valid"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "t"
                 intent: "i"
+                query: "SELECT 1"
             }
         `);
 
@@ -110,9 +87,10 @@ describe('Validating', () => {
         document = await parseValidated(`
             database env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "t"
                 intent: "i"
+                query: "SELECT 1"
             }
         `);
 
@@ -123,9 +101,14 @@ describe('Validating', () => {
         document = await parseValidated(`
             database mysql env "SAKILA_DATABASE_URL"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "listFilms"
                 intent: "list films"
+                query: "SELECT * FROM film LIMIT $1 OFFSET $2"
+                params: {
+                    $1: { name: limit description: "max rows" example: "100" type: integer }
+                    $2: { name: offset description: "skip rows" example: "0" type: integer }
+                }
             }
         `);
 
@@ -137,76 +120,33 @@ describe('Validating', () => {
         document = await parseValidated(`
             database mysql env "SAKILA_DATABASE_URL"
 
-            SELECT * FROM film {
+            SQL {
                 toolName: "listFilms"
                 intent: "list films"
+                query: "SELECT 1"
             }
         `);
 
         expect(errorMessages(document).some((m) => m.includes('MySQL'))).toBe(true);
     });
 
-    test('accepts valid columns map', async () => {
+    test('rejects duplicate tool names', async () => {
         document = await parseValidated(`
             database env "PAGILA_DATABASE_URL"
 
-            SELECT * FROM actor {
-                toolName: "listActors"
-                intent: "list actors"
-                columns: {
-                    actor_id: "Primary key"
-                    first_name: "Given name"
-                }
+            SQL {
+                toolName: "dup"
+                intent: "first"
+                query: "SELECT 1"
+            }
+
+            SQL {
+                toolName: "dup"
+                intent: "second"
+                query: "SELECT 2"
             }
         `);
 
-        expect(errorMessages(document)).toHaveLength(0);
-    });
-
-    test('rejects unknown column in columns map', async () => {
-        document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
-
-            SELECT * FROM actor {
-                toolName: "listActors"
-                intent: "list actors"
-                columns: {
-                    not_a_column: "x"
-                }
-            }
-        `);
-
-        expect(errorMessages(document).some((m) => m.includes('not_a_column'))).toBe(true);
-    });
-
-    test('rejects duplicate column keys in columns map', async () => {
-        document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
-
-            SELECT * FROM actor {
-                toolName: "listActors"
-                intent: "list actors"
-                columns: {
-                    actor_id: "a"
-                    actor_id: "b"
-                }
-            }
-        `);
-
-        expect(errorMessages(document).some((m) => m.includes('Duplicate column key'))).toBe(true);
-    });
-
-    test('rejects non-positive maxLimit', async () => {
-        document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
-
-            SELECT * FROM film {
-                toolName: "t"
-                intent: "i"
-                maxLimit: 0
-            }
-        `);
-
-        expect(errorMessages(document).some((m) => m.includes('maxLimit'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('toolName "dup" must be unique'))).toBe(true);
     });
 });

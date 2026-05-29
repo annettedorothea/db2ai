@@ -1,30 +1,36 @@
 database mysql env "SAKILA_DATABASE_URL"
 
-SELECT * FROM film {
+SQL {
     toolName: "listFilms"
     intent: "list films from Sakila with pagination"
+    query: "SELECT * FROM film LIMIT $1 OFFSET $2"
     summary: "Paginated Sakila film rows"
-    example: "First page: limit 20 offset 0; next page: limit 20 offset 20"
-    maxLimit: 500
-}
-
-SELECT * FROM actor {
-    toolName: "listActors"
-    intent: "list actors with pagination"
-    summary: "Paginated Sakila actor rows"
-    maxLimit: 500
-    columns: {
-        actor_id: "Primary key"
-        first_name: "Given name"
-        last_name: "Family name"
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
     }
 }
 
-SELECT * FROM category {
+SQL {
+    toolName: "listActors"
+    intent: "list actors with pagination"
+    query: "SELECT * FROM actor LIMIT $1 OFFSET $2"
+    summary: "Paginated Sakila actor rows"
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+    }
+}
+
+SQL {
     toolName: "listCategories"
     intent: "list film categories with pagination"
+    query: "SELECT * FROM category LIMIT $1 OFFSET $2"
     summary: "Paginated Sakila category rows"
-    maxLimit: 500
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+    }
 }
 
 SQL {

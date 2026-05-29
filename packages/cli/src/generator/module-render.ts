@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import type { ResolvedDatabaseDialect, ResolvedSqlParam, SqlParamType } from 'db-2-ai-dsl-language';
-import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen, ResolvedTableToolCodegen } from '../db-query-codegen.js';
+import type { ResolvedDbToolCodegen } from '../db-query-codegen.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -16,11 +16,8 @@ export type GeneratedToolModule = {
     toolName: string;
     title: string;
     description: string;
-    kind: 'table' | 'sql';
-    table?: string;
-    maxLimitCap?: number;
-    sqlText?: string;
-    example?: string;
+    kind: 'sql';
+    sqlText: string;
     params?: GeneratedSqlParam[];
 };
 
@@ -37,26 +34,13 @@ function serializeSqlParam(param: ResolvedSqlParam): GeneratedSqlParam {
 }
 
 function toGeneratedToolModule(tool: ResolvedDbToolCodegen): GeneratedToolModule {
-    if (tool.kind === 'table') {
-        const tableTool: ResolvedTableToolCodegen = tool;
-        return {
-            kind: 'table',
-            toolName: tableTool.toolName,
-            title: tableTool.title,
-            description: tableTool.description,
-            table: tableTool.table,
-            maxLimitCap: tableTool.maxLimitCap,
-            example: tableTool.example
-        };
-    }
-    const sqlTool: ResolvedSqlToolCodegen = tool;
     return {
         kind: 'sql',
-        toolName: sqlTool.toolName,
-        title: sqlTool.title,
-        description: sqlTool.description,
-        sqlText: sqlTool.sqlText,
-        params: sqlTool.params.map(serializeSqlParam)
+        toolName: tool.toolName,
+        title: tool.title,
+        description: tool.description,
+        sqlText: tool.sqlText,
+        params: tool.params.map(serializeSqlParam)
     };
 }
 
@@ -112,11 +96,8 @@ export type GeneratedTool = {
     toolName: string;
     title: string;
     description: string;
-    kind: 'table' | 'sql';
-    table?: string;
-    maxLimitCap?: number;
-    sqlText?: string;
-    example?: string;
+    kind: 'sql';
+    sqlText: string;
     params?: GeneratedSqlParam[];
 };
 

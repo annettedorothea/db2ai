@@ -22,70 +22,179 @@ export type GeneratedTool = {
     toolName: string;
     title: string;
     description: string;
-    kind: 'table' | 'sql';
-    table?: string;
-    maxLimitCap?: number;
-    sqlText?: string;
-    example?: string;
+    kind: 'sql';
+    sqlText: string;
     params?: GeneratedSqlParam[];
 };
 
 export const generatedTools: GeneratedTool[] = [
     {
-        kind: 'table',
+        kind: 'sql',
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Pagila with pagination\n\nRuns SELECT * FROM public.film with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nExample: First page: limit 20 offset 0; next page: limit 20 offset 20',
-        table: 'film',
-        maxLimitCap: 500,
-        example: 'First page: limit 20 offset 0; next page: limit 20 offset 20'
+            'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        sqlText: 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2',
+        params: [
+            {
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows per page',
+                example: '100',
+                jsonSchemaType: 'integer'
+            },
+            {
+                placeholder: '$2',
+                index: 2,
+                name: 'offset',
+                propertyName: 'offset',
+                description: 'rows to skip',
+                example: '0',
+                jsonSchemaType: 'integer'
+            }
+        ]
     },
     {
-        kind: 'table',
+        kind: 'sql',
         toolName: 'listActors',
         title: 'Paginated actor rows',
         description:
-            'list actors with pagination\n\nRuns SELECT * FROM public.actor with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- actor_id — Primary key\n- first_name — Given name\n- last_name — Family name',
-        table: 'actor',
-        maxLimitCap: 500
+            'list actors with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
+        params: [
+            {
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows per page',
+                example: '100',
+                jsonSchemaType: 'integer'
+            },
+            {
+                placeholder: '$2',
+                index: 2,
+                name: 'offset',
+                propertyName: 'offset',
+                description: 'rows to skip',
+                example: '0',
+                jsonSchemaType: 'integer'
+            }
+        ]
     },
     {
-        kind: 'table',
+        kind: 'sql',
         toolName: 'listCustomers',
         title: 'Paginated customer rows',
         description:
-            'list customers with pagination\n\nRuns SELECT * FROM public.customer with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- active — Active customer flag\n- address_id — Address ID\n- email — Email address\n\nExample: First 10 customers: limit 10 offset 0',
-        table: 'customer',
-        maxLimitCap: 500,
-        example: 'First 10 customers: limit 10 offset 0'
+            'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 10)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=10, offset=0',
+        sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2',
+        params: [
+            {
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows per page',
+                example: '10',
+                jsonSchemaType: 'integer'
+            },
+            {
+                placeholder: '$2',
+                index: 2,
+                name: 'offset',
+                propertyName: 'offset',
+                description: 'rows to skip',
+                example: '0',
+                jsonSchemaType: 'integer'
+            }
+        ]
     },
     {
-        kind: 'table',
+        kind: 'sql',
         toolName: 'listCategories',
         title: 'Paginated category rows',
         description:
-            'list categories with pagination\n\nRuns SELECT * FROM public.category with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).',
-        table: 'category',
-        maxLimitCap: 500
+            'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        sqlText: 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2',
+        params: [
+            {
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows per page',
+                example: '100',
+                jsonSchemaType: 'integer'
+            },
+            {
+                placeholder: '$2',
+                index: 2,
+                name: 'offset',
+                propertyName: 'offset',
+                description: 'rows to skip',
+                example: '0',
+                jsonSchemaType: 'integer'
+            }
+        ]
     },
     {
-        kind: 'table',
+        kind: 'sql',
         toolName: 'listCountries',
         title: 'Paginated country rows',
         description:
-            'list countries with pagination\n\nRuns SELECT * FROM public.country with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- country — country name\n- last_update — last update timestamp',
-        table: 'country',
-        maxLimitCap: 500
+            'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        sqlText: 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2',
+        params: [
+            {
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows per page',
+                example: '100',
+                jsonSchemaType: 'integer'
+            },
+            {
+                placeholder: '$2',
+                index: 2,
+                name: 'offset',
+                propertyName: 'offset',
+                description: 'rows to skip',
+                example: '0',
+                jsonSchemaType: 'integer'
+            }
+        ]
     },
     {
-        kind: 'table',
+        kind: 'sql',
         toolName: 'listInventory',
         title: 'Paginated inventory rows',
         description:
-            'list inventory with pagination\n\nRuns SELECT * FROM public.inventory with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- inventory_id — Primary key\n- film_id — Film ID\n- store_id — Store ID',
-        table: 'inventory',
-        maxLimitCap: 500
+            'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        sqlText: 'SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2',
+        params: [
+            {
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows per page',
+                example: '100',
+                jsonSchemaType: 'integer'
+            },
+            {
+                placeholder: '$2',
+                index: 2,
+                name: 'offset',
+                propertyName: 'offset',
+                description: 'rows to skip',
+                example: '0',
+                jsonSchemaType: 'integer'
+            }
+        ]
     },
     {
         kind: 'sql',
@@ -176,7 +285,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'pagila-tools';
-export const mcpServerVersion = '0.0.1';
+export const mcpServerVersion = '0.0.2';
 
 import * as z from 'zod/v4';
 
@@ -185,38 +294,38 @@ const __core2aiPrimitiveUnion = z.union([z.string(), z.number(), z.boolean()]);
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
+            limit: z.number().describe('max rows per page (SQL $1)'),
+            offset: z.number().describe('rows to skip (SQL $2)')
         })
         .strict(),
     listActors: z
         .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
+            limit: z.number().describe('max rows per page (SQL $1)'),
+            offset: z.number().describe('rows to skip (SQL $2)')
         })
         .strict(),
     listCustomers: z
         .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
+            limit: z.number().describe('max rows per page (SQL $1)'),
+            offset: z.number().describe('rows to skip (SQL $2)')
         })
         .strict(),
     listCategories: z
         .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
+            limit: z.number().describe('max rows per page (SQL $1)'),
+            offset: z.number().describe('rows to skip (SQL $2)')
         })
         .strict(),
     listCountries: z
         .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
+            limit: z.number().describe('max rows per page (SQL $1)'),
+            offset: z.number().describe('rows to skip (SQL $2)')
         })
         .strict(),
     listInventory: z
         .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
+            limit: z.number().describe('max rows per page (SQL $1)'),
+            offset: z.number().describe('rows to skip (SQL $2)')
         })
         .strict(),
     filmsByMpaaRating: z
@@ -378,13 +487,7 @@ export const mcpHostAdapter = {
 
 import pg from 'pg';
 
-export const DEFAULT_PAGE_LIMIT = 100;
-export const DEFAULT_MAX_LIMIT_CAP = 1000;
-
-export type InvokeOptions = Record<string, unknown> & {
-    limit?: number;
-    offset?: number;
-};
+export type InvokeOptions = Record<string, unknown>;
 
 function resolveConnectionString(hostContext: unknown): string {
     if (hostContext && typeof hostContext === 'object' && 'connectionString' in hostContext) {
@@ -417,123 +520,81 @@ export async function invokeTool(
     try {
         switch (toolName) {
             case 'listFilms': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "film" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const result = await client.query({
+                    text: 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2',
+                    values: [
+                        normalizePostgresNumericParamValue(options['limit']),
+                        normalizePostgresNumericParamValue(options['offset'])
+                    ]
+                });
                 return {
                     rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
+                    rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listActors': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "actor" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const result = await client.query({
+                    text: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
+                    values: [
+                        normalizePostgresNumericParamValue(options['limit']),
+                        normalizePostgresNumericParamValue(options['offset'])
+                    ]
+                });
                 return {
                     rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
+                    rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listCustomers': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "customer" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const result = await client.query({
+                    text: 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2',
+                    values: [
+                        normalizePostgresNumericParamValue(options['limit']),
+                        normalizePostgresNumericParamValue(options['offset'])
+                    ]
+                });
                 return {
                     rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
+                    rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listCategories': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "category" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const result = await client.query({
+                    text: 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2',
+                    values: [
+                        normalizePostgresNumericParamValue(options['limit']),
+                        normalizePostgresNumericParamValue(options['offset'])
+                    ]
+                });
                 return {
                     rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
+                    rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listCountries': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "country" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const result = await client.query({
+                    text: 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2',
+                    values: [
+                        normalizePostgresNumericParamValue(options['limit']),
+                        normalizePostgresNumericParamValue(options['offset'])
+                    ]
+                });
                 return {
                     rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
+                    rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listInventory': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "inventory" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
+                const result = await client.query({
+                    text: 'SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2',
+                    values: [
+                        normalizePostgresNumericParamValue(options['limit']),
+                        normalizePostgresNumericParamValue(options['offset'])
+                    ]
+                });
                 return {
                     rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
+                    rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'filmsByMpaaRating': {

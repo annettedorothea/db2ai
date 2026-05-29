@@ -1,7 +1,8 @@
 import type { SqlParamSpec, SqlParamSpecField, SqlParamType } from './generated/ast.js';
 import { isSqlParamSpecField } from './generated/ast.js';
 
-export const RESERVED_SQL_PARAM_NAMES = new Set(['limit', 'offset']);
+/** Reserved MCP argument names from removed TableQuery pagination — none today. */
+export const RESERVED_SQL_PARAM_NAMES = new Set<string>();
 
 export type ParsedSqlParamSpec = {
     name?: string;

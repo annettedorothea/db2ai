@@ -1,65 +1,68 @@
 database env "PAGILA_DATABASE_URL"
 
-SELECT * FROM film {
+SQL {
     toolName: "listFilms"
     intent: "list films from Pagila with pagination"
+    query: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2"
     summary: "Paginated film rows"
-    example: "First page: limit 20 offset 0; next page: limit 20 offset 20"
-    maxLimit: 500
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+    }
 }
 
-SELECT * FROM actor {
+SQL {
     toolName: "listActors"
     intent: "list actors with pagination"
+    query: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2"
     summary: "Paginated actor rows"
-    maxLimit: 500
-    columns: {
-        actor_id: "Primary key"
-        first_name: "Given name"
-        last_name: "Family name"
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
     }
 }
 
-SELECT * FROM customer {
+SQL {
     toolName: "listCustomers"
     intent: "list customers with pagination"
+    query: "SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2"
     summary: "Paginated customer rows"
-    example: "First 10 customers: limit 10 offset 0"
-    maxLimit: 500
-    columns: {
-        active: "Active customer flag"
-        address_id: "Address ID"
-        email: "Email address"
+    params: {
+        $1: { name: limit description: "max rows per page" example: "10" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
     }
 }
 
-SELECT * FROM category {
+SQL {
     toolName: "listCategories"
     intent: "list categories with pagination"
+    query: "SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2"
     summary: "Paginated category rows"
-    maxLimit: 500
-}
-
-SELECT * FROM country {
-    toolName: "listCountries"
-    intent: "list countries with pagination"
-    summary: "Paginated country rows"
-    maxLimit: 500
-    columns: {
-        country: "country name"
-        last_update: "last update timestamp"
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
     }
 }
 
-SELECT * FROM inventory {
+SQL {
+    toolName: "listCountries"
+    intent: "list countries with pagination"
+    query: "SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2"
+    summary: "Paginated country rows"
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+    }
+}
+
+SQL {
     toolName: "listInventory"
     intent: "list inventory with pagination"
+    query: "SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2"
     summary: "Paginated inventory rows"
-    maxLimit: 500
-    columns: {
-        inventory_id: "Primary key"
-        film_id: "Film ID"
-        store_id: "Store ID"
+    params: {
+        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $2: { name: offset description: "rows to skip" example: "0" type: integer }
     }
 }
 

@@ -1,6 +1,6 @@
 # db2ai
 
-**db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares tables or SQL plus AI-facing metadata (intent, examples, tool names, optional column docs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL/MySQL schemas).
+**db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares SQL tools plus AI-facing metadata (intent, examples, tool names, param specs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL/MySQL schemas).
 
 Sibling project: [api2ai](https://github.com/annettodorothea/api2ai) (OpenAPI to MCP).
 
@@ -13,10 +13,14 @@ From [`./packages/extension/demos/pagila.db2ai`](./packages/extension/demos/pagi
 ```txt
 database env "PAGILA_DATABASE_URL"
 
-SELECT * FROM film {
+SQL {
     toolName: "listFilms"
     intent: "list films from Pagila with pagination"
-    example: "First page: limit 20 offset 0"
+    query: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2"
+    params: {
+        $1: { name: limit, description: "max rows per page", example: "100", type: integer }
+        $2: { name: offset, description: "rows to skip", example: "0", type: integer }
+    }
 }
 ```
 

@@ -2,219 +2,275 @@
  * Generated from: pagila.db2ai
  */
 
-export const connectionEnv = 'PAGILA_DATABASE_URL';
+export const connectionEnv = "PAGILA_DATABASE_URL";
 
-export const databaseDialect = 'postgres';
+export const databaseDialect = "postgres";
 
 export const requiresAuth = false;
 
 export const generatedTools = [
     {
-        kind: 'table',
-        toolName: 'listFilms',
-        title: 'Paginated film rows',
-        description:
-            'list films from Pagila with pagination\n\nRuns SELECT * FROM public.film with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nExample: First page: limit 20 offset 0; next page: limit 20 offset 20',
-        table: 'film',
-        maxLimitCap: 500,
-        example: 'First page: limit 20 offset 0; next page: limit 20 offset 20'
-    },
-    {
-        kind: 'table',
-        toolName: 'listActors',
-        title: 'Paginated actor rows',
-        description:
-            'list actors with pagination\n\nRuns SELECT * FROM public.actor with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- actor_id — Primary key\n- first_name — Given name\n- last_name — Family name',
-        table: 'actor',
-        maxLimitCap: 500
-    },
-    {
-        kind: 'table',
-        toolName: 'listCustomers',
-        title: 'Paginated customer rows',
-        description:
-            'list customers with pagination\n\nRuns SELECT * FROM public.customer with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- active — Active customer flag\n- address_id — Address ID\n- email — Email address\n\nExample: First 10 customers: limit 10 offset 0',
-        table: 'customer',
-        maxLimitCap: 500,
-        example: 'First 10 customers: limit 10 offset 0'
-    },
-    {
-        kind: 'table',
-        toolName: 'listCategories',
-        title: 'Paginated category rows',
-        description:
-            'list categories with pagination\n\nRuns SELECT * FROM public.category with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).',
-        table: 'category',
-        maxLimitCap: 500
-    },
-    {
-        kind: 'table',
-        toolName: 'listCountries',
-        title: 'Paginated country rows',
-        description:
-            'list countries with pagination\n\nRuns SELECT * FROM public.country with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- country — country name\n- last_update — last update timestamp',
-        table: 'country',
-        maxLimitCap: 500
-    },
-    {
-        kind: 'table',
-        toolName: 'listInventory',
-        title: 'Paginated inventory rows',
-        description:
-            'list inventory with pagination\n\nRuns SELECT * FROM public.inventory with LIMIT/OFFSET.\nPagination: pass `limit` (default 100) and `offset` (default 0).\nNext page: same `limit`, increase `offset` (e.g. limit 20, offset 20 for page 2).\n\nColumns returned:\n- inventory_id — Primary key\n- film_id — Film ID\n- store_id — Store ID',
-        table: 'inventory',
-        maxLimitCap: 500
-    },
-    {
-        kind: 'sql',
-        toolName: 'filmsByMpaaRating',
-        title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
-        description:
-            'list films with a given MPAA age rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating ($1): MPAA rating (G, PG, PG-13, R, or NC-17) (example: PG-13)\n- maxRows ($2): max rows to return (example: 20)\n\nExample call: rating=PG-13, maxRows=20',
-        sqlText: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
-        params: [
+        "kind": "sql",
+        "toolName": "listFilms",
+        "title": "Paginated film rows",
+        "description": "list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0",
+        "sqlText": "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2",
+        "params": [
             {
-                placeholder: '$1',
-                index: 1,
-                name: 'rating',
-                propertyName: 'rating',
-                description: 'MPAA rating (G, PG, PG-13, R, or NC-17)',
-                example: 'PG-13',
-                jsonSchemaType: 'string'
+                "placeholder": "$1",
+                "index": 1,
+                "name": "limit",
+                "propertyName": "limit",
+                "description": "max rows per page",
+                "example": "100",
+                "jsonSchemaType": "integer"
             },
             {
-                placeholder: '$2',
-                index: 2,
-                name: 'maxRows',
-                propertyName: 'maxRows',
-                description: 'max rows to return',
-                example: '20',
-                jsonSchemaType: 'integer'
+                "placeholder": "$2",
+                "index": 2,
+                "name": "offset",
+                "propertyName": "offset",
+                "description": "rows to skip",
+                "example": "0",
+                "jsonSchemaType": "integer"
             }
         ]
     },
     {
-        kind: 'sql',
-        toolName: 'filmsWithActorLastName',
-        title: 'Actor–film cast via film_actor join',
-        description:
-            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix ($1): actor last name prefix (e.g. GAR, BER, HOP) (example: GAR)\n- maxRows ($2): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
-        sqlText:
-            "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
-        params: [
+        "kind": "sql",
+        "toolName": "listActors",
+        "title": "Paginated actor rows",
+        "description": "list actors with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0",
+        "sqlText": "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2",
+        "params": [
             {
-                placeholder: '$1',
-                index: 1,
-                name: 'lastNamePrefix',
-                propertyName: 'lastNamePrefix',
-                description: 'actor last name prefix (e.g. GAR, BER, HOP)',
-                example: 'GAR',
-                jsonSchemaType: 'string'
+                "placeholder": "$1",
+                "index": 1,
+                "name": "limit",
+                "propertyName": "limit",
+                "description": "max rows per page",
+                "example": "100",
+                "jsonSchemaType": "integer"
             },
             {
-                placeholder: '$2',
-                index: 2,
-                name: 'maxRows',
-                propertyName: 'maxRows',
-                description: 'max rows to return',
-                example: '25',
-                jsonSchemaType: 'integer'
+                "placeholder": "$2",
+                "index": 2,
+                "name": "offset",
+                "propertyName": "offset",
+                "description": "rows to skip",
+                "example": "0",
+                "jsonSchemaType": "integer"
             }
         ]
     },
     {
-        kind: 'sql',
-        toolName: 'searchFilms',
-        title: 'Film full-text style search (title and description)',
-        description:
-            'search films by free text in title or description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText ($1): search text (matched in title or description) (example: dog)\n- maxRows ($2): max rows to return (example: 15)\n\nExample call: searchText=dog, maxRows=15',
-        sqlText:
-            "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
-        params: [
+        "kind": "sql",
+        "toolName": "listCustomers",
+        "title": "Paginated customer rows",
+        "description": "list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 10)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=10, offset=0",
+        "sqlText": "SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2",
+        "params": [
             {
-                placeholder: '$1',
-                index: 1,
-                name: 'searchText',
-                propertyName: 'searchText',
-                description: 'search text (matched in title or description)',
-                example: 'dog',
-                jsonSchemaType: 'string'
+                "placeholder": "$1",
+                "index": 1,
+                "name": "limit",
+                "propertyName": "limit",
+                "description": "max rows per page",
+                "example": "10",
+                "jsonSchemaType": "integer"
             },
             {
-                placeholder: '$2',
-                index: 2,
-                name: 'maxRows',
-                propertyName: 'maxRows',
-                description: 'max rows to return',
-                example: '15',
-                jsonSchemaType: 'integer'
+                "placeholder": "$2",
+                "index": 2,
+                "name": "offset",
+                "propertyName": "offset",
+                "description": "rows to skip",
+                "example": "0",
+                "jsonSchemaType": "integer"
+            }
+        ]
+    },
+    {
+        "kind": "sql",
+        "toolName": "listCategories",
+        "title": "Paginated category rows",
+        "description": "list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0",
+        "sqlText": "SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2",
+        "params": [
+            {
+                "placeholder": "$1",
+                "index": 1,
+                "name": "limit",
+                "propertyName": "limit",
+                "description": "max rows per page",
+                "example": "100",
+                "jsonSchemaType": "integer"
+            },
+            {
+                "placeholder": "$2",
+                "index": 2,
+                "name": "offset",
+                "propertyName": "offset",
+                "description": "rows to skip",
+                "example": "0",
+                "jsonSchemaType": "integer"
+            }
+        ]
+    },
+    {
+        "kind": "sql",
+        "toolName": "listCountries",
+        "title": "Paginated country rows",
+        "description": "list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0",
+        "sqlText": "SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2",
+        "params": [
+            {
+                "placeholder": "$1",
+                "index": 1,
+                "name": "limit",
+                "propertyName": "limit",
+                "description": "max rows per page",
+                "example": "100",
+                "jsonSchemaType": "integer"
+            },
+            {
+                "placeholder": "$2",
+                "index": 2,
+                "name": "offset",
+                "propertyName": "offset",
+                "description": "rows to skip",
+                "example": "0",
+                "jsonSchemaType": "integer"
+            }
+        ]
+    },
+    {
+        "kind": "sql",
+        "toolName": "listInventory",
+        "title": "Paginated inventory rows",
+        "description": "list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0",
+        "sqlText": "SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2",
+        "params": [
+            {
+                "placeholder": "$1",
+                "index": 1,
+                "name": "limit",
+                "propertyName": "limit",
+                "description": "max rows per page",
+                "example": "100",
+                "jsonSchemaType": "integer"
+            },
+            {
+                "placeholder": "$2",
+                "index": 2,
+                "name": "offset",
+                "propertyName": "offset",
+                "description": "rows to skip",
+                "example": "0",
+                "jsonSchemaType": "integer"
+            }
+        ]
+    },
+    {
+        "kind": "sql",
+        "toolName": "filmsByMpaaRating",
+        "title": "Films by MPAA rating (G, PG, PG-13, R, NC-17)",
+        "description": "list films with a given MPAA age rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating ($1): MPAA rating (G, PG, PG-13, R, or NC-17) (example: PG-13)\n- maxRows ($2): max rows to return (example: 20)\n\nExample call: rating=PG-13, maxRows=20",
+        "sqlText": "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2",
+        "params": [
+            {
+                "placeholder": "$1",
+                "index": 1,
+                "name": "rating",
+                "propertyName": "rating",
+                "description": "MPAA rating (G, PG, PG-13, R, or NC-17)",
+                "example": "PG-13",
+                "jsonSchemaType": "string"
+            },
+            {
+                "placeholder": "$2",
+                "index": 2,
+                "name": "maxRows",
+                "propertyName": "maxRows",
+                "description": "max rows to return",
+                "example": "20",
+                "jsonSchemaType": "integer"
+            }
+        ]
+    },
+    {
+        "kind": "sql",
+        "toolName": "filmsWithActorLastName",
+        "title": "Actor–film cast via film_actor join",
+        "description": "which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix ($1): actor last name prefix (e.g. GAR, BER, HOP) (example: GAR)\n- maxRows ($2): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25",
+        "sqlText": "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
+        "params": [
+            {
+                "placeholder": "$1",
+                "index": 1,
+                "name": "lastNamePrefix",
+                "propertyName": "lastNamePrefix",
+                "description": "actor last name prefix (e.g. GAR, BER, HOP)",
+                "example": "GAR",
+                "jsonSchemaType": "string"
+            },
+            {
+                "placeholder": "$2",
+                "index": 2,
+                "name": "maxRows",
+                "propertyName": "maxRows",
+                "description": "max rows to return",
+                "example": "25",
+                "jsonSchemaType": "integer"
+            }
+        ]
+    },
+    {
+        "kind": "sql",
+        "toolName": "searchFilms",
+        "title": "Film full-text style search (title and description)",
+        "description": "search films by free text in title or description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText ($1): search text (matched in title or description) (example: dog)\n- maxRows ($2): max rows to return (example: 15)\n\nExample call: searchText=dog, maxRows=15",
+        "sqlText": "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
+        "params": [
+            {
+                "placeholder": "$1",
+                "index": 1,
+                "name": "searchText",
+                "propertyName": "searchText",
+                "description": "search text (matched in title or description)",
+                "example": "dog",
+                "jsonSchemaType": "string"
+            },
+            {
+                "placeholder": "$2",
+                "index": 2,
+                "name": "maxRows",
+                "propertyName": "maxRows",
+                "description": "max rows to return",
+                "example": "15",
+                "jsonSchemaType": "integer"
             }
         ]
     }
 ];
 
-export const mcpServerName = 'pagila-tools';
-export const mcpServerVersion = '0.0.1';
+export const mcpServerName = "pagila-tools";
+export const mcpServerVersion = "0.0.2";
 
 import * as z from 'zod/v4';
 
 const __core2aiPrimitiveUnion = z.union([z.string(), z.number(), z.boolean()]);
 
 export const inputZodByTool = {
-    listFilms: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    listActors: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    listCustomers: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    listCategories: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    listCountries: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    listInventory: z
-        .object({
-            limit: z.number().describe('Rows per page (default 100).').optional(),
-            offset: z.number().describe('Rows to skip for pagination (default 0).').optional()
-        })
-        .strict(),
-    filmsByMpaaRating: z
-        .object({
-            rating: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)'),
-            maxRows: z.number().describe('max rows to return (SQL $2)')
-        })
-        .strict(),
-    filmsWithActorLastName: z
-        .object({
-            lastNamePrefix: z.string().describe('actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)'),
-            maxRows: z.number().describe('max rows to return (SQL $2)')
-        })
-        .strict(),
-    searchFilms: z
-        .object({
-            searchText: z.string().describe('search text (matched in title or description) (SQL $1)'),
-            maxRows: z.number().describe('max rows to return (SQL $2)')
-        })
-        .strict()
+    "listFilms": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
+    "listActors": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
+    "listCustomers": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
+    "listCategories": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
+    "listCountries": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
+    "listInventory": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
+    "filmsByMpaaRating": z.object({ "rating": z.string().describe("MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)"), "maxRows": z.number().describe("max rows to return (SQL $2)") }).strict(),
+    "filmsWithActorLastName": z.object({ "lastNamePrefix": z.string().describe("actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)"), "maxRows": z.number().describe("max rows to return (SQL $2)") }).strict(),
+    "searchFilms": z.object({ "searchText": z.string().describe("search text (matched in title or description) (SQL $1)"), "maxRows": z.number().describe("max rows to return (SQL $2)") }).strict()
 };
 
 const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
@@ -297,7 +353,9 @@ export const mcpHostAdapter = {
         }
         const credential = process.env[authEnvName]?.trim();
         if (!credential) {
-            throw new Error('Environment variable "' + authEnvName + '" is missing or empty (required by --auth-env).');
+            throw new Error(
+                'Environment variable "' + authEnvName + '" is missing or empty (required by --auth-env).'
+            );
         }
     },
 
@@ -310,11 +368,7 @@ export const mcpHostAdapter = {
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
             throw new Error(
-                'Database URL from "' +
-                    connectionEnv +
-                    '" does not match generated database dialect "' +
-                    databaseDialect +
-                    '".'
+                'Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".'
             );
         }
 
@@ -356,9 +410,6 @@ export const mcpHostAdapter = {
 
 import pg from 'pg';
 
-export const DEFAULT_PAGE_LIMIT = 100;
-export const DEFAULT_MAX_LIMIT_CAP = 1000;
-
 function resolveConnectionString(hostContext) {
     if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
         const cs = String(hostContext.connectionString).trim();
@@ -385,174 +436,69 @@ export async function invokeTool(toolName, options = {}, hostContext) {
     await client.connect();
     try {
         switch (toolName) {
-            case 'listFilms': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "film" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'listActors': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "actor" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'listCustomers': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "customer" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'listCategories': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "category" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'listCountries': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "country" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'listInventory': {
-                const effectiveLimit = Math.min(
-                    typeof options.limit === 'number' && Number.isFinite(options.limit)
-                        ? options.limit
-                        : DEFAULT_PAGE_LIMIT,
-                    500
-                );
-                const offset =
-                    typeof options.offset === 'number' && Number.isFinite(options.offset) && options.offset >= 0
-                        ? Math.floor(options.offset)
-                        : 0;
-                const sql = 'SELECT * FROM "inventory" LIMIT $1 OFFSET $2';
-                const result = await client.query(sql, [effectiveLimit, offset]);
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length,
-                    limit: effectiveLimit,
-                    offset
-                };
-            }
-            case 'filmsByMpaaRating': {
-                const result = await client.query({
-                    text: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
-                    values: [
-                        options['rating'] !== undefined && options['rating'] !== null
-                            ? String(options['rating'])
-                            : null,
-                        normalizePostgresNumericParamValue(options['maxRows'])
-                    ]
-                });
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
-                };
-            }
-            case 'filmsWithActorLastName': {
-                const result = await client.query({
-                    text: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
-                    values: [
-                        options['lastNamePrefix'] !== undefined && options['lastNamePrefix'] !== null
-                            ? String(options['lastNamePrefix'])
-                            : null,
-                        normalizePostgresNumericParamValue(options['maxRows'])
-                    ]
-                });
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
-                };
-            }
-            case 'searchFilms': {
-                const result = await client.query({
-                    text: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
-                    values: [
-                        options['searchText'] !== undefined && options['searchText'] !== null
-                            ? String(options['searchText'])
-                            : null,
-                        options['searchText'] !== undefined && options['searchText'] !== null
-                            ? String(options['searchText'])
-                            : null,
-                        normalizePostgresNumericParamValue(options['maxRows'])
-                    ]
-                });
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
-                };
-            }
+        case "listFilms": {
+            const result = await client.query({ text: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "listActors": {
+            const result = await client.query({ text: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "listCustomers": {
+            const result = await client.query({ text: "SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "listCategories": {
+            const result = await client.query({ text: "SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "listCountries": {
+            const result = await client.query({ text: "SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "listInventory": {
+            const result = await client.query({ text: "SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "filmsByMpaaRating": {
+            const result = await client.query({ text: "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2", values: [options["rating"] !== undefined && options["rating"] !== null ? String(options["rating"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "filmsWithActorLastName": {
+            const result = await client.query({ text: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2", values: [options["lastNamePrefix"] !== undefined && options["lastNamePrefix"] !== null ? String(options["lastNamePrefix"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
+        case "searchFilms": {
+            const result = await client.query({ text: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2", values: [options["searchText"] !== undefined && options["searchText"] !== null ? String(options["searchText"]) : null, options["searchText"] !== undefined && options["searchText"] !== null ? String(options["searchText"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
+            return {
+                rows: result.rows,
+                rowCount: result.rowCount ?? result.rows.length
+            };
+        }
             default:
                 throw new Error(`Unknown tool: ${toolName}`);
         }
