@@ -14,6 +14,8 @@ export type DbMcpSmokeOptions = {
     connectionString: string;
     toolName: string;
     toolArgs: Record<string, unknown>;
+    hostArgs?: string[];
+    extraEnv?: Record<string, string>;
     timeoutMs?: number;
 };
 
@@ -39,9 +41,11 @@ export async function runDbMcpSmoke(options: DbMcpSmokeOptions): Promise<void> {
             generatedModulePath: generatedJsPath,
             toolName: options.toolName,
             toolArgs: options.toolArgs,
+            hostArgs: options.hostArgs,
             cwd: runRoot,
             env: {
-                [options.envName]: options.connectionString
+                [options.envName]: options.connectionString,
+                ...(options.extraEnv ?? {})
             },
             timeoutMs: options.timeoutMs ?? 20_000
         });

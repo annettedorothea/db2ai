@@ -1,5 +1,5 @@
 import type { Model, SqlQuery } from 'db-2-ai-dsl-language';
-import { isSqlQuery } from 'db-2-ai-dsl-language';
+import { getAccessKind, getOptionalParams, isSqlQuery, type AccessKind } from 'db-2-ai-dsl-language';
 import { jsonSchemaExampleValue, resolveSqlParamsOrdered, type ResolvedSqlParam } from 'db-2-ai-dsl-language';
 
 export type JsonSchemaDict = Record<string, unknown>;
@@ -11,6 +11,7 @@ export type ResolvedSqlToolCodegen = {
     description: string;
     sqlText: string;
     params: ResolvedSqlParam[];
+    access: AccessKind;
 };
 
 export type ResolvedDbToolCodegen = ResolvedSqlToolCodegen;
@@ -87,7 +88,8 @@ function resolveSqlTool(query: SqlQuery): ResolvedSqlToolCodegen {
         title: buildSqlTitle(query),
         description: buildSqlDescription(query, params),
         sqlText,
-        params
+        params,
+        access: getAccessKind(query)
     };
 }
 
@@ -101,9 +103,10 @@ export function resolveToolsFromModel(model: Model): ResolvedDbToolCodegen[] {
     return tools;
 }
 
-function buildSqlInputSchema(tool: ResolvedSqlToolCodegen): JsonSchemaDict {
+function buildSqlInputSchema(tool: ResolvedSqlToolCodegen, optionalParams: readonly string[]): JsonSchemaDict {
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
+    const optional = new Set(optionalParams.map((p) => p.trim()).filter((p) => p.length > 0));
     for (const p of tool.params) {
         const prop: Record<string, unknown> = {
             type: p.jsonSchemaType,
@@ -113,7 +116,9 @@ function buildSqlInputSchema(tool: ResolvedSqlToolCodegen): JsonSchemaDict {
             prop.examples = [jsonSchemaExampleValue(p.example, p.jsonSchemaType)];
         }
         properties[p.propertyName] = prop;
-        required.push(p.propertyName);
+        if (!optional.has(p.propertyName)) {
+            required.push(p.propertyName);
+        }
     }
     return {
         type: 'object',
@@ -123,10 +128,12 @@ function buildSqlInputSchema(tool: ResolvedSqlToolCodegen): JsonSchemaDict {
     };
 }
 
-export function buildInputSchemaByTool(tools: ResolvedDbToolCodegen[]): Record<string, JsonSchemaDict> {
+export function buildInputSchemaByTool(model: Model, tools: ResolvedDbToolCodegen[]): Record<string, JsonSchemaDict> {
     const out: Record<string, JsonSchemaDict> = {};
     for (const tool of tools) {
-        out[tool.toolName] = buildSqlInputSchema(tool);
+        const query = model.entries.find((e) => isSqlQuery(e) && e.toolName?.trim() === tool.toolName);
+        const optionalParams = query && isSqlQuery(query) ? getOptionalParams(query) : [];
+        out[tool.toolName] = buildSqlInputSchema(tool, optionalParams);
     }
     return out;
 }

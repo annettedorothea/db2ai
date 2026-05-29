@@ -1,12 +1,13 @@
 /**
  * Generated from: pagila.db2ai
  */
+import { resolveCredentialAndOptionalJwt } from '@core2ai/core/mcp-host';
 
 export const connectionEnv = 'PAGILA_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
 
-export const requiresAuth = false;
+export const requiresAuth = true;
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -23,8 +24,23 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
+    access: 'public' | 'protected' | 'checked';
     sqlText: string;
     params?: GeneratedSqlParam[];
+};
+
+export type InvokeOptions = Record<string, unknown>;
+
+export type DbHostContext = {
+    connectionString: string;
+    databaseDialect: 'postgres' | 'mysql';
+    credential?: string;
+    jwt?: Record<string, unknown>;
+};
+
+export type CheckedHostContext = {
+    credential: string;
+    jwt?: Record<string, unknown>;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -34,6 +50,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated film rows',
         description:
             'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        access: 'public',
         sqlText: 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
@@ -62,6 +79,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated actor rows',
         description:
             'list actors with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        access: 'protected',
         sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
@@ -90,6 +108,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated customer rows',
         description:
             'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 10)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=10, offset=0',
+        access: 'public',
         sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
@@ -118,6 +137,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated category rows',
         description:
             'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        access: 'public',
         sqlText: 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
@@ -146,6 +166,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated country rows',
         description:
             'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        access: 'public',
         sqlText: 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
@@ -174,6 +195,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated inventory rows',
         description:
             'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+        access: 'public',
         sqlText: 'SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
@@ -202,6 +224,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
         description:
             'list films with a given MPAA age rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating ($1): MPAA rating (G, PG, PG-13, R, or NC-17) (example: PG-13)\n- maxRows ($2): max rows to return (example: 20)\n\nExample call: rating=PG-13, maxRows=20',
+        access: 'public',
         sqlText: 'SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2',
         params: [
             {
@@ -230,6 +253,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Actor–film cast via film_actor join',
         description:
             'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix ($1): actor last name prefix (e.g. GAR, BER, HOP) (example: GAR)\n- maxRows ($2): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
+        access: 'public',
         sqlText:
             "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2",
         params: [
@@ -259,6 +283,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Film full-text style search (title and description)',
         description:
             'search films by free text in title or description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText ($1): search text (matched in title or description) (example: dog)\n- maxRows ($2): max rows to return (example: 15)\n\nExample call: searchText=dog, maxRows=15',
+        access: 'public',
         sqlText:
             "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2",
         params: [
@@ -288,8 +313,6 @@ export const mcpServerName = 'pagila-tools';
 export const mcpServerVersion = '0.0.2';
 
 import * as z from 'zod/v4';
-
-const __core2aiPrimitiveUnion = z.union([z.string(), z.number(), z.boolean()]);
 
 export const inputZodByTool = {
     listFilms: z
@@ -351,7 +374,7 @@ export const inputZodByTool = {
 const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
 const META_ENV_DIRS = 'MCP_HOST_ENV_DIRS';
 
-function applyHostEnvKeys(hostConfig, envDirs) {
+function applyHostEnvKeys(hostConfig: { authEnv?: string }, envDirs: string[]): void {
     if (hostConfig.authEnv) {
         process.env[META_AUTH_ENV_KEY] = hostConfig.authEnv;
     } else {
@@ -364,28 +387,13 @@ function applyHostEnvKeys(hostConfig, envDirs) {
     }
 }
 
-function decodeJwtPayloadUnsafe(token) {
-    const parts = String(token).trim().split('.');
-    if (parts.length !== 3) {
-        throw new Error('credential is not a JWT (expected three dot-separated segments).');
-    }
-    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    while (b64.length % 4 !== 0) {
-        b64 += '=';
-    }
-    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-}
-
-function isExpectedDatabaseUrl(connectionString) {
-    if (databaseDialect === 'mysql') {
-        return connectionString.startsWith('mysql://');
-    }
+function isExpectedDatabaseUrl(connectionString: string): boolean {
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }
 
 export const mcpHostAdapter = {
-    configureFromArgv(argv, envDirs) {
-        let authEnv;
+    configureFromArgv(argv: string[], envDirs: string[]): void {
+        let authEnv: string | undefined;
         for (let i = 0; i < argv.length; i++) {
             const arg = argv[i];
             if (arg === '--auth-env') {
@@ -403,7 +411,7 @@ export const mcpHostAdapter = {
         applyHostEnvKeys({ authEnv }, envDirs);
     },
 
-    validateAtStartup(requiresAuth) {
+    validateAtStartup(requiresAuth: boolean): void {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
             throw new Error(
@@ -424,15 +432,14 @@ export const mcpHostAdapter = {
         }
         const authEnvName = process.env[META_AUTH_ENV_KEY]?.trim();
         if (!authEnvName) {
-            throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
+            throw new Error(
+                'Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.'
+            );
         }
-        const credential = process.env[authEnvName]?.trim();
-        if (!credential) {
-            throw new Error('Environment variable "' + authEnvName + '" is missing or empty (required by --auth-env).');
-        }
+        // Credential value may be empty at startup — public tools work without a token; protected/checked fail at invoke.
     },
 
-    resolveHostContext() {
+    resolveHostContext(): DbHostContext {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
             throw new Error(
@@ -450,31 +457,17 @@ export const mcpHostAdapter = {
         }
 
         const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
-        let credential = authKey ? process.env[authKey]?.trim() : undefined;
-        credential = credential || undefined;
-
-        let jwt;
-        if (credential) {
-            const segments = String(credential).trim().split('.');
-            if (segments.length === 3) {
-                try {
-                    jwt = decodeJwtPayloadUnsafe(credential);
-                } catch {
-                    jwt = undefined;
-                }
-            }
-        }
-
+        const { credential, jwt } = resolveCredentialAndOptionalJwt(authKey);
         return { connectionString, databaseDialect, credential, jwt };
     },
 
-    envDirsForReload() {
+    envDirsForReload(): string[] {
         const raw = process.env[META_ENV_DIRS];
         if (!raw?.trim()) {
             return [];
         }
         try {
-            const dirs = JSON.parse(raw);
+            const dirs: unknown = JSON.parse(raw);
             if (Array.isArray(dirs) && dirs.every((d) => typeof d === 'string')) {
                 return dirs;
             }
@@ -485,16 +478,12 @@ export const mcpHostAdapter = {
     }
 };
 
-import pg from 'pg';
+import { Client } from 'pg';
 
-export type InvokeOptions = Record<string, unknown>;
-
-function resolveConnectionString(hostContext: unknown): string {
-    if (hostContext && typeof hostContext === 'object' && 'connectionString' in hostContext) {
-        const cs = (hostContext as { connectionString?: unknown }).connectionString;
-        if (cs !== undefined && cs !== null && String(cs).trim().length > 0) {
-            return String(cs).trim();
-        }
+function resolveConnectionString(hostContext: DbHostContext): string {
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
     }
     throw new Error(
         'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
@@ -512,10 +501,24 @@ function normalizePostgresNumericParamValue(value: unknown): number | null {
 export async function invokeTool(
     toolName: string,
     options: InvokeOptions = {},
-    hostContext?: unknown
+    hostContext?: DbHostContext
 ): Promise<unknown> {
-    const connectionString = resolveConnectionString(hostContext);
-    const client = new pg.Client({ connectionString });
+    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
+    if (!toolMeta) {
+        throw new Error('Unknown tool: ' + toolName);
+    }
+
+    const host: DbHostContext =
+        hostContext !== undefined ? (hostContext as DbHostContext) : mcpHostAdapter.resolveHostContext();
+    if (toolMeta.access !== 'public') {
+        if (!host.credential || !String(host.credential).trim()) {
+            throw new Error(
+                'Missing host credential. Pass --auth-env on mcp-serve.mjs and set the variable (re-read on every tool call).'
+            );
+        }
+    }
+    const connectionString = resolveConnectionString(host);
+    const client = new Client({ connectionString });
     await client.connect();
     try {
         switch (toolName) {
@@ -646,7 +649,7 @@ export async function invokeTool(
                 };
             }
             default:
-                throw new Error(`Unknown tool: ${toolName}`);
+                throw new Error('Unknown tool: ' + toolName);
         }
     } finally {
         await client.end();

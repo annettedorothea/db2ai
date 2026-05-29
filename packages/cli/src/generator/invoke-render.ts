@@ -1,12 +1,14 @@
 import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
+import { renderInvokeCredentialAndParameterCheck } from './auth-stub-render.js';
 
 function renderOptionValueExpression(
     propertyName: string,
     dialect: ResolvedDatabaseDialect,
-    paramType: SqlParamType
+    paramType: SqlParamType,
+    optionsVar: string
 ): string {
-    const optionAccess = `options[${JSON.stringify(propertyName)}]`;
+    const optionAccess = `${optionsVar}[${JSON.stringify(propertyName)}]`;
     if (dialect === 'mysql') {
         if (paramType === 'boolean') {
             return `normalizeMysqlBooleanParamValue(${optionAccess})`;
@@ -26,14 +28,18 @@ function rewriteLogicalPlaceholdersForMysql(sqlText: string): string {
     return sqlText.replace(/\$[0-9]+/g, '?');
 }
 
-function renderSqlInvokeCase(tool: ResolvedSqlToolCodegen, dialect: ResolvedDatabaseDialect): string {
+function renderSqlInvokeCase(
+    tool: ResolvedSqlToolCodegen,
+    dialect: ResolvedDatabaseDialect,
+    optionsVar: string
+): string {
     const paramsByPlaceholder = new Map(tool.params.map((p) => [p.placeholder, p]));
     const orderedExprs = Array.from(tool.sqlText.matchAll(/\$[0-9]+/g), (match) => {
         const param = paramsByPlaceholder.get(match[0]);
         if (!param) {
             throw new Error(`Codegen: SQL query references ${match[0]}, but no matching param was resolved.`);
         }
-        return renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType);
+        return renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType, optionsVar);
     });
     const valueExprs = orderedExprs.join(', ');
     if (dialect === 'mysql') {
@@ -81,8 +87,63 @@ function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokePa
     return flags;
 }
 
-function renderInvokeSwitchCases(tools: ResolvedDbToolCodegen[], dialect: ResolvedDatabaseDialect): string {
-    return tools.map((tool) => renderSqlInvokeCase(tool, dialect)).join('\n');
+function renderInvokeSwitchCases(
+    tools: ResolvedDbToolCodegen[],
+    dialect: ResolvedDatabaseDialect,
+    optionsVar: string
+): string {
+    return tools.map((tool) => renderSqlInvokeCase(tool, dialect, optionsVar)).join('\n');
+}
+
+function renderHostBinding(typescript: boolean): string {
+    if (typescript) {
+        return `
+    const host: DbHostContext =
+        hostContext !== undefined
+            ? (hostContext as DbHostContext)
+            : mcpHostAdapter.resolveHostContext();`;
+    }
+    return `
+    const host = hostContext ?? mcpHostAdapter.resolveHostContext();`;
+}
+
+function renderPostgresClientSetup(typescript: boolean): string {
+    if (typescript) {
+        return `
+    const connectionString = resolveConnectionString(host);
+    const client = new Client({ connectionString });
+    await client.connect();`;
+    }
+    return `
+    const connectionString = resolveConnectionString(host);
+    const client = new pg.Client({ connectionString });
+    await client.connect();`;
+}
+
+function renderInvokeToolPreamble(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
+    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+    return `
+    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
+    if (!toolMeta) {
+        throw new Error('Unknown tool: ' + toolName);
+    }
+${renderHostBinding(typescript)}${accessChecks}${renderPostgresClientSetup(typescript)}
+    try {
+        switch (toolName) {`;
+}
+
+function renderInvokeToolPreambleMysql(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
+    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+    return `
+    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
+    if (!toolMeta) {
+        throw new Error('Unknown tool: ' + toolName);
+    }
+${renderHostBinding(typescript)}${accessChecks}
+    const connectionString = resolveConnectionString(host);
+    const client = await mysql.createConnection(connectionString);
+    try {
+        switch (toolName) {`;
 }
 
 const POSTGRES_NUMERIC_HELPER_TS = `
@@ -181,7 +242,13 @@ function normalizeMysqlBooleanParamValue(value) {
 }
 `.trim();
 
-function renderPostgresInvokeBlockTs(toolCases: string, flags: InvokeParamHelperFlags): string {
+function renderPostgresInvokeBlockTs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, true);
     const helpers = [
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_TS : '',
         flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_TS : ''
@@ -190,16 +257,12 @@ function renderPostgresInvokeBlockTs(toolCases: string, flags: InvokeParamHelper
         .join('\n\n');
     const helperSection = helpers.length > 0 ? `\n\n${helpers}` : '';
     return `
-import pg from 'pg';
+import { Client } from 'pg';
 
-export type InvokeOptions = Record<string, unknown>;
-
-function resolveConnectionString(hostContext: unknown): string {
-    if (hostContext && typeof hostContext === 'object' && 'connectionString' in hostContext) {
-        const cs = (hostContext as { connectionString?: unknown }).connectionString;
-        if (cs !== undefined && cs !== null && String(cs).trim().length > 0) {
-            return String(cs).trim();
-        }
+function resolveConnectionString(hostContext: DbHostContext): string {
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
     }
     throw new Error(
         'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
@@ -209,16 +272,11 @@ function resolveConnectionString(hostContext: unknown): string {
 export async function invokeTool(
     toolName: string,
     options: InvokeOptions = {},
-    hostContext?: unknown
-): Promise<unknown> {
-    const connectionString = resolveConnectionString(hostContext);
-    const client = new pg.Client({ connectionString });
-    await client.connect();
-    try {
-        switch (toolName) {
+    hostContext?: DbHostContext
+): Promise<unknown> {${preamble}
 ${toolCases}
             default:
-                throw new Error(\`Unknown tool: \${toolName}\`);
+                throw new Error('Unknown tool: ' + toolName);
         }
     } finally {
         await client.end();
@@ -227,7 +285,13 @@ ${toolCases}
 `.trim();
 }
 
-function renderPostgresInvokeBlockJs(toolCases: string, flags: InvokeParamHelperFlags): string {
+function renderPostgresInvokeBlockJs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, false);
     const helpers = [
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_JS : '',
         flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_JS : ''
@@ -250,15 +314,10 @@ function resolveConnectionString(hostContext) {
     );
 }${helperSection}
 
-export async function invokeTool(toolName, options = {}, hostContext) {
-    const connectionString = resolveConnectionString(hostContext);
-    const client = new pg.Client({ connectionString });
-    await client.connect();
-    try {
-        switch (toolName) {
+export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
 ${toolCases}
             default:
-                throw new Error(\`Unknown tool: \${toolName}\`);
+                throw new Error('Unknown tool: ' + toolName);
         }
     } finally {
         await client.end();
@@ -267,19 +326,21 @@ ${toolCases}
 `.trim();
 }
 
-function renderMysqlInvokeBlockTs(toolCases: string, flags: InvokeParamHelperFlags): string {
+function renderMysqlInvokeBlockTs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, true);
     const helperSection = flags.mysqlBoolean ? `\n\n${MYSQL_BOOLEAN_HELPER_TS}` : '';
     return `
 import mysql from 'mysql2/promise';
 
-export type InvokeOptions = Record<string, unknown>;
-
-function resolveConnectionString(hostContext: unknown): string {
-    if (hostContext && typeof hostContext === 'object' && 'connectionString' in hostContext) {
-        const cs = (hostContext as { connectionString?: unknown }).connectionString;
-        if (cs !== undefined && cs !== null && String(cs).trim().length > 0) {
-            return String(cs).trim();
-        }
+function resolveConnectionString(hostContext: DbHostContext): string {
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
     }
     throw new Error(
         'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
@@ -305,15 +366,11 @@ function normalizeMysqlParamValue(value: unknown): string | number | null {
 export async function invokeTool(
     toolName: string,
     options: InvokeOptions = {},
-    hostContext?: unknown
-): Promise<unknown> {
-    const connectionString = resolveConnectionString(hostContext);
-    const client = await mysql.createConnection(connectionString);
-    try {
-        switch (toolName) {
+    hostContext?: DbHostContext
+): Promise<unknown> {${preamble}
 ${toolCases}
             default:
-                throw new Error(\`Unknown tool: \${toolName}\`);
+                throw new Error('Unknown tool: ' + toolName);
         }
     } finally {
         await client.end();
@@ -322,7 +379,13 @@ ${toolCases}
 `.trim();
 }
 
-function renderMysqlInvokeBlockJs(toolCases: string, flags: InvokeParamHelperFlags): string {
+function renderMysqlInvokeBlockJs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, false);
     const helperSection = flags.mysqlBoolean ? `\n\n${MYSQL_BOOLEAN_HELPER_JS}` : '';
     return `
 import mysql from 'mysql2/promise';
@@ -355,14 +418,10 @@ function normalizeMysqlParamValue(value) {
     return text;
 }${helperSection}
 
-export async function invokeTool(toolName, options = {}, hostContext) {
-    const connectionString = resolveConnectionString(hostContext);
-    const client = await mysql.createConnection(connectionString);
-    try {
-        switch (toolName) {
+export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
 ${toolCases}
             default:
-                throw new Error(\`Unknown tool: \${toolName}\`);
+                throw new Error('Unknown tool: ' + toolName);
         }
     } finally {
         await client.end();
@@ -371,18 +430,30 @@ ${toolCases}
 `.trim();
 }
 
-export function renderInvokeBlockTs(tools: ResolvedDbToolCodegen[], dialect: ResolvedDatabaseDialect): string {
-    const toolCases = renderInvokeSwitchCases(tools, dialect);
+export function renderInvokeBlockTs(
+    tools: ResolvedDbToolCodegen[],
+    dialect: ResolvedDatabaseDialect,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const optionsVar = hasChecked ? 'optionsResolved' : 'options';
+    const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
     return dialect === 'mysql'
-        ? renderMysqlInvokeBlockTs(toolCases, flags)
-        : renderPostgresInvokeBlockTs(toolCases, flags);
+        ? renderMysqlInvokeBlockTs(toolCases, flags, hasAuth, hasChecked)
+        : renderPostgresInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
 }
 
-export function renderInvokeBlockJs(tools: ResolvedDbToolCodegen[], dialect: ResolvedDatabaseDialect): string {
-    const toolCases = renderInvokeSwitchCases(tools, dialect);
+export function renderInvokeBlockJs(
+    tools: ResolvedDbToolCodegen[],
+    dialect: ResolvedDatabaseDialect,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const optionsVar = hasChecked ? 'optionsResolved' : 'options';
+    const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
     return dialect === 'mysql'
-        ? renderMysqlInvokeBlockJs(toolCases, flags)
-        : renderPostgresInvokeBlockJs(toolCases, flags);
+        ? renderMysqlInvokeBlockJs(toolCases, flags, hasAuth, hasChecked)
+        : renderPostgresInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
 }

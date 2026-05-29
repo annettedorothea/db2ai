@@ -1,0 +1,38 @@
+---
+description: After codegen changes, regenerate demos and verify lint + typecheck on generated tools
+globs: packages/cli/src/generator/**/*
+alwaysApply: false
+---
+
+# Codegen And Generated Output Quality
+
+Generated files under `packages/extension/demos/generated/tools/` must be **lint- and typecheck-clean without ESLint `--fix`**. Fix the generator templates, not the committed output.
+
+**Always:** do not hand-edit `packages/extension/demos/generated/**` or bundled MCP files to fix behavior — see [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).
+
+## When this applies
+
+Changes under `packages/cli/src/generator/` (or other generator wiring that affects `*-tools.ts` output).
+
+## Required verification
+
+From the **db2ai workspace root**, run in order:
+
+1. `npm run build`
+2. `npm run generate:all`
+3. `npm run check:generated`
+
+Do **not** run `eslint --fix` on generated files to “repair” output. If `check:generated` fails, fix the generator and regenerate.
+
+## What `check:generated` covers
+
+- `npm run lint:generated` — ESLint on committed `packages/extension/demos/generated/tools/**/*.ts` (no auto-fix)
+- `npm run typecheck:generated` — `tsc -p packages/extension/demos/tsconfig.generated.json`
+
+## Prettier only at generate time
+
+The generator may run Prettier (`formatGeneratedFilesWithPrettier`) so output matches repo formatting. ESLint/type errors must be resolved in generator source, not patched after the fact.
+
+## Commit generated output
+
+When demo `.db2ai` files or generator output shape change, include regenerated `packages/extension/demos/generated/tools/*.ts` (and `.mjs` if changed) in the same change set.

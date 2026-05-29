@@ -41,6 +41,7 @@ describe('Validating', () => {
 
             SQL {
                 toolName: "listFilms"
+                access: public
                 intent: "list films"
                 query: "SELECT * FROM film LIMIT $1 OFFSET $2"
                 params: {
@@ -74,6 +75,7 @@ describe('Validating', () => {
 
             SQL {
                 toolName: "t"
+                access: public
                 intent: "i"
                 query: "SELECT 1"
             }
@@ -89,6 +91,7 @@ describe('Validating', () => {
 
             SQL {
                 toolName: "t"
+                access: public
                 intent: "i"
                 query: "SELECT 1"
             }
@@ -103,6 +106,7 @@ describe('Validating', () => {
 
             SQL {
                 toolName: "listFilms"
+                access: public
                 intent: "list films"
                 query: "SELECT * FROM film LIMIT $1 OFFSET $2"
                 params: {
@@ -122,6 +126,7 @@ describe('Validating', () => {
 
             SQL {
                 toolName: "listFilms"
+                access: public
                 intent: "list films"
                 query: "SELECT 1"
             }
@@ -136,12 +141,14 @@ describe('Validating', () => {
 
             SQL {
                 toolName: "dup"
+                access: public
                 intent: "first"
                 query: "SELECT 1"
             }
 
             SQL {
                 toolName: "dup"
+                access: public
                 intent: "second"
                 query: "SELECT 2"
             }

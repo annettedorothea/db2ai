@@ -49,8 +49,9 @@ function ancestorDirectories(startDir) {
   }
   return directories;
 }
-function loadLocalEnvFiles(startDirs) {
-  const protectedKeys = new Set(Object.keys(process.env));
+function loadLocalEnvFiles(startDirs, options) {
+  const refresh = options?.refresh === true;
+  const protectedKeys = refresh ? /* @__PURE__ */ new Set() : new Set(Object.keys(process.env));
   const loadedKeys = /* @__PURE__ */ new Set();
   const loadedFiles = [];
   const visitedFiles = /* @__PURE__ */ new Set();
@@ -153,7 +154,7 @@ function requireInputZodSchema(inputZodByTool, toolName) {
 function reloadEnvFilesForDev(generated2) {
   const dirs = generated2.adapter.envDirsForReload();
   if (dirs.length > 0) {
-    loadLocalEnvFiles(dirs);
+    loadLocalEnvFiles(dirs, { refresh: true });
   }
 }
 async function runMcpServer(generated2) {

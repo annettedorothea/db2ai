@@ -1,5 +1,13 @@
 import * as path from 'node:path';
-import type { ResolvedDatabaseDialect, ResolvedSqlParam, SqlParamType } from 'db-2-ai-dsl-language';
+import type { Model } from 'db-2-ai-dsl-language';
+import {
+    getAccessKind,
+    isSqlQuery,
+    type AccessKind,
+    type ResolvedDatabaseDialect,
+    type ResolvedSqlParam,
+    type SqlParamType
+} from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen } from '../db-query-codegen.js';
 
 export type GeneratedSqlParam = {
@@ -17,6 +25,7 @@ export type GeneratedToolModule = {
     title: string;
     description: string;
     kind: 'sql';
+    access: AccessKind;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -39,9 +48,23 @@ function toGeneratedToolModule(tool: ResolvedDbToolCodegen): GeneratedToolModule
         toolName: tool.toolName,
         title: tool.title,
         description: tool.description,
+        access: tool.access,
         sqlText: tool.sqlText,
         params: tool.params.map(serializeSqlParam)
     };
+}
+
+function requiresAuthLiteral(model: Model): string {
+    if (!model.auth) {
+        return 'false';
+    }
+    const needsCredential = model.entries.some((entry) => isSqlQuery(entry) && getAccessKind(entry) !== 'public');
+    return needsCredential ? 'true' : 'false';
+}
+
+function renderGeneratedImports(mcpHostJwtImport: string, parameterCheckerImports: string): string {
+    const lines = [mcpHostJwtImport, parameterCheckerImports].filter((line) => line.length > 0);
+    return lines.length > 0 ? `${lines.join('\n')}\n\n` : '';
 }
 
 function serializeJsonForModule(value: unknown): string {
@@ -68,19 +91,22 @@ export function renderTsModule(
     databaseDialect: ResolvedDatabaseDialect,
     mcpServerIdentityBlock: string,
     toolRuntimeBlock: string,
-    source: string
+    model: Model,
+    source: string,
+    parameterCheckerImports = '',
+    mcpHostJwtImport = ''
 ): string {
     const toolsLiteral = serializeToolsForModule(tools);
     const sourceRef = renderSourceReference(source);
+    const importPrefix = renderGeneratedImports(mcpHostJwtImport, parameterCheckerImports);
     return `/**
  * Generated from: ${sourceRef}
  */
-
-export const connectionEnv = ${JSON.stringify(connectionEnv)};
+${importPrefix}export const connectionEnv = ${JSON.stringify(connectionEnv)};
 
 export const databaseDialect = ${JSON.stringify(databaseDialect)};
 
-export const requiresAuth = false;
+export const requiresAuth = ${requiresAuthLiteral(model)};
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -97,8 +123,23 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
+    access: 'public' | 'protected' | 'checked';
     sqlText: string;
     params?: GeneratedSqlParam[];
+};
+
+export type InvokeOptions = Record<string, unknown>;
+
+export type DbHostContext = {
+    connectionString: string;
+    databaseDialect: 'postgres' | 'mysql';
+    credential?: string;
+    jwt?: Record<string, unknown>;
+};
+
+export type CheckedHostContext = {
+    credential: string;
+    jwt?: Record<string, unknown>;
 };
 
 export const generatedTools: GeneratedTool[] = ${toolsLiteral};
@@ -114,18 +155,21 @@ export function renderJsModule(
     databaseDialect: ResolvedDatabaseDialect,
     mcpServerIdentityBlock: string,
     toolRuntimeBlock: string,
-    source: string
+    model: Model,
+    source: string,
+    parameterCheckerImports = '',
+    mcpHostJwtImport = ''
 ): string {
     const sourceRef = renderSourceReference(source);
+    const importPrefix = renderGeneratedImports(mcpHostJwtImport, parameterCheckerImports);
     return `/**
  * Generated from: ${sourceRef}
  */
-
-export const connectionEnv = ${JSON.stringify(connectionEnv)};
+${importPrefix}export const connectionEnv = ${JSON.stringify(connectionEnv)};
 
 export const databaseDialect = ${JSON.stringify(databaseDialect)};
 
-export const requiresAuth = false;
+export const requiresAuth = ${requiresAuthLiteral(model)};
 
 export const generatedTools = ${serializeToolsForModule(tools)};
 

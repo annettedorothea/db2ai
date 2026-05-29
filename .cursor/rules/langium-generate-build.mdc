@@ -9,6 +9,10 @@ After code changes in this repository, run:
 
 `npm run langium:generate && npm run build && npm run check`
 
-Exception: If all changed files are inside `packages/extension/demos/`, skip these commands.
+Exception: If all changed files are inside `packages/extension/demos/` (excluding generator output), skip these commands.
+
+If you changed **`packages/cli/src/generator/`**, follow [codegen-generated-quality.mdc](./codegen-generated-quality.mdc): `npm run build`, `npm run generate:all`, `npm run check:generated`.
+
+If you changed **`@core2ai/core/mcp-host`** (via pin refresh), also follow [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc): `bundle:mcp-runtime`, `generate:all`, MCP restart.
 
 If either command fails, fix the issue before proceeding with more implementation work.

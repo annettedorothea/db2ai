@@ -51,11 +51,11 @@ describe('Completion for SQL block keywords', () => {
         const list = await completionAt(header, offset);
 
         const labels = sortedBlockKeywordLabels(list?.items ?? []);
-        expect(labels).toEqual(['toolName', 'intent', 'query', 'summary', 'params']);
+        expect(labels).toEqual(['toolName', 'access', 'intent', 'query', 'summary', 'params']);
     });
 
     test('does not suggest already used block keywords', async () => {
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: "listFilms"\n    intent: "list films"\n    `;
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: "listFilms"\n    access: public\n    intent: "list films"\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);

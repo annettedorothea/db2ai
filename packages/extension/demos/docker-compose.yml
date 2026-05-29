@@ -26,3 +26,20 @@ services:
             retries: 30
             start_period: 60s
         restart: unless-stopped
+    access-demo:
+        image: postgres:16-alpine
+        container_name: db2ai-access-demo
+        environment:
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: access_demo
+        ports:
+            - '${ACCESS_DEMO_HOST_PORT:-55433}:5432'
+        volumes:
+            - ./access-demo/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d access_demo']
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 20s
+        restart: unless-stopped

@@ -2,11 +2,30 @@
     "mcpServers": {
         "db2ai-pagila": {
             "command": "node",
-            "args": ["./generated/cli/mcp-serve.mjs", "./generated/tools/pagila-tools.mjs"]
+            "args": [
+                "./generated/cli/mcp-serve.mjs",
+                "./generated/tools/pagila-tools.mjs",
+                "--auth-env",
+                "DB2AI_AUTH_TOKEN"
+            ]
         },
         "db2ai-sakila": {
             "command": "node",
-            "args": ["./generated/cli/mcp-serve.mjs", "./generated/tools/sakila-tools.mjs"]
+            "args": [
+                "./generated/cli/mcp-serve.mjs",
+                "./generated/tools/sakila-tools.mjs",
+                "--auth-env",
+                "DB2AI_AUTH_TOKEN"
+            ]
+        },
+        "db2ai-access-demo": {
+            "command": "node",
+            "args": [
+                "./generated/cli/mcp-serve.mjs",
+                "./generated/tools/access-demo-tools.mjs",
+                "--auth-env",
+                "ACCESS_DEMO_TOKEN"
+            ]
         }
     }
 }

@@ -8,7 +8,7 @@ The full project (DSL, CLI, demos) lives in the [db2ai](https://github.com/annet
 
 - VS Code or Cursor **1.67+**
 - Node.js **20+** in demo/tool workspaces (for `@modelcontextprotocol/sdk`, `zod`, `pg`/`mysql2` at runtime)
-- Docker Desktop for the Pagila PostgreSQL and Sakila MySQL demo DBs
+- Docker Desktop for demo DBs (Pagila PostgreSQL, Sakila MySQL, access-demo PostgreSQL for JWT/access testing)
 
 ## Usage
 
@@ -34,7 +34,7 @@ Connection strings belong in `.env` / MCP host config, not in the DSL.
 4. Open and enable:
     - Open the demo folder as the workspace.
     - In Cursor Settings, open **Tools & MCP**.
-    - Enable **`db2ai-pagila`** or **`db2ai-sakila`**.
+    - Enable **`db2ai-pagila`**, **`db2ai-sakila`**, and/or **`db2ai-access-demo`** (`DB2AI_AUTH_TOKEN` and `ACCESS_DEMO_TOKEN` in `.env` — see demos `.env.example`).
 
 See the generated **`README.md`** in your demo folder for prompts and Docker scripts.
 

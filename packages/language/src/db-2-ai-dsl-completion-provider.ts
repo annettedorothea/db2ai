@@ -16,17 +16,41 @@ import {
 } from './generated/ast.js';
 import { usedSqlParamSpecFieldKinds } from './sql-param-spec.js';
 
-const SQL_BLOCK_KEYS = ['toolName', 'intent', 'query', 'summary', 'params'] as const;
+const SQL_BLOCK_KEYS = ['toolName', 'access', 'intent', 'query', 'summary', 'params'] as const;
 type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
 const SQL_PARAM_SPEC_KEYS = ['name', 'description', 'example', 'type'] as const;
+const ACCESS_KINDS = ['public', 'protected', 'checked'] as const;
+type AccessKindKeyword = (typeof ACCESS_KINDS)[number];
+type CheckedBodyKey = 'optionalParams';
 type SqlParamSpecKey = (typeof SQL_PARAM_SPEC_KEYS)[number];
 
 const SQL_KEYWORD_SORT: Record<SqlBlockKey, string> = {
     toolName: '0100',
-    intent: '0101',
-    query: '0102',
-    summary: '0103',
+    access: '0101',
+    intent: '0102',
+    query: '0103',
+    summary: '0104',
     params: '0107'
+};
+
+const ACCESS_KIND_SORT: Record<AccessKindKeyword, string> = {
+    public: '0110',
+    protected: '0111',
+    checked: '0112'
+};
+
+const CHECKED_BODY_SORT: Record<CheckedBodyKey, string> = {
+    optionalParams: '0300'
+};
+
+const ACCESS_KIND_INSERT: Record<AccessKindKeyword, string> = {
+    public: 'access: public$0',
+    protected: 'access: protected$0',
+    checked: 'access: checked {\n    optionalParams: ["$1"]\n}'
+};
+
+const CHECKED_BODY_INSERT: Record<CheckedBodyKey, string> = {
+    optionalParams: 'optionalParams: ["$1"]$0'
 };
 
 const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
@@ -38,6 +62,7 @@ const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
 
 const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     toolName: 'toolName: "$1"$0',
+    access: 'access: public$0',
     intent: 'intent: "$1"$0',
     query: 'query: "$1"$0',
     summary: 'summary: "$1"$0',
@@ -84,6 +109,9 @@ function usedSqlBlockKeys(query: SqlQuery): Set<string> {
     const used = new Set<string>();
     if (query.toolName !== undefined) {
         used.add('toolName');
+    }
+    if (query.access !== undefined) {
+        used.add('access');
     }
     if (query.intent !== undefined) {
         used.add('intent');
@@ -411,6 +439,60 @@ function resolveSqlQueryAtOffset(model: Model, root: CstNode, offset: number) {
     return AstUtils.getContainerOfType(leafAt.astNode as AstNode, isSqlQuery);
 }
 
+function buildAccessKindCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+    const textDoc = document.textDocument;
+    const line = textDoc.getText({
+        start: { line: position.line, character: 0 },
+        end: { line: position.line, character: position.character }
+    });
+    const match = /^\s*access\s*:\s*(\w*)$/.exec(line);
+    if (!match) {
+        return [];
+    }
+    const prefix = match[1] ?? '';
+    const candidates = ACCESS_KINDS.filter((key) => key.startsWith(prefix));
+    return candidates.map((key) => ({
+        label: key,
+        kind: CompletionItemKind.Keyword,
+        detail: 'SQL tool access',
+        insertTextFormat: key === 'checked' ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
+        sortText: ACCESS_KIND_SORT[key],
+        insertText: ACCESS_KIND_INSERT[key].replace('$0', '')
+    }));
+}
+
+function buildCheckedBodyKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+    const textDoc = document.textDocument;
+    const beforeCursor = textDoc.getText({ start: { line: 0, character: 0 }, end: position });
+    if (!/access\s*:\s*checked\s*\{[^}]*$/.test(beforeCursor)) {
+        return [];
+    }
+    const blockStart = beforeCursor.lastIndexOf('access');
+    const blockText = beforeCursor.slice(blockStart);
+    if (/\boptionalParams\b\s*:/.test(blockText)) {
+        return [];
+    }
+    const line = textDoc.getText({
+        start: { line: position.line, character: 0 },
+        end: { line: position.line, character: position.character }
+    });
+    const prefixMatch = /optionalParams\s*$/.exec(line.trimEnd());
+    const prefix = prefixMatch ? 'optionalParams' : '';
+    if (prefix.length > 0 && !'optionalParams'.startsWith(prefix)) {
+        return [];
+    }
+    return [
+        {
+            label: 'optionalParams',
+            kind: CompletionItemKind.Keyword,
+            detail: 'checked access optional SQL params',
+            insertTextFormat: InsertTextFormat.Snippet,
+            sortText: CHECKED_BODY_SORT.optionalParams,
+            insertText: CHECKED_BODY_INSERT.optionalParams
+        }
+    ];
+}
+
 function buildBlockKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
     const root = document.parseResult.value?.$cstNode;
     const model = document.parseResult.value;
@@ -436,6 +518,14 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         params: CompletionParams,
         cancelToken?: Cancellation.CancellationToken
     ): Promise<CompletionList | undefined> {
+        const accessKindItems = buildAccessKindCompletionItems(document, params.position);
+        if (accessKindItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(accessKindItems), false);
+        }
+        const checkedBodyItems = buildCheckedBodyKeywordCompletionItems(document, params.position);
+        if (checkedBodyItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(checkedBodyItems), false);
+        }
         const keywordItems = buildBlockKeywordCompletionItems(document, params.position);
         if (keywordItems.length > 0) {
             return CompletionList.create(this.deduplicateItems(keywordItems), false);

@@ -52,6 +52,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "filmsByRating"
+                access: public
                 intent: "films with minimum rating"
                 query: "SELECT film_id FROM film WHERE rating >= $1 LIMIT $2"
                 params: { ${validParamBlock} }
@@ -68,6 +69,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "filmsByRating"
+                access: public
                 intent: "films with a given rating"
                 query: "SELECT film_id FROM film WHERE rating = $1 LIMIT $2"
                 params: { ${validParamBlock} }
@@ -83,6 +85,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "x"
+                access: public
                 intent: "y"
                 query: "SELECT 1 WHERE id = $1"
                 params: {}
@@ -98,6 +101,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "x"
+                access: public
                 intent: "y"
                 query: "SELECT 1"
                 params: {
@@ -118,6 +122,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "x"
+                access: public
                 intent: "y"
                 query: "SELECT 1 WHERE a = $1"
                 params: {
@@ -142,6 +147,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "x"
+                access: public
                 intent: "y"
                 query: "SELECT 1 WHERE a = $1 AND b = $2"
                 params: {
@@ -166,6 +172,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "x"
+                access: public
                 intent: "y"
                 query: "SELECT 1 WHERE a = $1"
                 params: {
@@ -187,6 +194,7 @@ describe('SQL tool validation', () => {
 
             SQL {
                 toolName: "x"
+                access: public
                 intent: "y"
                 query: "SELECT 1 LIMIT $1"
                 params: {

@@ -2,6 +2,8 @@ import { EmptyFileSystem, type LangiumDocument } from 'langium';
 import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
+import { getAccessKind } from '../src/query-access.js';
+import { isSqlQuery } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
 
 let parse: ReturnType<typeof parseHelper<Model>>;
@@ -19,6 +21,7 @@ describe('Parsing tests', () => {
 
             SQL {
                 toolName: "listFilms"
+                access: public
                 intent: "list films"
                 query: "SELECT * FROM film LIMIT $1 OFFSET $2"
             }
@@ -31,6 +34,33 @@ describe('Parsing tests', () => {
         const entry = document.parseResult.value.entries[0];
         expect(entry.$type).toBe('SqlQuery');
         expect(entry.toolName).toBe('listFilms');
+        if (isSqlQuery(entry)) {
+            expect(getAccessKind(entry)).toBe('public');
+        }
+    });
+
+    test('parses auth keyword and checked access', async () => {
+        document = await parse(`
+            database env "ACCESS_DEMO_DATABASE_URL"
+
+            auth
+
+            SQL {
+                toolName: "listCustomerOrders"
+                access: checked {
+                    optionalParams: ["customerId"]
+                }
+                intent: "orders"
+                query: "SELECT 1"
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        expect(document.parseResult.value.auth).toBeDefined();
+        const entry = document.parseResult.value.entries[0];
+        if (isSqlQuery(entry)) {
+            expect(getAccessKind(entry)).toBe('checked');
+        }
     });
 
     test('parses explicit postgres dialect', async () => {
@@ -39,6 +69,7 @@ describe('Parsing tests', () => {
 
             SQL {
                 toolName: "listFilms"
+                access: public
                 intent: "list films"
                 query: "SELECT 1"
             }
@@ -55,6 +86,7 @@ describe('Parsing tests', () => {
 
             SQL {
                 toolName: "listFilms"
+                access: public
                 intent: "list films"
                 query: "SELECT 1"
             }
@@ -71,6 +103,7 @@ describe('Parsing tests', () => {
 
             SQL {
                 toolName: "listActors"
+                access: public
                 intent: "list actors"
                 query: "SELECT * FROM actor LIMIT $1 OFFSET $2"
                 summary: "Actors"
@@ -105,6 +138,7 @@ describe('Parsing tests', () => {
             SQL {
                 summary: "Actors"
                 toolName: "listActors"
+                access: public
                 intent: "list actors"
                 query: "SELECT 1"
             }
@@ -119,6 +153,7 @@ describe('Parsing tests', () => {
 
             SQL {
                 toolName: "filmsByRating"
+                access: public
                 intent: "films with minimum rating"
                 query: "SELECT film_id, title FROM film WHERE rating >= $1 LIMIT $2"
                 params: {

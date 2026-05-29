@@ -29,7 +29,7 @@ Use `database mysql env "SAKILA_DATABASE_URL"` for MySQL; omitted dialect remain
 
 ## MCP demos
 
-Bundled demos and walkthrough: **[`./packages/extension/demos/`](./packages/extension/demos/)** — see **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**. Start PostgreSQL: `cd packages/extension/demos && npm run db:up`; start MySQL: `npm run db:sakila:up`.
+Bundled demos and walkthrough: **[`./packages/extension/demos/`](./packages/extension/demos/)** — see **[`./packages/extension/demos/README.md`](./packages/extension/demos/README.md)**. Databases: `npm run db:up:all` in `packages/extension/demos` (Pagila, Sakila, access-demo); access/JWT details in that README.
 
 **Without cloning the repo:** install the VSIX, then run **db2ai: Create demo workspace (MCP examples)** from the Command Palette. Details: [`./packages/extension/README.md`](./packages/extension/README.md).
 
@@ -66,21 +66,24 @@ Package notes: [`./packages/language/README.md`](./packages/language/README.md) 
 
 ## npm scripts (repository root)
 
-| Script               | Purpose                                                      |
-| -------------------- | ------------------------------------------------------------ |
-| `langium:generate`   | Regenerate Langium AST/grammar from `packages/language`      |
-| `langium:watch`      | Watch grammar and regenerate on change                       |
-| `build`              | TypeScript build (workspaces) + `bundle:mcp-runtime`         |
-| `build:clean`        | `clean` then `build`                                         |
-| `watch`              | TypeScript watch on the monorepo build graph                 |
-| `clean`              | Clean all workspace build outputs                            |
-| `bundle:mcp-runtime` | Bundle standalone `mcp-serve` into `packages/cli/resources/` |
-| `generate:pagila`    | Regenerate Pagila PostgreSQL example tools                   |
-| `generate:sakila`    | Regenerate Sakila MySQL example tools                        |
-| `test`               | All automated tests, including Pagila/Sakila MCP stdio smoke |
-| `test:smoke:pagila`  | Smoke-call `listFilms` on generated tools                    |
-| `test:mcp:pagila`    | Smoke Pagila through generated MCP stdio host                |
-| `test:mcp:sakila`    | Smoke Sakila through generated MCP stdio host                |
+| Script                   | Purpose                                                      |
+| ------------------------ | ------------------------------------------------------------ |
+| `langium:generate`       | Regenerate Langium AST/grammar from `packages/language`      |
+| `langium:watch`          | Watch grammar and regenerate on change                       |
+| `build`                  | TypeScript build (workspaces) + `bundle:mcp-runtime`         |
+| `build:clean`            | `clean` then `build`                                         |
+| `watch`                  | TypeScript watch on the monorepo build graph                 |
+| `clean`                  | Clean all workspace build outputs                            |
+| `bundle:mcp-runtime`     | Bundle standalone `mcp-serve` into `packages/cli/resources/` |
+| `generate:pagila`        | Regenerate Pagila PostgreSQL example tools                   |
+| `generate:sakila`        | Regenerate Sakila MySQL example tools                        |
+| `generate:access-demo`   | Regenerate access-demo tools (JWT / checked access)          |
+| `test`                   | All automated tests, including MCP stdio smokes              |
+| `test:smoke:pagila`      | Smoke-call `listFilms` on generated tools                    |
+| `test:smoke:access-demo` | Smoke-call `listProducts` on access-demo tools               |
+| `test:mcp:pagila`        | Smoke Pagila through generated MCP stdio host                |
+| `test:mcp:sakila`        | Smoke Sakila through generated MCP stdio host                |
+| `test:mcp:access-demo`   | Smoke access-demo (Docker + JWT) through MCP stdio host      |
 
 ## Launch configurations ([`./.vscode/launch.json`](./.vscode/launch.json))
 

@@ -10,16 +10,16 @@ todos:
       status: completed
     - id: access-demo-docker
       content: 'Commit 3 — db2ai: access-demo DB + feste JWTs in .env.example'
-      status: pending
+      status: completed
     - id: dsl-access-grammar
       content: 'Commit 3 — db2ai: DSL auth { } + access auf SqlQuery, query-access.ts, Validator + Completion + Tests'
-      status: pending
+      status: completed
     - id: codegen-access
       content: 'Commit 3 — db2ai: Codegen mit core2ai-Hilfen (requiresAuth, stubs, invoke-Guard)'
-      status: pending
+      status: completed
     - id: access-demo-dsl
       content: 'Commit 3 — access-demo (public listProducts + checked listCustomerOrders); pagila/sakila access public + 1–2 protected; Stub + mcp.json + smoke'
-      status: pending
+      status: completed
     - id: sql-read-only-only
       content: 'Commit 4 — db2ai: INSERT/UPDATE/DELETE in SQL verbieten (Validator + optional Codegen-Guard); DB-Validierung nur EXPLAIN (PG/MySQL), kein execute bei Save'
       status: pending

@@ -2,6 +2,7 @@ grammar Db2AiDsl
 
 entry Model:
     'database' (dialect=DatabaseDialect)? 'env' env=STRING
+    (auth?='auth')?
     (entries += SqlQuery)*;
 
 DatabaseDialect returns string:
@@ -10,11 +11,27 @@ DatabaseDialect returns string:
 SqlQuery:
     'SQL' '{'
         ('toolName' ':' toolName=STRING)?
+        'access' ':' access=Access
         ('intent' ':' intent=STRING)?
         ('query' ':' query=STRING)?
         ('summary' ':' summary=STRING)?
         ('params' ':' params=SqlParamMap)?
     '}';
+
+Access:
+    PublicAccess | ProtectedAccess | CheckedAccess;
+
+PublicAccess:
+    {infer PublicAccess} 'public';
+
+ProtectedAccess:
+    {infer ProtectedAccess} 'protected';
+
+CheckedAccess:
+    {infer CheckedAccess} 'checked' ('{' checkedBody=CheckedAccessBody '}')?;
+
+CheckedAccessBody:
+    ('optionalParams' ':' '[' (optionalParams+=STRING (',' optionalParams+=STRING)*)? ']')?;
 
 SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';

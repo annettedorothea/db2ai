@@ -1,4 +1,5 @@
 export * from './db-2-ai-dsl-module.js';
+export * from './query-access.js';
 export * from './db-2-ai-dsl-validator.js';
 export * from './db-2-ai-dsl-sql-validator.js';
 export * from './dialect.js';
