@@ -45,7 +45,7 @@ Prerequisite: **Node.js 20+**.
         npm run langium:generate
         npm run build
         ```
-    - **`@core2ai/core` pin:** fixed Git tag in `packages/cli/package.json` (canonical pin in **core2ai** `scripts/core2ai-pin.json`; targets in `core2ai-pin.targets.json`). Show pin: `npm run core2ai:pin`. After a core2ai release: bump tag in core2ai, reinstall, run `npm run core2ai:apply-pin`, then `npm run install:github-https`.
+    - **`@core2ai/core` pin:** fixed Git tag in `packages/cli/package.json` (canonical pin in **core2ai** `scripts/core2ai-pin.json`; targets in `core2ai-pin.targets.json`). Show pin: `npm run core2ai:pin`. After a core2ai release: bump tag in core2ai, then `npm run core2ai:refresh-pin`.
 2. Open the **`db2ai`** repository root in Cursor/VS Code.
 3. Edit or create a `.db2ai` file, for example under `./packages/extension/demos/`.
 4. Generate tools with one of these options:
