@@ -129,6 +129,12 @@ When both MCP servers are enabled, name **Pagila** or **Sakila** in the prompt i
 
 After DSL changes: run the matching `generate:*` script, save the file, or **Generate tool code**, then reload MCP.
 
+## MCP transport and credentials
+
+These demos serve tools through a **local MCP server over stdio**. Cursor (or another MCP client) starts [`generated/cli/mcp-serve.mjs`](./generated/cli/mcp-serve.mjs), loads the matching `generated/tools/*-tools.mjs`, and talks MCP on the stdio transport configured in [`.cursor/mcp.json`](./.cursor/mcp.json).
+
+There is **no sign-in step in MCP** itself. Database access is configured in [`.env`](./.env.example) via `PAGILA_DATABASE_URL` and `SAKILA_DATABASE_URL`. The MCP host uses those connection strings when it starts. Reload the MCP server after you change `.env`.
+
 ## MCP configuration
 
 [`./.cursor/mcp.json`](./.cursor/mcp.json) registers `db2ai-pagila` and `db2ai-sakila`. Connection URLs come from env (`PAGILA_DATABASE_URL`, `SAKILA_DATABASE_URL`), not from the DSL file.

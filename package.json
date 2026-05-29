@@ -10,6 +10,8 @@
         "postinstall": "node scripts/install-git-hooks.mjs",
         "install:hooks": "node scripts/install-git-hooks.mjs",
         "install:github-https": "node scripts/npm-install-github-https.mjs",
+        "core2ai:pin": "node node_modules/@core2ai/core/scripts/print-core2ai-pin.mjs",
+        "core2ai:apply-pin": "node node_modules/@core2ai/core/scripts/apply-core2ai-pin.mjs",
         "watch": "tsc -b tsconfig.build.json --watch",
         "build": "tsc -b tsconfig.build.json && npm run bundle:mcp-runtime && npm run build --workspaces",
         "bundle:mcp-runtime": "esbuild @core2ai/core/mcp-host/standalone-entry --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=packages/cli/resources/mcp-serve-emitted.mjs --external:@modelcontextprotocol/sdk --external:zod --external:pg",

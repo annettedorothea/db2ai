@@ -5,7 +5,28 @@ alwaysApply: true
 
 # GitHub Core Dependency
 
-- Keep `@core2ai/core` pinned to an explicit Git tag, not `main`, so installs stay reproducible.
-- If `npm install` fails with GitHub SSH or `known_hosts` warnings, use `npm run install:github-https`.
-- The install script rewrites GitHub SSH URLs to HTTPS for that process only. Do not modify global Git config or `~/.ssh/known_hosts` unless the user explicitly asks.
-- After bumping the core tag, update the lockfile with `npm run install:github-https`, then run `npm run build` and `npm run check`.
+## What “pin” means
+
+A **pin** is the fixed version string in `package.json` for `@core2ai/core`, for example:
+
+`github:annettedorothea/core2ai#v0.0.2`
+
+That tells npm to install **exactly** the Git commit tagged `v0.0.2` on GitHub — not a sibling folder (`file:../../../core2ai`) and not a moving branch like `#main`.
+
+## Single source of truth
+
+- Pin version: **`core2ai/scripts/core2ai-pin.json`** (edit there, tag + push core2ai).
+- Which files to update in this repo: **`core2ai-pin.targets.json`**.
+- Scripts live in **`@core2ai/core`**; run **`npm run core2ai:apply-pin`** from this repo root, then **`npm run install:github-https`**.
+
+Show the current pin: **`npm run core2ai:pin`**.
+
+## Install
+
+- Prefer **`npm run install:github-https`** over plain `npm install` if GitHub SSH or `known_hosts` errors appear.
+- The script rewrites GitHub SSH URLs to HTTPS for that process only. Do not modify global Git config unless the user explicitly asks.
+- After bumping the tag in **core2ai** (new Git tag + push), run `core2ai:apply-pin` and `install:github-https`, then `npm run langium:generate`, `npm run build`, and `npm run check`.
+
+## Do not use
+
+- `file:…/core2ai` in committed `package.json` or lockfiles (local monorepo path only for ad-hoc experiments).

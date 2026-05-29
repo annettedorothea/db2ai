@@ -1,13 +1,13 @@
 ---
 name: db2ai access concept
-overview: 'Drei Commits: (0) db2ai TableQuery entfernen, (1) core2ai-Extraktion via api2ai-Refactor, (2) db2ai Access-Feature auf SQL-Tools. Token-Env nur in mcp.json (--auth-env).'
+overview: 'Vier Commits: (0) TableQuery entfernen, (1) core2ai via api2ai, (2) Access auf SQL-Tools, (3) nur read-only SQL (kein INSERT/UPDATE/DELETE; Validator EXPLAIN). Token-Env nur in mcp.json (--auth-env).'
 todos:
     - id: remove-table-query
       content: 'Commit 1 — db2ai: TableQuery entfernen, pagila/sakila auf SQL migrieren; Version 0.0.2'
-      status: pending
+      status: completed
     - id: core2ai-extract-api2ai
       content: 'Commit 2 — core2ai v0.0.2 + api2ai 0.0.2; file:-Pin entfernen, nur github#v0.0.2; JWT/Stub-Extraktion; build + check'
-      status: pending
+      status: completed
     - id: access-demo-docker
       content: 'Commit 3 — db2ai: access-demo DB + feste JWTs in .env.example'
       status: pending
@@ -20,18 +20,22 @@ todos:
     - id: access-demo-dsl
       content: 'Commit 3 — access-demo (public listProducts + checked listCustomerOrders); pagila/sakila access public + 1–2 protected; Stub + mcp.json + smoke'
       status: pending
+    - id: sql-read-only-only
+      content: 'Commit 4 — db2ai: INSERT/UPDATE/DELETE in SQL verbieten (Validator + optional Codegen-Guard); DB-Validierung nur EXPLAIN (PG/MySQL), kein execute bei Save'
+      status: pending
 isProject: false
 ---
 
-# db2ai: TableQuery entfernen + core2ai-Extraktion + Access
+# db2ai: TableQuery entfernen + core2ai-Extraktion + Access + read-only SQL
 
-## Gesamtstruktur (drei Commits)
+## Gesamtstruktur (vier Commits)
 
 | Schritt | Repo(s)          | Inhalt                                          | Commit   |
 | ------- | ---------------- | ----------------------------------------------- | -------- |
 | **0**   | db2ai            | TableQuery entfernen, Demos migrieren           | Commit 1 |
 | **1**   | core2ai + api2ai | JWT/Stub-Hilfen nach core2ai, api2ai refactoren | Commit 2 |
 | **2–4** | db2ai            | Access-Feature (nutzt core2ai aus Schritt 1)    | Commit 3 |
+| **5**   | db2ai            | Nur read-only SQL; Validator ohne Datenänderung | Commit 4 |
 
 PoC → Alpha: **keine Deprecation**.
 
@@ -40,9 +44,11 @@ flowchart LR
   s0["Schritt 0\ndb2ai TableQuery raus"]
   s1["Schritt 1\ncore2ai + api2ai"]
   s2["Schritt 2–4\ndb2ai Access"]
+  s3["Schritt 5\nread-only SQL"]
   s0 -->|"Commit 1"| s1
   s1 -->|"Commit 2"| s2
-  s2 -->|"Commit 3"| done["Alpha"]
+  s2 -->|"Commit 3"| s3
+  s3 -->|"Commit 4"| done["Alpha"]
 ```
 
 **Warum api2ai vor db2ai Access?** Die Extraktion wird an einem funktionierenden Referenz-System (mock-api, checked stubs) validiert. db2ai übernimmt danach erprobte core2ai-APIs statt parallel zu duplizieren.
@@ -221,12 +227,64 @@ npm run test:smoke:access-demo
 
 ---
 
+## Schritt 6: Nur read-only SQL (Commit 4 — db2ai, letzter Schritt)
+
+**Ziel:** Kein `INSERT` / `UPDATE` / `DELETE` / `MERGE` / `TRUNCATE` (und keine DDL) in `query:` — weder zur Laufzeit (MCP) noch beim Speichern in der IDE. Schreiben bleibt bei **api2ai** (HTTP), nicht in db2ai-SQL-Tools.
+
+**Motivation:** Heute führt [`sql-db-validator.ts`](file:///Users/annette/Documents/Projekte/MCP/db2ai/packages/language/src/sql-db-validator.ts) das Statement mit `example`-Werten **wirklich** aus; DML würde die DB beim Validieren ändern. Für Kunden-DEV und PoC reicht **SELECT-only**.
+
+### 6a. Statische Prüfung (Validator)
+
+Neue Hilfe z. B. `sql-statement-kind.ts`:
+
+- `query`-String trimmen, Kommentare/`;` am Ende ignorieren (v1: ein Statement pro `SQL`-Block).
+- Erstes signifikantes Token (case-insensitive): nur **`SELECT`** (optional **`WITH`** … **`SELECT`**) erlauben.
+- Bei `INSERT` | `UPDATE` | `DELETE` | `MERGE` | `REPLACE` | `TRUNCATE` | `CREATE` | `ALTER` | `DROP` | `GRANT` | `REVOKE` → **Error** am `query`-Range, Quelle `db2ai-sql`.
+- [`db-2-ai-dsl-validator.ts`](file:///Users/annette/Documents/Projekte/MCP/db2ai/packages/language/src/db-2-ai-dsl-validator.ts): Aufruf für jedes `SqlQuery`; Tests (positiv: `SELECT`, `WITH … SELECT`; negativ: `INSERT`, `UPDATE`, `DELETE`).
+
+**Kein** neues DSL-Keyword nötig — Regel ist global für alle `SQL { }`-Blöcke.
+
+### 6b. DB-Validierung ohne Datenänderung
+
+[`sql-db-validator.ts`](file:///Users/annette/Documents/Projekte/MCP/db2ai/packages/language/src/sql-db-validator.ts) ersetzt `client.query({ text, values })` durch:
+
+| Dialekt    | Probe                                                              |
+| ---------- | ------------------------------------------------------------------ |
+| PostgreSQL | `EXPLAIN (VERBOSE, FORMAT JSON) …` mit gebundenen `$n` (wie heute) |
+| MySQL      | `EXPLAIN` mit `?`-Rewrite (wie invoke)                             |
+
+- **Nicht** `EXPLAIN ANALYZE` (führt aus).
+- Fehler aus DB (Syntax, unbekannte Spalte, Typ-Bind) weiter als Diagnostic.
+- Optional: Hinweis in README — Validierung nutzt `EXPLAIN`, ändert keine Daten.
+
+### 6c. Codegen / Runtime (Defense in depth)
+
+- [`invoke-render.ts`](file:///Users/annette/Documents/Projekte/MCP/db2ai/packages/cli/src/generator/invoke-render.ts): vor `query()` dieselbe read-only-Prüfung → `throw new Error('…')` (falls Validator umgangen wurde).
+- Demos: alle `.db2ai` bleiben `SELECT` (bereits so); kein Migrationsbedarf.
+
+### 6d. Verifikation
+
+```bash
+npm run langium:generate && npm run build && npm run check
+```
+
+- Language-Tests: DML abgelehnt; gültiges `SELECT` + `EXPLAIN`-Pfad (Mock oder Pagila-Container).
+- Smoke unverändert grün.
+
+### Abgrenzung Schritt 6
+
+- Schreiben über **HTTP** (api2ai `POST`/`PUT`/…) — **nicht** betroffen.
+- Späteres „Mutation-SQL“ in db2ai — **bewusst out of scope** für Alpha; eigener Plan, wenn überhaupt.
+
+---
+
 ## Abgrenzung
 
 - db2ai host-adapter in Schritt 1 **nicht** refactoren (erst in Schritt 4 mit Access)
 - Row-Level Security in Postgres (nur Stubs)
 - JWT-Signatur-Verifikation zur Laufzeit
 - TableQuery (entfernt in Schritt 0)
+- **INSERT/UPDATE/DELETE in db2ai-SQL** (verboten ab Schritt 6 / Commit 4)
 
 ## Risiken
 
@@ -235,3 +293,5 @@ npm run test:smoke:access-demo
 | core2ai-Tag-Koordination            | Schritt 1 komplett in api2ai validieren, dann db2ai bumpen                      |
 | Generierter Code importiert core2ai | MCP-Bundle muss `@core2ai/core/mcp-host` external/resolvable halten (wie heute) |
 | api2ai-Regression                   | mock-api smoke vor db2ai-Access                                                 |
+| `EXPLAIN` deckt nicht alles ab      | Statische SELECT-only-Regel + Runtime-Guard; Demos nur `SELECT`                 |
+| MySQL `EXPLAIN` vs. komplexes SQL   | Fehler aus `EXPLAIN` reichen; ggf. MySQL-spezifische Tests in `sql-validating`  |
