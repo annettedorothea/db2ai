@@ -10,6 +10,7 @@
         "postinstall": "node scripts/install-git-hooks.mjs",
         "install:hooks": "node scripts/install-git-hooks.mjs",
         "install:github-https": "node scripts/npm-install-github-https.mjs",
+        "install:demos": "node scripts/npm-install-github-https.mjs --prefix packages/extension/demos",
         "core2ai:pin": "node scripts/run-core2ai-script.mjs print-core2ai-pin.mjs",
         "core2ai:apply-pin": "node scripts/run-core2ai-script.mjs apply-core2ai-pin.mjs",
         "core2ai:refresh-pin": "node scripts/run-core2ai-script.mjs refresh-core2ai-pin.mjs",

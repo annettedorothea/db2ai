@@ -1,0 +1,39 @@
+---
+description: Bei db2ai keine Env-Dateien aendern; bei Auth-Fehler abbrechen, kein Credential-Workaround
+alwaysApply: true
+---
+
+# Env-Dateien und Auth bei db2ai-MCPs
+
+Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
+
+## Env-Dateien nie anfassen
+
+- **Nicht lesen, schreiben oder aendern:** `.env`, `.env.local`, `.env.*` und vergleichbare Secret-/Config-Dateien.
+- **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
+- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `ACCESS_DEMO_TOKEN`, `DB2AI_AUTH_TOKEN`, `PAGILA_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
+
+## Auth-Fehler: Fehler melden, nicht umgehen
+
+- MCP-Server mit `--auth-env` nutzen **ausschliesslich** das vom Host injizierte Credential/JWT — optionale Tool-Argumente oder Header sind **kein** Ersatz fuer fehlende Env-Credentials.
+- Schlaegt ein authentifizierter MCP-Call fehl (z. B. `401`, `403`, „customerId does not match JWT claim“, „Missing host credential“):
+  - **Fehler woertlich** an den Nutzer melden,
+  - **sofort stoppen** — keinen zweiten Versuch mit anderem `customerId`, anderem Credential oder anderer Identitaet,
+  - kurz erklaeren, dass das **vorhandene Credential/JWT** nicht zur Anfrage passt und der Nutzer Env/Token selbst anpassen muss, wenn er andere Daten sehen will.
+- **Kein Workaround:** kein CLI aus `generated/**`, kein direkter SQL-/HTTP-Call, kein Umgehen der Auth-Stubs unter `src/auth/**`.
+
+## Kein Login- oder Token-Workaround
+
+- db2ai-Demos haben **kein** separates `login`-Tool wie die api2ai Mock-API.
+- **Nicht** versuchen, Identitaet per Tool-Aufruf zu wechseln, wenn Env auf eine andere Person zeigt.
+- Wenn der Nutzer **explizit** eine andere Demo-Identitaet will (z. B. anderes JWT in `.env.example`): nur erklaeren, welche Variable er selbst in `.env` setzen soll — **nicht** die Datei fuer ihn aendern.
+
+## Beispiel (access-demo)
+
+**Anfrage:** „db2ai zeig bobs bestellungen an“ — `ACCESS_DEMO_TOKEN` gehoert zu `alice`.
+
+- ✅ Einmal `listCustomerOrders` mit `customerId: bob` aufrufen.
+- ✅ Bei Mismatch-Fehler melden: JWT ist `alice`, angefragt wurde `bob`; Nutzer soll `ACCESS_DEMO_TOKEN` in `.env` selbst auf Bobs Demo-JWT setzen.
+- ❌ `.env.local` lesen oder aendern.
+- ❌ Erneut `listCustomerOrders` nach eigenmaechtigem Credential-Tausch.
+- ❌ Pagila/Sakila- oder andere db2ai-MCPs als Ersatz nutzen, um die Anfrage doch noch zu erfuellen.

@@ -6,6 +6,9 @@ import { expect } from 'vitest';
 import { generateAction } from '../../src/generate-command.js';
 import { restoreEnv } from './env.js';
 
+/** Matches Pagila/Sakila MCP config in packages/extension/demos/.cursor/mcp.json */
+const DEFAULT_AUTH_ENV = 'DB2AI_AUTH_TOKEN';
+
 export type DirectInvokeFixtureOptions = {
     demosRoot: string;
     tmpRoot: string;
@@ -14,6 +17,8 @@ export type DirectInvokeFixtureOptions = {
     generatedToolsName: string;
     databaseEnv: string;
     connectionString: string;
+    /** Env var name for --auth-env when generated tools include protected/checked access */
+    authEnv?: string;
 };
 
 export type DirectInvokeFixture = {
@@ -35,7 +40,9 @@ export async function withGeneratedDirectInvokeFixture(
     const runRoot = await fs.mkdtemp(path.join(options.tmpRoot, options.tmpPrefix));
     const generatedTsPath = path.join(runRoot, `generated/tools/${options.generatedToolsName}.ts`);
     const generatedJsPath = path.join(runRoot, `generated/tools/${options.generatedToolsName}.mjs`);
+    const authEnv = options.authEnv ?? DEFAULT_AUTH_ENV;
     const previousDatabaseUrl = process.env[options.databaseEnv];
+    const previousAuthToken = process.env[authEnv];
 
     try {
         process.env[options.databaseEnv] = options.connectionString;
@@ -46,13 +53,18 @@ export async function withGeneratedDirectInvokeFixture(
             unknown
         >;
         const generated = readGeneratedModule(imported);
-        generated.adapter.configureFromArgv([], [options.demosRoot]);
+        const hostArgv = generated.requiresAuth === true ? (['--auth-env', authEnv] as const) : ([] as const);
+        generated.adapter.configureFromArgv([...hostArgv], [options.demosRoot]);
+        if (generated.requiresAuth === true && previousAuthToken === undefined) {
+            process.env[authEnv] = '';
+        }
         generated.adapter.validateAtStartup(generated.requiresAuth === true);
         const hostContext = generated.adapter.resolveHostContext();
 
         await run({ imported, generated, hostContext });
     } finally {
         restoreEnv(options.databaseEnv, previousDatabaseUrl);
+        restoreEnv(authEnv, previousAuthToken);
         await fs.rm(runRoot, { recursive: true, force: true });
     }
 }
