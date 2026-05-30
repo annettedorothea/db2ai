@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-// ../core2ai/packages/mcp-host/out/mcp-standalone-entry.js
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-standalone-entry.js
 import * as path2 from "node:path";
 import { pathToFileURL } from "node:url";
 
-// ../core2ai/packages/mcp-host/out/env.js
+// node_modules/@core2ai/core/packages/mcp-host/out/env.js
 import * as fs from "node:fs";
 import * as path from "node:path";
 var LOCAL_ENV_FILES = [".env", ".env.local"];
@@ -83,7 +83,7 @@ function loadLocalEnvFiles(startDirs, options) {
   return loadedFiles;
 }
 
-// ../core2ai/packages/mcp-host/out/mcp-host-adapter.js
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-host-adapter.js
 function readMcpHostAdapter(imported2) {
   const adapter = imported2.mcpHostAdapter;
   if (!adapter || typeof adapter !== "object") {
@@ -127,7 +127,7 @@ function readGeneratedModule(imported2) {
   };
 }
 
-// ../core2ai/packages/mcp-host/out/mcp-server.js
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-server.js
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 function requireMcpServerIdentity(generated2) {
@@ -184,7 +184,7 @@ async function runMcpServer(generated2) {
   await server.connect(transport);
 }
 
-// ../core2ai/packages/mcp-host/out/mcp-standalone-entry.js
+// node_modules/@core2ai/core/packages/mcp-host/out/mcp-standalone-entry.js
 var argv = process.argv.slice(2);
 var modulePath = argv[0];
 if (!modulePath) {
