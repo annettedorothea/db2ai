@@ -121,7 +121,7 @@ function registerGenerateOnSave(context: vscode.ExtensionContext): void {
     context.subscriptions.push(disposable);
 }
 
-const DEMO_COPY_SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp', '.pagila-src']);
+const DEMO_COPY_SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp']);
 const DEMO_COPY_SKIP_FILES = new Set(['package-lock.json', '.env', '.env.local']);
 
 function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): void {

@@ -1,3 +1,4 @@
 {
-    "packageJson": ["packages/cli/package.json"]
+    "packageJson": ["packages/cli/package.json", "packages/extension/demos/package.json"],
+    "generatorFallback": "packages/cli/src/generator.ts"
 }
