@@ -49,7 +49,16 @@ Edit `.db2ai` under `packages/extension/demos/`, then:
 - **Extension dev:** **Run db2ai Extension** (opens demos workspace; save regenerates tools).
 - **CLI:** `node ./packages/cli/bin/cli.js parse|validate|generate <file> …`
 
-More workflows: **[core2ai docs hub](../core2ai/docs/README.md)** (sibling repo).
+## Documentation
+
+Shared architecture (three layers, core2ai pin, build cheatsheet): **[core2ai docs hub](../core2ai/docs/README.md)** (sibling repo).
+
+| Doc                                                                                 | When to read                           |
+| ----------------------------------------------------------------------------------- | -------------------------------------- |
+| [Three layers overview](../core2ai/docs/01-three-layers-overview.md)                | First visit — how db2ai fits the stack |
+| [Layer 2 — MCP server and tools](../core2ai/docs/03-layer2-mcp-server-and-tools.md) | SQL tools and `mcp-serve.mjs`          |
+| [Layer 3 — Cursor and agent](../core2ai/docs/04-layer3-cursor-and-agent.md)         | Demos, `mcp.json`, chat testing        |
+| [Build cheatsheet](../core2ai/docs/consumer-build-cheatsheet.md)                    | Which npm script to run                |
 
 ## Project layout
 
