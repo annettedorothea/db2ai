@@ -71,7 +71,7 @@ export const generatedTools = [
 ];
 
 export const mcpServerName = "access-demo-tools";
-export const mcpServerVersion = "0.0.3";
+export const mcpServerVersion = "0.0.4";
 
 const parameterCheckers = {
     "listCustomerOrders": checkListCustomerOrdersParameters
