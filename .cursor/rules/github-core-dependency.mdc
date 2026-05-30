@@ -17,9 +17,9 @@ That tells npm to install **exactly** the Git commit tagged `v0.0.2` on GitHub â
 
 - Pin version: **`core2ai/scripts/core2ai-pin.json`** (edit there, tag + push core2ai).
 - Which files to update in this repo: **`core2ai-pin.targets.json`**.
-- Pin scripts: **`npm run core2ai:refresh-pin`** from this repo root (preferred).
+- Pin scripts: **`npm run core2ai:use-pin`** or **`core2ai:refresh-pin`** (apply + forced reinstall).
 - Fallback pin source: sibling **`../core2ai/scripts`** when present; else **`node_modules/@core2ai/core/scripts`**.
-- Legacy: **`core2ai:apply-pin`** then **`install:github-https`**.
+- If GitHub SSH fails: **`install:github-https`**.
 
 Show the current pin: **`npm run core2ai:pin`**.
 
