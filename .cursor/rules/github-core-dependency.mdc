@@ -17,7 +17,7 @@ That tells npm to install **exactly** the Git commit tagged `v0.0.2` on GitHub â
 
 - Pin version: **`core2ai/scripts/core2ai-pin.json`** (edit there, tag + push core2ai).
 - Which files to update in this repo: **`core2ai-pin.targets.json`**.
-- Pin scripts: **`npm run core2ai:use-pin`** or **`core2ai:refresh-pin`** (apply + forced reinstall).
+- Pin scripts: **`npm run core2ai:use-pin`** (apply + forced reinstall).
 - Fallback pin source: sibling **`../core2ai/scripts`** when present; else **`node_modules/@core2ai/core/scripts`**.
 - If GitHub SSH fails: **`install:github-https`**.
 
@@ -44,7 +44,7 @@ See **core2ai** rule [core2ai-dev-link-mode.mdc](../core2ai/.cursor/rules/core2a
 
 - Prefer **`npm run install:github-https`** over plain `npm install` if GitHub SSH or `known_hosts` errors appear.
 - The script rewrites GitHub SSH URLs to HTTPS for that process only. Do not modify global Git config unless the user explicitly asks.
-- After bumping the tag in **core2ai** (new Git tag + push), run **`npm run core2ai:refresh-pin`**, then `npm run bundle:mcp-runtime`, `npm run generate:all`, `npm run langium:generate`, `npm run build`, and `npm run check`.
+- After bumping the tag in **core2ai** (new Git tag + push), run **`npm run core2ai:use-pin`**, then `npm run bundle:mcp-runtime`, `npm run generate:all`, `npm run langium:generate`, `npm run build`, and `npm run check`.
 - See [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc) for the full MCP bundle + demo copy workflow.
 
 ## Do not use

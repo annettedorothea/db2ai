@@ -14,7 +14,7 @@ alwaysApply: true
 | `packages/extension/demos/generated/tools/**` | `packages/cli/src/generator/**` → `npm run build`, `npm run generate:all` |
 | `packages/extension/demos/generated/cli/mcp-serve.mjs` | `npm run bundle:mcp-runtime`, then `npm run generate:all` (or core2ai pin refresh first) |
 | `packages/cli/resources/mcp-serve-emitted.mjs` | `npm run bundle:mcp-runtime` after `@core2ai/core/mcp-host` is current |
-| `node_modules/@core2ai/core/**` | Tag + `npm run core2ai:refresh-pin`, then bundle + generate |
+| `node_modules/@core2ai/core/**` | Tag + `npm run core2ai:use-pin`, then bundle + generate |
 
 Do **not** run `eslint --fix` on generated files. Do **not** use manual `cp` into `generated/**` or `node_modules` as a permanent fix.
 

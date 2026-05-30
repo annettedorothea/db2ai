@@ -241,7 +241,11 @@ List tools use SQL params by name (`limit`, `offset`, …) as defined in each to
 
 ```bash
 npm run db:access-demo:up --prefix ./packages/extension/demos
-npm run generate:access-demo
+npm run generate:access-demo --prefix ./packages/extension/demos
 npm run test:smoke:access-demo
 npm run test:mcp:access-demo
 ```
+
+---
+
+#Col3:23

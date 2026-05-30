@@ -7,7 +7,7 @@ alwaysApply: true
 
 `@core2ai/core` is installed via **GitHub pin** (`github:annettedorothea/core2ai#vX.Y.Z`), not a sibling `file:` path.
 
-## After `npm run core2ai:refresh-pin` or a new core2ai tag
+## After `npm run core2ai:use-pin` or a new core2ai tag
 
 From the **db2ai workspace root**:
 

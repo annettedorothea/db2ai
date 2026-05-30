@@ -1,6 +1,6 @@
 # Command-line interface (CLI)
 
-Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files, plus **`smoke-generated`** for testing MCP tool modules. The generator emits TypeScript, ESM `.mjs`, and copies the bundled MCP host from `@core2ai/core/mcp-host` into `generated/cli/mcp-serve.mjs`.
+Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files, plus **`smoke-generated`** for testing MCP tool modules.
 
 ## Commands
 
@@ -13,51 +13,40 @@ node ./packages/cli/bin/cli.js generate <source.db2ai> <dest-tools.ts>
 node ./packages/cli/bin/cli.js smoke-generated <path-to-*-tools.mjs> <toolName> [argsJson]
 ```
 
-Prefer root `package.json` scripts: `generate:pagila`, `generate:sakila`, `test:smoke:pagila`, `test:mcp:pagila`, `test:mcp:sakila`.
+Prefer **`npm run generate:*`** or **`generate:all`** in **[`../extension/demos/`](../extension/demos/)** (not root `package.json`).
 
-`npm test` includes Pagila and Sakila direct-invoke integration tests plus MCP stdio smokes. Tests reuse healthy `db2ai-pagila` / `db2ai-sakila` Docker containers when available; otherwise they start them via the demo Docker Compose setup. Newly started containers default to `PAGILA_HOST_PORT=55432` and `SAKILA_HOST_PORT=53306` unless set explicitly. `npm run check` intentionally skips tests so pre-commit stays fast.
+## Smoke tests
+
+From repo root:
+
+```bash
+npm run test:smoke              # pagila + access-demo direct smokes
+npm run test:smoke:pagila
+npm run test:e2e                # Docker MCP e2e suite
+npm run test:mcp:pagila         # one e2e scenario
+```
+
+Scenarios: [`../../scripts/dev-smoke.config.json`](../../scripts/dev-smoke.config.json).
+
+`npm test` includes Pagila/Sakila integration tests and MCP stdio smokes (Docker). `npm run check` skips tests (fast pre-commit).
 
 ## Database env (DSL)
-
-The `.db2ai` file declares the database dialect and **environment variable name** for the connection URL:
 
 ```text
 database env "PAGILA_DATABASE_URL"
 database mysql env "SAKILA_DATABASE_URL"
 ```
 
-The omitted dialect is PostgreSQL for backwards compatibility. The env name is emitted as `connectionEnv` in generated tools and used by the MCP host for startup validation and `hostContext.connectionString`. The actual URL lives in `.env` / `.env.local` (or Cursor `mcp.json` `env`), not in the DSL.
+The env **name** is in the DSL; the URL lives in `.env` / `mcp.json` `env`.
 
-## MCP serve (JWT, optional)
-
-Run the copied host (no need to repeat the DB env key in `args`):
+## MCP serve
 
 ```bash
 node ./generated/cli/mcp-serve.mjs ./generated/tools/<name>-tools.mjs
-```
-
-Optional user login simulation (same pattern as api2ai):
-
-```bash
 node ./generated/cli/mcp-serve.mjs ./generated/tools/<name>-tools.mjs --auth-env DB2AI_USER_JWT
 ```
 
-When `requiresAuth` is `true` in generated tools, `--auth-env` is required at startup. JWT payload is decoded into `hostContext.jwt` when the credential looks like a JWT.
-
-Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host/standalone-entry` into [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs).
-
-## Layout
-
-- [`bin/cli.js`](./bin/cli.js) — executable stub
-- [`src/main.ts`](./src/main.ts) — Commander setup
-- [`src/generator.ts`](./src/generator.ts) — code generation
-- [`src/db-query-codegen.ts`](./src/db-query-codegen.ts) — SQL / table tool schemas
-- [`src/generator/`](./src/generator/) — generated module renderers and project bootstrap
-- [`test/smoke/smoke.ts`](./test/smoke/smoke.ts) — smoke runner
-- [`test/e2e/`](./test/e2e/) — MCP stdio end-to-end smoke runners for Pagila and Sakila
-- [`test/integration/`](./test/integration/) — Vitest integration tests, including direct invoke
-- [`test/support/`](./test/support/) — shared test helpers, including Docker setup
-- [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs) — bundled MCP host
+Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host` into [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs).
 
 ---
 
