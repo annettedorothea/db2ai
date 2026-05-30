@@ -20,6 +20,6 @@ Editing `../core2ai` alone does **not** update bundled `mcp-serve.mjs` or `node_
 
 ## Release workflow
 
-Use skill **core2ai release** (canonical: `core2ai/.cursor/skills/core2ai-release/`).
+Use skill **guided release** (canonical: `core2ai/.cursor/skills/guided-release/`).
 
 See also [github-core-dependency.mdc](./github-core-dependency.mdc), [codegen-generated-quality.mdc](./codegen-generated-quality.mdc), and [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).
