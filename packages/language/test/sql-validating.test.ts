@@ -51,7 +51,7 @@ describe('SQL tool validation', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "filmsByRating"
+                toolName: filmsByRating
                 access: public
                 intent: "films with minimum rating"
                 query: "SELECT film_id FROM film WHERE rating >= $1 LIMIT $2"
@@ -68,7 +68,7 @@ describe('SQL tool validation', () => {
             database mysql env "SAKILA_DATABASE_URL"
 
             SQL {
-                toolName: "filmsByRating"
+                toolName: filmsByRating
                 access: public
                 intent: "films with a given rating"
                 query: "SELECT film_id FROM film WHERE rating = $1 LIMIT $2"
@@ -84,7 +84,7 @@ describe('SQL tool validation', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "x"
+                toolName: x
                 access: public
                 intent: "y"
                 query: "SELECT 1 WHERE id = $1"
@@ -100,7 +100,7 @@ describe('SQL tool validation', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "x"
+                toolName: x
                 access: public
                 intent: "y"
                 query: "SELECT 1"
@@ -121,7 +121,7 @@ describe('SQL tool validation', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "x"
+                toolName: x
                 access: public
                 intent: "y"
                 query: "SELECT 1 WHERE a = $1"
@@ -146,7 +146,7 @@ describe('SQL tool validation', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "x"
+                toolName: x
                 access: public
                 intent: "y"
                 query: "SELECT 1 WHERE a = $1 AND b = $2"
@@ -171,7 +171,7 @@ describe('SQL tool validation', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "x"
+                toolName: x
                 access: public
                 intent: "y"
                 query: "SELECT 1 WHERE a = $1"
@@ -193,7 +193,7 @@ describe('SQL tool validation', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "x"
+                toolName: x
                 access: public
                 intent: "y"
                 query: "SELECT 1 LIMIT $1"

@@ -1,10 +1,9 @@
 import type { ValidationAcceptor, ValidationChecks } from 'langium';
-import type { Db2AiDslAstType, Model, SqlQuery } from './generated/ast.js';
-import { isCheckedAccess, isSqlQuery } from './generated/ast.js';
+import type { Db2AiDslAstType, Model } from './generated/ast.js';
+import { isSqlQuery } from './generated/ast.js';
 import type { Db2AiDslServices } from './db-2-ai-dsl-module.js';
 import { checkSqlQuery } from './db-2-ai-dsl-sql-validator.js';
-import { accessRequiresAuth, getOptionalParams } from './query-access.js';
-import { resolveSqlParamsOrdered } from './sql-params.js';
+import { accessRequiresAuth } from './query-access.js';
 import {
     databaseDialectDisplayName,
     databaseDialectFromModel,
@@ -34,7 +33,6 @@ export class Db2AiDslValidator {
         for (const entry of model.entries) {
             if (isSqlQuery(entry)) {
                 checkSqlQuery(entry, accept);
-                this.checkOptionalParams(entry, accept);
             }
         }
     }
@@ -54,38 +52,6 @@ export class Db2AiDslValidator {
                 });
             }
         }
-    }
-
-    private checkOptionalParams(query: SqlQuery, accept: ValidationAcceptor): void {
-        const optionalParams = getOptionalParams(query);
-        if (optionalParams.length === 0) {
-            return;
-        }
-        const sqlText = query.query !== undefined ? String(query.query) : '';
-        const entries = query.params?.entries ?? [];
-        const knownNames = new Set(
-            resolveSqlParamsOrdered(entries, sqlText)
-                .map((p) => p.propertyName)
-                .filter((name) => name.length > 0)
-        );
-        const body = isCheckedAccess(query.access) ? query.access.checkedBody : undefined;
-        optionalParams.forEach((paramName, index) => {
-            const normalized = String(paramName).trim();
-            if (normalized.length === 0) {
-                return;
-            }
-            if (!knownNames.has(normalized)) {
-                accept(
-                    'warning',
-                    `optionalParams entry "${normalized}" is not a SQL param name on this tool and has no effect on the generated tool schema.`,
-                    {
-                        node: body ?? query.access,
-                        property: 'optionalParams',
-                        index
-                    }
-                );
-            }
-        });
     }
 
     private checkDatabaseEnv(model: Model, accept: ValidationAcceptor): void {

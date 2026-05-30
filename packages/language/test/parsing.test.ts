@@ -3,7 +3,7 @@ import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
 import { getAccessKind } from '../src/query-access.js';
-import { isSqlQuery } from '../src/generated/ast.js';
+import { isSqlParamNameField, isSqlQuery } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
 
 let parse: ReturnType<typeof parseHelper<Model>>;
@@ -20,7 +20,7 @@ describe('Parsing tests', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "listFilms"
+                toolName: listFilms
                 access: public
                 intent: "list films"
                 query: "SELECT * FROM film LIMIT $1 OFFSET $2"
@@ -46,9 +46,9 @@ describe('Parsing tests', () => {
             auth
 
             SQL {
-                toolName: "listCustomerOrders"
+                toolName: listCustomerOrders
                 access: checked {
-                    optionalParams: ["customerId"]
+                    optionalParams: [customerId]
                 }
                 intent: "orders"
                 query: "SELECT 1"
@@ -68,7 +68,7 @@ describe('Parsing tests', () => {
             database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "listFilms"
+                toolName: listFilms
                 access: public
                 intent: "list films"
                 query: "SELECT 1"
@@ -85,7 +85,7 @@ describe('Parsing tests', () => {
             database mysql env "SAKILA_DATABASE_URL"
 
             SQL {
-                toolName: "listFilms"
+                toolName: listFilms
                 access: public
                 intent: "list films"
                 query: "SELECT 1"
@@ -102,7 +102,7 @@ describe('Parsing tests', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "listActors"
+                toolName: listActors
                 access: public
                 intent: "list actors"
                 query: "SELECT * FROM actor LIMIT $1 OFFSET $2"
@@ -137,7 +137,7 @@ describe('Parsing tests', () => {
 
             SQL {
                 summary: "Actors"
-                toolName: "listActors"
+                toolName: listActors
                 access: public
                 intent: "list actors"
                 query: "SELECT 1"
@@ -152,7 +152,7 @@ describe('Parsing tests', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "filmsByRating"
+                toolName: filmsByRating
                 access: public
                 intent: "films with minimum rating"
                 query: "SELECT film_id, title FROM film WHERE rating >= $1 LIMIT $2"
@@ -180,7 +180,9 @@ describe('Parsing tests', () => {
             expect(entry.query).toContain('$1');
             expect(entry.params?.entries).toHaveLength(2);
             expect(entry.params?.entries[0].placeholder).toBe('$1');
-            expect(entry.params?.entries[0].spec?.fields.some((f) => f.name === 'rating')).toBe(true);
+            expect(
+                entry.params?.entries[0].spec?.fields.some((f) => isSqlParamNameField(f) && f.name === 'rating')
+            ).toBe(true);
         }
     });
 });

@@ -46,11 +46,11 @@ const CHECKED_BODY_SORT: Record<CheckedBodyKey, string> = {
 const ACCESS_KIND_INSERT: Record<AccessKindKeyword, string> = {
     public: 'access: public$0',
     protected: 'access: protected$0',
-    checked: 'access: checked {\n    optionalParams: ["$1"]\n}'
+    checked: 'access: checked {\n    optionalParams: [$1]\n}'
 };
 
 const CHECKED_BODY_INSERT: Record<CheckedBodyKey, string> = {
-    optionalParams: 'optionalParams: ["$1"]$0'
+    optionalParams: 'optionalParams: [$1]$0'
 };
 
 const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
@@ -61,7 +61,7 @@ const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
 };
 
 const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
-    toolName: 'toolName: "$1"$0',
+    toolName: 'toolName: $1$0',
     access: 'access: public$0',
     intent: 'intent: "$1"$0',
     query: 'query: "$1"$0',
@@ -369,6 +369,19 @@ function cursorAwaitingBlockKeyword(entry: { $cstNode?: CstNode }, offset: numbe
     return blockKeywordLeafAtOffset(entry, offset, keys) === undefined;
 }
 
+function cursorInsideOptionalParamsList(
+    query: SqlQuery,
+    textDoc: LangiumDocument['textDocument'],
+    position: Position
+): boolean {
+    const queryStart = query.$cstNode?.offset ?? 0;
+    const beforeCursor = textDoc.getText({
+        start: textDoc.positionAt(queryStart),
+        end: position
+    });
+    return /optionalParams\s*:\s*\[[^\]]*$/m.test(beforeCursor);
+}
+
 function blockKeywordItemsForSqlQuery(
     query: SqlQuery,
     root: CstNode,
@@ -379,6 +392,9 @@ function blockKeywordItemsForSqlQuery(
     const used = usedSqlBlockKeys(query);
 
     if (!offsetInsideToolBlock(query, offset)) {
+        return [];
+    }
+    if (cursorInsideOptionalParamsList(query, textDoc, position)) {
         return [];
     }
     const paramEntry = findSqlParamEntryAtOffset(query, root, offset);

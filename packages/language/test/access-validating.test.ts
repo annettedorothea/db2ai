@@ -34,7 +34,7 @@ describe('Access validating', () => {
             database env "ACCESS_DEMO_DATABASE_URL"
 
             SQL {
-                toolName: "listActors"
+                toolName: listActors
                 access: protected
                 intent: "list actors"
                 query: "SELECT 1"
@@ -52,9 +52,9 @@ describe('Access validating', () => {
             auth
 
             SQL {
-                toolName: "listCustomerOrders"
+                toolName: listCustomerOrders
                 access: checked {
-                    optionalParams: ["customerId"]
+                    optionalParams: [customerId]
                 }
                 intent: "orders"
                 query: "SELECT 1 FROM orders WHERE customer_id = $1"
@@ -73,16 +73,16 @@ describe('Access validating', () => {
         }
     });
 
-    test('warns when optionalParams entry is not a SQL param name', async () => {
+    test('reports unresolved optionalParams reference', async () => {
         const document = await parseValidated(`
             database env "ACCESS_DEMO_DATABASE_URL"
 
             auth
 
             SQL {
-                toolName: "listCustomerOrders"
+                toolName: listCustomerOrders
                 access: checked {
-                    optionalParams: ["missingParam"]
+                    optionalParams: [missingParam]
                 }
                 intent: "orders"
                 query: "SELECT 1 FROM orders WHERE customer_id = $1"
@@ -93,8 +93,8 @@ describe('Access validating', () => {
         `);
 
         const diagnostics = document.diagnostics ?? [];
-        expect(diagnostics).toHaveLength(1);
-        expect(diagnostics[0]?.severity).toBe(2);
-        expect(diagnostics[0]?.message).toContain('optionalParams entry "missingParam"');
+        expect(diagnostics.length).toBeGreaterThan(0);
+        expect(diagnostics.some((d) => d.message.includes('missingParam'))).toBe(true);
+        expect(diagnostics.some((d) => d.message.toLowerCase().includes('could not resolve reference'))).toBe(true);
     });
 });

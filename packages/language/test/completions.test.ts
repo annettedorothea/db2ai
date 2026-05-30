@@ -32,10 +32,10 @@ function sortedBlockKeywordLabels(items: Array<{ detail?: unknown; label: unknow
         .map((i) => String(i.label));
 }
 
-async function completionAt(content: string, offset: number) {
+async function completionAt(content: string, offset: number, parseOptions: ParseHelperOptions = { validation: false }) {
     completionCase += 1;
     const documentUri = path.join(fixtureDir, `completion-case-${completionCase}.db2ai`);
-    const options: ParseHelperOptions = { validation: false, documentUri };
+    const options: ParseHelperOptions = { ...parseOptions, documentUri };
     const document = (await parse(content, options)) as LangiumDocument<Model>;
     const position = document.textDocument.positionAt(offset);
     const params = { position, textDocument: { uri: document.uri.toString() } } satisfies CompletionParams;
@@ -55,7 +55,7 @@ describe('Completion for SQL block keywords', () => {
     });
 
     test('does not suggest already used block keywords', async () => {
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: "listFilms"\n    access: public\n    intent: "list films"\n    `;
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listFilms\n    access: public\n    intent: "list films"\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);
@@ -75,5 +75,31 @@ describe('Completion for SQL block keywords', () => {
 
         const labels = blockKeywordLabels(list?.items ?? []);
         expect(labels).toContain('toolName');
+    });
+});
+
+describe('Completion for checked access optionalParams', () => {
+    test('suggests optionalParams keyword inside checked access block', async () => {
+        const marker = '/*caret*/';
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = $1"\n    params: {\n        $1: { name: customerId description: "id" example: "1" type: string }\n    }\n}\n`;
+        const list = await completionAt(header.replace(marker, ''), header.indexOf(marker));
+        const labels = (list?.items ?? []).map((item) => String(item.label));
+        expect(labels).toContain('optionalParams');
+    });
+
+    test('suggests SQL param names inside optionalParams list', async () => {
+        const marker = '/*caret*/';
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = $1"\n    params: {\n        $1: { name: customerId description: "id" example: "1" type: string }\n    }\n}\n`;
+        const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
+        const labels = (list?.items ?? []).map((item) => String(item.label));
+        expect(labels).toContain('customerId');
+    });
+
+    test('suggests SQL param names when editing optionalParams prefix', async () => {
+        const marker = '/*caret*/';
+        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = $1"\n    params: {\n        $1: { name: customerId description: "id" example: "1" type: string }\n    }\n}\n`;
+        const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
+        const labels = (list?.items ?? []).map((item) => String(item.label));
+        expect(labels).toContain('customerId');
     });
 });

@@ -3,7 +3,7 @@ database env "PAGILA_DATABASE_URL"
 auth
 
 SQL {
-    toolName: "listFilms"
+    toolName: listFilms
     access: public
     intent: "list films from Pagila with pagination"
     query: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2"
@@ -15,7 +15,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listActors"
+    toolName: listActors
     access: protected
     intent: "list actors with pagination"
     query: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2"
@@ -27,7 +27,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listCustomers"
+    toolName: listCustomers
     access: public
     intent: "list customers with pagination"
     query: "SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2"
@@ -39,7 +39,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listCategories"
+    toolName: listCategories
     access: public
     intent: "list categories with pagination"
     query: "SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2"
@@ -51,7 +51,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listCountries"
+    toolName: listCountries
     access: public
     intent: "list countries with pagination"
     query: "SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2"
@@ -63,7 +63,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listInventory"
+    toolName: listInventory
     access: public
     intent: "list inventory with pagination"
     query: "SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2"
@@ -75,7 +75,7 @@ SQL {
 }
 
 SQL {
-    toolName: "filmsByMpaaRating"
+    toolName: filmsByMpaaRating
     access: public
     intent: "list films with a given MPAA age rating"
     query: "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2"
@@ -96,7 +96,7 @@ SQL {
 }
 
 SQL {
-    toolName: "filmsWithActorLastName"
+    toolName: filmsWithActorLastName
     access: public
     intent: "which films feature actors whose last name starts with a given prefix"
     query: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2"
@@ -117,7 +117,7 @@ SQL {
 }
 
 SQL {
-    toolName: "searchFilms"
+    toolName: searchFilms
     access: public
     intent: "search films by free text in title or description"
     query: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2"

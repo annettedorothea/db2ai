@@ -3,7 +3,7 @@ database env "ACCESS_DEMO_DATABASE_URL"
 auth
 
 SQL {
-    toolName: "listProducts"
+    toolName: listProducts
     access: public
     intent: "list products in the access-demo catalog"
     query: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1"
@@ -14,7 +14,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listProductsWithReviews"
+    toolName: listProductsWithReviews
     access: protected
     intent: "list products that have at least one review, with review details"
     query: "SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)"
@@ -25,9 +25,9 @@ SQL {
 }
 
 SQL {
-    toolName: "listCustomerOrders"
+    toolName: listCustomerOrders
     access: checked {
-        optionalParams: ["customerId"]
+        optionalParams: [customerId]
     }
     intent: "list orders for a customer; customerId may be taken from the JWT when omitted"
     query: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id"

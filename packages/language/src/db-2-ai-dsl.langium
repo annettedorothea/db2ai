@@ -10,7 +10,7 @@ DatabaseDialect returns string:
 
 SqlQuery:
     'SQL' '{'
-        ('toolName' ':' toolName=STRING)?
+        ('toolName' ':' toolName=ID)?
         'access' ':' access=Access
         ('intent' ':' intent=STRING)?
         ('query' ':' query=STRING)?
@@ -31,7 +31,7 @@ CheckedAccess:
     {infer CheckedAccess} 'checked' ('{' checkedBody=CheckedAccessBody '}')?;
 
 CheckedAccessBody:
-    ('optionalParams' ':' '[' (optionalParams+=STRING (',' optionalParams+=STRING)*)? ']')?;
+    ('optionalParams' ':' '[' (optionalParams+=[SqlParamNameField:ID] (',' optionalParams+=[SqlParamNameField:ID])*)? ']')?;
 
 SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';
@@ -43,10 +43,13 @@ SqlParamSpec:
     '{' (fields += SqlParamSpecField)* '}';
 
 SqlParamSpecField:
-    'name' ':' name=ID |
+    SqlParamNameField |
     'description' ':' description=STRING |
     'example' ':' example=STRING |
     'type' ':' paramType=SqlParamType;
+
+SqlParamNameField:
+    'name' ':' name=ID;
 
 SqlParamType returns string:
     'string' | 'integer' | 'number' | 'boolean';

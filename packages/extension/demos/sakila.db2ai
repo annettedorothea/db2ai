@@ -3,7 +3,7 @@ database mysql env "SAKILA_DATABASE_URL"
 auth
 
 SQL {
-    toolName: "listFilms"
+    toolName: listFilms
     access: public
     intent: "list films from Sakila with pagination"
     query: "SELECT * FROM film LIMIT $1 OFFSET $2"
@@ -15,7 +15,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listActors"
+    toolName: listActors
     access: protected
     intent: "list actors with pagination"
     query: "SELECT * FROM actor LIMIT $1 OFFSET $2"
@@ -27,7 +27,7 @@ SQL {
 }
 
 SQL {
-    toolName: "listCategories"
+    toolName: listCategories
     access: public
     intent: "list film categories with pagination"
     query: "SELECT * FROM category LIMIT $1 OFFSET $2"
@@ -39,7 +39,7 @@ SQL {
 }
 
 SQL {
-    toolName: "filmsByRating"
+    toolName: filmsByRating
     access: public
     intent: "list films with a given rating"
     query: "SELECT film_id, title, rating FROM film WHERE rating = $1 ORDER BY title LIMIT $2"
@@ -60,7 +60,7 @@ SQL {
 }
 
 SQL {
-    toolName: "filmsWithActorLastName"
+    toolName: filmsWithActorLastName
     access: public
     intent: "which films feature actors whose last name starts with a given prefix"
     query: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name LIKE CONCAT($1, '%') ORDER BY a.last_name, f.title LIMIT $2"
@@ -82,7 +82,7 @@ SQL {
 }
 
 SQL {
-    toolName: "searchFilms"
+    toolName: searchFilms
     access: public
     intent: "search films by free text in title or description"
     query: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title LIKE CONCAT('%', $1, '%') OR description LIKE CONCAT('%', $1, '%') ORDER BY title LIMIT $2"

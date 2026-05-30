@@ -4,9 +4,17 @@ import {
     isModel,
     validateSqlBlocksWithExamples
 } from 'db-2-ai-dsl-language';
+import {
+    assertDocumentValidForGenerate,
+    collectLangiumDocumentErrors,
+    printDocumentValidationErrors,
+    type CliLangiumDocument
+} from '@core2ai/core/codegen';
 import chalk from 'chalk';
+import type { LangiumDocument } from 'langium';
 import { NodeFileSystem } from 'langium/node';
 import * as path from 'node:path';
+import { DiagnosticSeverity } from 'vscode-languageserver-types';
 import { URI } from 'vscode-uri';
 import { loadLocalEnvFiles } from './env.js';
 
@@ -19,13 +27,43 @@ function checkExtension(file: string): void {
     }
 }
 
-async function loadDocument(file: string, validation: boolean) {
+async function loadDocument(file: string, validation: boolean): Promise<LangiumDocument> {
     checkExtension(file);
     const services = createDb2AiDslServices(NodeFileSystem);
     const uri = URI.file(path.resolve(file));
     const document = await services.shared.workspace.LangiumDocuments.getOrCreateDocument(uri);
     await services.shared.workspace.DocumentBuilder.build([document], { validation });
     return document;
+}
+
+function db2aiGenerateValidationOptions(file: string) {
+    return {
+        beforeBuild: () => loadLocalEnvFiles([process.cwd(), path.dirname(path.resolve(file))]),
+        extraErrors: async (document: CliLangiumDocument) => {
+            const model = document.parseResult?.value;
+            if (!isModel(model)) {
+                return [];
+            }
+            const uri = document.uri?.toString() ?? URI.file(path.resolve(file)).toString();
+            const sqlDbDiags = await validateSqlBlocksWithExamples(model, uri);
+            return sqlDbDiags
+                .filter((d) => d.severity === DiagnosticSeverity.Error)
+                .map((d) => ({
+                    severity: d.severity,
+                    message: d.message,
+                    range: d.range
+                }));
+        }
+    };
+}
+
+export async function assertDocumentValidOrExit(file: string): Promise<LangiumDocument> {
+    const services = createDb2AiDslServices(NodeFileSystem).Db2AiDsl;
+    return assertDocumentValidForGenerate(
+        file,
+        services,
+        db2aiGenerateValidationOptions(file)
+    ) as Promise<LangiumDocument>;
 }
 
 export async function parseAction(file: string): Promise<void> {
@@ -43,26 +81,14 @@ export async function parseAction(file: string): Promise<void> {
 export async function validateAction(file: string): Promise<void> {
     loadLocalEnvFiles([process.cwd(), path.dirname(path.resolve(file))]);
     const document = await loadDocument(file, true);
-    const parserErrors = document.parseResult.parserErrors;
-    if (parserErrors.length > 0) {
-        for (const error of parserErrors) {
-            console.error(chalk.red(error.message));
-        }
-        process.exit(1);
-    }
-    const allDiagnostics = [...(document.diagnostics ?? [])];
-    const model = document.parseResult.value;
-    if (isModel(model)) {
-        const sqlDbDiags = await validateSqlBlocksWithExamples(model, document.uri.toString());
-        allDiagnostics.push(...sqlDbDiags);
-    }
+    const errors = [
+        ...collectLangiumDocumentErrors(document),
+        ...(await db2aiGenerateValidationOptions(file).extraErrors!(document))
+    ];
+    const warnings = (document.diagnostics ?? []).filter((d) => d.severity === DiagnosticSeverity.Warning);
 
-    const errors = allDiagnostics.filter((d) => d.severity === 1);
-    const warnings = allDiagnostics.filter((d) => d.severity === 2);
     if (errors.length > 0) {
-        for (const diagnostic of errors) {
-            console.error(chalk.red(diagnostic.message));
-        }
+        printDocumentValidationErrors(document, errors);
         process.exit(1);
     }
     for (const diagnostic of warnings) {

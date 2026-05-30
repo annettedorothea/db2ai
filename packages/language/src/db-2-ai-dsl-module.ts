@@ -9,6 +9,7 @@ import {
 } from 'langium/lsp';
 import { Db2AiDslGeneratedModule, Db2AiDslGeneratedSharedModule } from './generated/module.js';
 import { Db2AiDslCompletionProvider } from './db-2-ai-dsl-completion-provider.js';
+import { Db2AiDslScopeComputation } from './db-2-ai-dsl-scope.js';
 import { Db2AiDslValidator, registerValidationChecks } from './db-2-ai-dsl-validator.js';
 
 export type Db2AiDslAddedServices = {
@@ -20,6 +21,9 @@ export type Db2AiDslAddedServices = {
 export type Db2AiDslServices = LangiumServices & Db2AiDslAddedServices;
 
 export const Db2AiDslModule: Module<Db2AiDslServices, PartialLangiumServices & Db2AiDslAddedServices> = {
+    references: {
+        ScopeComputation: (services) => new Db2AiDslScopeComputation(services)
+    },
     validation: {
         Db2AiDslValidator: () => new Db2AiDslValidator()
     },

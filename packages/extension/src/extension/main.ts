@@ -1,5 +1,6 @@
 import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node.js';
 import * as vscode from 'vscode';
+import { DiagnosticSeverity } from 'vscode';
 import * as path from 'node:path';
 import { cpSync, existsSync } from 'node:fs';
 import { execFile } from 'node:child_process';
@@ -7,6 +8,57 @@ import { LanguageClient, TransportKind } from 'vscode-languageclient/node.js';
 
 let client: LanguageClient;
 const generateByFileQueue = new Map<string, Promise<void>>();
+const DIAGNOSTICS_WAIT_MS = 1500;
+
+function waitForLanguageDiagnostics(uri: vscode.Uri): Promise<void> {
+    return new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            dispose.dispose();
+            clearTimeout(timer);
+            resolve();
+        };
+        const dispose = vscode.languages.onDidChangeDiagnostics((event) => {
+            if (event.uris.some((changedUri) => changedUri.toString() === uri.toString())) {
+                finish();
+            }
+        });
+        const timer = setTimeout(finish, DIAGNOSTICS_WAIT_MS);
+    });
+}
+
+function isValidationBlockedGenerateFailure(message: string): boolean {
+    return (
+        /Cannot generate/i.test(message) ||
+        /validation error/i.test(message) ||
+        /There are validation errors/i.test(message) ||
+        /fix parser errors/i.test(message)
+    );
+}
+
+function reportGenerateFailure(
+    productLabel: 'api2ai' | 'db2ai',
+    sourcePath: string,
+    message: string,
+    reportSuccess: boolean
+): void {
+    const baseName = path.basename(sourcePath);
+    if (isValidationBlockedGenerateFailure(message)) {
+        if (reportSuccess) {
+            void vscode.window.showWarningMessage(
+                `${productLabel}: generation skipped — fix validation errors in ${baseName} first.`
+            );
+        }
+        return;
+    }
+    if (reportSuccess) {
+        void vscode.window.showErrorMessage(`${productLabel}: generate failed for ${baseName}: ${message}`);
+    }
+}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     client = await startLanguageClient(context);
@@ -55,7 +107,10 @@ function registerGenerateOnSave(context: vscode.ExtensionContext): void {
         const queued = generateByFileQueue.get(sourcePath) ?? Promise.resolve();
         const next = queued
             .catch(() => undefined)
-            .then(async () => generateForSourceFile(context, sourcePath))
+            .then(async () => {
+                await waitForLanguageDiagnostics(vscode.Uri.file(sourcePath));
+                await generateForSourceFile(context, sourcePath);
+            })
             .finally(() => {
                 if (generateByFileQueue.get(sourcePath) === next) {
                     generateByFileQueue.delete(sourcePath);
@@ -179,6 +234,19 @@ async function generateForSourceFile(
     options?: { reportSuccess?: boolean }
 ): Promise<void> {
     const reportSuccess = options?.reportSuccess === true;
+    const sourceUri = vscode.Uri.file(sourcePath);
+    const blockingErrors = vscode.languages
+        .getDiagnostics(sourceUri)
+        .filter((diagnostic) => diagnostic.severity === DiagnosticSeverity.Error);
+    if (blockingErrors.length > 0) {
+        if (reportSuccess) {
+            void vscode.window.showWarningMessage(
+                `db2ai: generation skipped — fix ${blockingErrors.length} error(s) in ${path.basename(sourcePath)} first.`
+            );
+        }
+        return;
+    }
+
     const parsed = path.parse(sourcePath);
     const destinationPath = path.join(parsed.dir, 'generated', 'tools', `${parsed.name}-tools.ts`);
     const spawn = resolveCliSpawn(context);
@@ -209,7 +277,7 @@ async function generateForSourceFile(
         })
         .catch((error) => {
             const message = error instanceof Error ? error.message.trim() : String(error);
-            void vscode.window.showErrorMessage(`db2ai: generate failed for ${path.basename(sourcePath)}: ${message}`);
+            reportGenerateFailure('db2ai', sourcePath, message, reportSuccess);
         });
 }
 

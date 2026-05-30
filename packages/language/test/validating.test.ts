@@ -40,7 +40,7 @@ describe('Validating', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "listFilms"
+                toolName: listFilms
                 access: public
                 intent: "list films"
                 query: "SELECT * FROM film LIMIT $1 OFFSET $2"
@@ -74,7 +74,7 @@ describe('Validating', () => {
             database env "not-valid"
 
             SQL {
-                toolName: "t"
+                toolName: t
                 access: public
                 intent: "i"
                 query: "SELECT 1"
@@ -90,7 +90,7 @@ describe('Validating', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "t"
+                toolName: t
                 access: public
                 intent: "i"
                 query: "SELECT 1"
@@ -105,7 +105,7 @@ describe('Validating', () => {
             database mysql env "SAKILA_DATABASE_URL"
 
             SQL {
-                toolName: "listFilms"
+                toolName: listFilms
                 access: public
                 intent: "list films"
                 query: "SELECT * FROM film LIMIT $1 OFFSET $2"
@@ -125,7 +125,7 @@ describe('Validating', () => {
             database mysql env "SAKILA_DATABASE_URL"
 
             SQL {
-                toolName: "listFilms"
+                toolName: listFilms
                 access: public
                 intent: "list films"
                 query: "SELECT 1"
@@ -140,14 +140,14 @@ describe('Validating', () => {
             database env "PAGILA_DATABASE_URL"
 
             SQL {
-                toolName: "dup"
+                toolName: dup
                 access: public
                 intent: "first"
                 query: "SELECT 1"
             }
 
             SQL {
-                toolName: "dup"
+                toolName: dup
                 access: public
                 intent: "second"
                 query: "SELECT 2"

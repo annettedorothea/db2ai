@@ -10,7 +10,7 @@ export function checkSqlQuery(sqlQuery: SqlQuery, accept: ValidationAcceptor): v
 
 function checkSqlRequiredKeys(sqlQuery: SqlQuery, accept: ValidationAcceptor): void {
     if (sqlQuery.toolName === undefined) {
-        accept('error', 'SQL tool requires `toolName: "..."`.', { node: sqlQuery, property: 'toolName' });
+        accept('error', 'SQL tool requires `toolName: <id>`.', { node: sqlQuery, property: 'toolName' });
     } else if (String(sqlQuery.toolName).trim().length === 0) {
         accept('error', 'SQL tool `toolName` must not be empty.', { node: sqlQuery, property: 'toolName' });
     }
