@@ -1,0 +1,29 @@
+{
+    "cliBin": "./packages/cli/bin/cli.js",
+    "scenarios": {
+        "pagila": {
+            "kind": "smoke-generated",
+            "module": "./packages/extension/demos/generated/tools/pagila-tools.mjs",
+            "tool": "listFilms"
+        },
+        "access-demo": {
+            "kind": "smoke-generated",
+            "module": "./packages/extension/demos/generated/tools/access-demo-tools.mjs",
+            "tool": "listProducts"
+        },
+        "mcp-pagila": {
+            "kind": "node-script",
+            "script": "./packages/cli/out/test/e2e/mcp-smoke-pagila.js"
+        },
+        "mcp-sakila": {
+            "kind": "node-script",
+            "script": "./packages/cli/out/test/e2e/mcp-smoke-sakila.js"
+        },
+        "mcp-access-demo": {
+            "kind": "node-script",
+            "script": "./packages/cli/out/test/e2e/mcp-smoke-access-demo.js"
+        }
+    },
+    "smoke": ["pagila", "access-demo"],
+    "e2e": ["mcp-pagila", "mcp-sakila", "mcp-access-demo"]
+}

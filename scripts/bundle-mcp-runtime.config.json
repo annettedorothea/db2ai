@@ -1,0 +1,4 @@
+{
+    "outfile": "packages/cli/resources/mcp-serve-emitted.mjs",
+    "external": ["@modelcontextprotocol/sdk", "zod", "pg"]
+}
