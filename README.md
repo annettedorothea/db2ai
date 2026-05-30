@@ -1,6 +1,6 @@
 # db2ai
 
-**db2ai** selects relational database queries into MCP tools: a **`.db2ai` DSL** declares SQL tools plus AI-facing metadata (intent, examples, tool names, param specs). A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, completion against PostgreSQL/MySQL schemas).
+**db2ai** curates relational database queries into MCP tools: a **.db2ai DSL** defines SQL queries together with AI-facing metadata (intent, examples, tool names, optional column documentation). Queries are validated against a live PostgreSQL or MySQL database using EXPLAIN. A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, and completion).
 
 Sibling project: [api2ai](https://github.com/annettedorothea/api2ai) (OpenAPI to MCP). Shared library: [core2ai](https://github.com/annettedorothea/core2ai) (`@core2ai/core`).
 
@@ -55,9 +55,9 @@ Shared architecture (three layers, core2ai pin, build cheatsheet): **[core2ai do
 
 | Doc                                                                                 | When to read                           |
 | ----------------------------------------------------------------------------------- | -------------------------------------- |
-| [Three layers overview](../core2ai/docs/01-three-layers-overview.md)                | First visit — how db2ai fits the stack |
-| [Layer 2 — MCP server and tools](../core2ai/docs/03-layer2-mcp-server-and-tools.md) | SQL tools and `mcp-serve.mjs`          |
-| [Layer 3 — Cursor and agent](../core2ai/docs/04-layer3-cursor-and-agent.md)         | Demos, `mcp.json`, chat testing        |
+| [Three layers overview](../core2ai/docs/00-three-layers-overview.md)                | First visit — how db2ai fits the stack |
+| [Layer 2 — MCP server and tools](../core2ai/docs/02-layer2-mcp-server-and-tools.md) | SQL tools and `mcp-serve.mjs`          |
+| [Layer 3 — Cursor and agent](../core2ai/docs/03-layer3-cursor-and-agent.md)         | Demos, `mcp.json`, chat testing        |
 | [Build cheatsheet](../core2ai/docs/consumer-build-cheatsheet.md)                    | Which npm script to run                |
 
 ## Project layout
