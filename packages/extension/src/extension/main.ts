@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { cpSync, existsSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node.js';
+import demoBundleRequired from '../../demo-bundle-required.json' with { type: 'json' };
 
 let client: LanguageClient;
 const generateByFileQueue = new Map<string, Promise<void>>();
@@ -123,12 +124,7 @@ function registerGenerateOnSave(context: vscode.ExtensionContext): void {
 
 const DEMO_COPY_SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp']);
 const DEMO_COPY_SKIP_FILES = new Set(['package-lock.json', '.env', '.env.local']);
-const DEMO_BUNDLE_REQUIRED = [
-    'package.json',
-    'demos-generate.config.json',
-    'scripts/generate.mjs',
-    'scripts/generate-all.mjs'
-];
+const DEMO_BUNDLE_REQUIRED: readonly string[] = demoBundleRequired;
 
 function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): void {
     const disposable = vscode.commands.registerCommand('db2ai.createDemoWorkspace', async () => {

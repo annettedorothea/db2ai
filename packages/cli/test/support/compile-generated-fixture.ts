@@ -57,7 +57,7 @@ function compileGeneratedInDir(projectRoot: string, include: string[]): void {
     }
 }
 
-/** Emit `.js` next to generated `.ts` (and optional `src/auth` stubs) for smoke/e2e fixtures. */
+/** Emit `.js` next to generated `.ts` (and optional `src/auth` stubs) for Vitest fixtures. */
 export function compileGeneratedForSmoke(runRoot: string): void {
     compileGeneratedInDir(runRoot, ['generated/**/*.ts']);
 

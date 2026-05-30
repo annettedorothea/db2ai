@@ -1,4 +1,4 @@
-import { readGeneratedModule } from '@core2ai/core/mcp-host';
+import { readGeneratedToolModule, type GeneratedToolModule } from './generated-module.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -24,7 +24,7 @@ export type DirectInvokeFixtureOptions = {
 
 export type DirectInvokeFixture = {
     imported: Record<string, unknown>;
-    generated: ReturnType<typeof readGeneratedModule>;
+    generated: GeneratedToolModule;
     hostContext: unknown;
 };
 
@@ -54,7 +54,7 @@ export async function withGeneratedDirectInvokeFixture(
             string,
             unknown
         >;
-        const generated = readGeneratedModule(imported);
+        const generated = readGeneratedToolModule(imported);
         const hostArgv = generated.requiresAuth === true ? (['--auth-env', authEnv] as const) : ([] as const);
         generated.adapter.configureFromArgv([...hostArgv], [options.demosRoot]);
         if (generated.requiresAuth === true && previousAuthToken === undefined) {

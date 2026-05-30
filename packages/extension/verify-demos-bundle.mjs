@@ -1,16 +1,11 @@
 #!/usr/bin/env node
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const demosRoot = path.join(extensionRoot, 'demos');
-const required = [
-    'package.json',
-    'demos-generate.config.json',
-    'scripts/generate.mjs',
-    'scripts/generate-all.mjs'
-];
+const required = JSON.parse(readFileSync(path.join(extensionRoot, 'demo-bundle-required.json'), 'utf8'));
 
 const missing = required.filter((relative) => !existsSync(path.join(demosRoot, relative)));
 if (missing.length > 0) {

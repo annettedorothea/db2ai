@@ -1,34 +1,31 @@
 # Command-line interface (CLI)
 
-Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files, plus **`smoke-generated`** for testing MCP tool modules.
+Langium-backed **`parse`**, **`validate`**, and **`generate`** for `.db2ai` files.
 
-## Commands
+For day-to-day work you usually **do not** call this CLI directly — see [How to run](#how-to-run) below.
 
-From the **db2ai workspace root** (after `npm install`, `npm run langium:generate`, `npm run build`):
+## How to run
 
-```bash
-node ./packages/cli/bin/cli.js parse <file.db2ai>
-node ./packages/cli/bin/cli.js validate <file.db2ai>
-node ./packages/cli/bin/cli.js generate <source.db2ai> <dest-tools.ts>
-node ./packages/cli/bin/cli.js smoke-generated <path-to-*-tools.mjs> <toolName> [argsJson]
-```
+**Prerequisite** (workspace root): `npm run langium:generate && npm run build`
 
-Prefer **`npm run generate:*`** or **`generate:all`** in **[`../extension/demos/`](../extension/demos/)** (not root `package.json`).
-
-## Smoke tests
-
-From repo root:
+From the **db2ai repo root**, prefer the workspace bin:
 
 ```bash
-npm run test:smoke              # pagila + access-demo direct smokes
-npm run test:smoke:pagila
-npm run test:e2e                # Docker MCP e2e suite
-npm run test:mcp:pagila         # one e2e scenario
+npx db-2-ai-dsl-cli parse <file.db2ai>
+npx db-2-ai-dsl-cli validate <file.db2ai>
+npx db-2-ai-dsl-cli generate <source.db2ai> <dest-tools.ts>
 ```
 
-Scenarios: [`../../scripts/dev-smoke.config.json`](../../scripts/dev-smoke.config.json).
+Equivalent (same entrypoint): `node ./packages/cli/bin/cli.js …`
 
-`npm test` includes Pagila/Sakila integration tests and MCP stdio smokes (Docker). `npm run check` skips tests (fast pre-commit).
+| Workflow                  | Instead of raw CLI                                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Demos in the monorepo** | Extension Dev Host (save → regenerate) or `npm run generate:all` in [`../extension/demos/`](../extension/demos/) |
+| **One demo file**         | `node ../extension/demos/scripts/generate.mjs …` (from demos folder)                                             |
+| **Installed VSIX**        | Save in editor, or embedded `cli.cjs` via demo generate script                                                   |
+| **Integration tests**     | `npm test` from repo root — see [`test/README.md`](./test/README.md)                                             |
+
+`validate` / `generate` block on DSL errors (shared gate from `@core2ai/core/codegen`).
 
 ## Database env (DSL)
 
@@ -41,12 +38,20 @@ The env **name** is in the DSL; the URL lives in `.env` / `mcp.json` `env`.
 
 ## MCP serve
 
+Generate and compile demos first (`npm run generate:all`, `npm run build:generated` in [`../extension/demos/`](../extension/demos/)), then:
+
 ```bash
-node ./generated/cli/mcp-serve.mjs ./generated/tools/<name>-tools.mjs
-node ./generated/cli/mcp-serve.mjs ./generated/tools/<name>-tools.mjs --auth-env DB2AI_USER_JWT
+node ./generated/cli/mcp-serve.js ./generated/tools/<name>-tools.js
+node ./generated/cli/mcp-serve.js ./generated/tools/<name>-tools.js --auth-env DB2AI_AUTH_TOKEN
 ```
 
-Root `npm run bundle:mcp-runtime` bundles `@core2ai/core/mcp-host` into [`resources/mcp-serve-emitted.mjs`](./resources/mcp-serve-emitted.mjs).
+The MCP host is **generated** (`cli/mcp-serve.ts`) — no `@core2ai/core` at runtime.
+
+## Layout
+
+- [`src/main.ts`](./src/main.ts) — Commander: `parse`, `validate`, `generate`
+- [`src/generator/`](./src/generator/) — code generation
+- [`test/`](./test/) — Vitest (direct invoke + MCP stdio; Docker for Pagila/Sakila)
 
 ---
 

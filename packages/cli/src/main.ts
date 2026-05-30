@@ -4,22 +4,11 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import { generateAction } from './generate-command.js';
-import { loadLocalEnvFiles } from './env.js';
 import { parseAction, validateAction } from './document-actions.js';
-import { runSmokeGenerated } from '../test/smoke/smoke.js';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const packagePath = path.resolve(__dirname, '..', '..', 'package.json');
 const packageContent = await fs.readFile(packagePath, 'utf-8');
-
-export const smokeGeneratedAction = async (
-    generatedModulePath: string,
-    toolName: string,
-    argsJson?: string
-): Promise<void> => {
-    loadLocalEnvFiles([process.cwd(), path.dirname(path.resolve(generatedModulePath))]);
-    await runSmokeGenerated(generatedModulePath, toolName, argsJson);
-};
 
 export default function (): void {
     const program = new Command();
@@ -45,14 +34,6 @@ export default function (): void {
         .argument('<destination>', 'destination .ts file (run tsc to emit companion .js)')
         .description('Generate MCP tool modules from a .db2ai file.')
         .action(generateAction);
-
-    program
-        .command('smoke-generated')
-        .argument('<generatedModule>', 'path to generated *-tools.js')
-        .argument('<toolName>', 'tool name from generated module')
-        .argument('[argsJson]', 'optional JSON args, e.g. {"limit":5,"offset":0}')
-        .description('Invoke one generated tool directly.')
-        .action(smokeGeneratedAction);
 
     program.parse(process.argv);
 }

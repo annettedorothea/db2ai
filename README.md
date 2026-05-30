@@ -2,7 +2,7 @@
 
 **db2ai** curates relational database queries into MCP tools: a **.db2ai DSL** defines SQL queries together with AI-facing metadata (intent, examples, tool names, optional column documentation). Queries are validated against a live PostgreSQL or MySQL database using EXPLAIN. A **code generator** (CLI + extension on save) emits tool modules and a stdio MCP host. Built with **[Langium](https://langium.org/)** (grammar, validation, and completion).
 
-Sibling project: [api2ai](https://github.com/annettedorothea/api2ai) (OpenAPI to MCP). Shared library: [core2ai](https://github.com/annettedorothea/core2ai) (`@core2ai/core`).
+Sibling project: [api2ai](https://github.com/annettedorothea/api2ai) (OpenAPI to MCP). Shared library: [core2ai](https://github.com/annettedorothea/core2ai) (`@core2ai/core` via **npm link**).
 
 Keywords: **DSL** · **SQL** · **PostgreSQL** · **MySQL** · **code generator** · **MCP** · **Langium**
 
@@ -38,11 +38,12 @@ Bundled demos: **[`./packages/extension/demos/README.md`](./packages/extension/d
 Prerequisite: **Node.js 20+**, **Docker** for database demos.
 
 ```bash
-npm run install:github-https
+npm install
+npm run install:demos
 npm run langium:generate && npm run build && npm run check
 ```
 
-**`@core2ai/core` pin:** Git tag in `packages/cli/package.json` (canonical: **core2ai** `scripts/core2ai-pin.json`). Show pin: `npm run core2ai:pin`. After a core2ai release: `npm run core2ai:use-pin`. Local core2ai work: `npm run core2ai:use-local` (switch back with `use-pin` before push).
+**`@core2ai/core`:** not on npm — link sibling core2ai once (see **[core2ai README](../core2ai/README.md#npm-link-api2ai--db2ai)**). While hacking core2ai, run **`npm run watch`** there so `out/` stays current.
 
 Edit `.db2ai` under `packages/extension/demos/`, then:
 
@@ -72,19 +73,15 @@ Package notes: [`packages/language/README.md`](./packages/language/README.md) ·
 
 ## Daily npm scripts (repository root)
 
-| Script              | Purpose                                                              |
-| ------------------- | -------------------------------------------------------------------- |
-| `build`             | TypeScript + `bundle:mcp-runtime` + workspaces                       |
-| `check`             | format + typecheck + lint + generated tools                          |
-| `test`              | unit + MCP e2e (Docker)                                              |
-| `test:smoke`        | all direct generated-tool smokes                                     |
-| `test:e2e`          | Pagila + Sakila + access-demo MCP e2e                                |
-| `generate:all`      | regenerate all demo tools (forwards to demos)                        |
-| `core2ai:use-pin`   | apply GitHub pin after core2ai release                               |
-| `core2ai:use-local` | link sibling `../core2ai` for dev                                    |
-| `release:vsix`      | GitHub prerelease of tested VSIX (build with `extension:vsix` first) |
+| Script         | Purpose                                                                                                        |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `build`        | TypeScript project references + workspace builds                                                               |
+| `check`        | format + typecheck + lint + generated tools                                                                    |
+| `test`         | `langium:generate`, `build`, all Vitest (language + CLI integration incl. MCP stdio; Docker for Pagila/Sakila) |
+| `generate:all` | regenerate all demo tools (forwards to demos)                                                                  |
+| `release:vsix` | GitHub prerelease of tested VSIX (build with `extension:vsix` first)                                           |
 
-Per-demo: `npm run test:smoke:pagila`, `test:smoke:access-demo`, `test:mcp:pagila`, … — see [`scripts/dev-smoke.config.json`](./scripts/dev-smoke.config.json).
+All tests: `npm test` (from repo root). Docker must be running for Pagila/Sakila integration tests; Pagila is started automatically when needed.
 
 Regenerate tools: `npm run generate:all` or `npm run generate:pagila|sakila|access-demo` inside **`packages/extension/demos/`**.
 
