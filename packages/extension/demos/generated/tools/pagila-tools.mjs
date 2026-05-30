@@ -265,7 +265,7 @@ export const generatedTools = [
 ];
 
 export const mcpServerName = "pagila-tools";
-export const mcpServerVersion = "0.0.2";
+export const mcpServerVersion = "0.0.3";
 
 import * as z from 'zod/v4';
 

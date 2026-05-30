@@ -110,7 +110,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'access-demo-tools';
-export const mcpServerVersion = '0.0.2';
+export const mcpServerVersion = '0.0.3';
 
 const parameterCheckers: Record<
     string,
