@@ -63,17 +63,17 @@ Package notes: [`packages/language/README.md`](./packages/language/README.md) ·
 
 ## Daily npm scripts (repository root)
 
-| Script              | Purpose                                        |
-| ------------------- | ---------------------------------------------- |
-| `build`             | TypeScript + `bundle:mcp-runtime` + workspaces |
-| `check`             | format + typecheck + lint + generated tools    |
-| `test`              | unit + MCP e2e (Docker)                        |
-| `test:smoke`        | all direct generated-tool smokes               |
-| `test:e2e`          | Pagila + Sakila + access-demo MCP e2e          |
-| `generate:all`      | regenerate all demo tools (forwards to demos)  |
-| `core2ai:use-pin`   | apply GitHub pin after core2ai release         |
-| `core2ai:use-local` | link sibling `../core2ai` for dev              |
-| `release:vsix`      | test + check + VSIX + GitHub prerelease        |
+| Script              | Purpose                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| `build`             | TypeScript + `bundle:mcp-runtime` + workspaces                       |
+| `check`             | format + typecheck + lint + generated tools                          |
+| `test`              | unit + MCP e2e (Docker)                                              |
+| `test:smoke`        | all direct generated-tool smokes                                     |
+| `test:e2e`          | Pagila + Sakila + access-demo MCP e2e                                |
+| `generate:all`      | regenerate all demo tools (forwards to demos)                        |
+| `core2ai:use-pin`   | apply GitHub pin after core2ai release                               |
+| `core2ai:use-local` | link sibling `../core2ai` for dev                                    |
+| `release:vsix`      | GitHub prerelease of tested VSIX (build with `extension:vsix` first) |
 
 Per-demo: `npm run test:smoke:pagila`, `test:smoke:access-demo`, `test:mcp:pagila`, … — see [`scripts/dev-smoke.config.json`](./scripts/dev-smoke.config.json).
 
@@ -82,11 +82,11 @@ Regenerate tools: `npm run generate:all` or `npm run generate:pagila|sakila|acce
 ## Extension (VSIX)
 
 ```bash
-npm run extension:vsix -w packages/extension   # local build
-npm run release:vsix                           # prerelease pipeline
+npm run extension:vsix -w packages/extension   # build + install/test in Cursor
+npm run release:vsix                           # upload that VSIX to GitHub
 ```
 
-`release:vsix` runs full tests including Docker MCP smokes — start Docker first.
+Build and test the VSIX locally before `release:vsix` — the script does not rebuild or re-run tests.
 
 Bump extension version: `npm run version:patch` (or `minor` / `major`). Details: [`./packages/extension/README.md`](./packages/extension/README.md).
 
