@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { expect } from 'vitest';
 import { generateAction } from '../../src/generate-command.js';
+import { compileGeneratedForSmoke } from './compile-generated-fixture.js';
 import { restoreEnv } from './env.js';
 
 /** Matches Pagila/Sakila MCP config in packages/extension/demos/.cursor/mcp.json */
@@ -39,7 +40,7 @@ export async function withGeneratedDirectInvokeFixture(
 ): Promise<void> {
     const runRoot = await fs.mkdtemp(path.join(options.tmpRoot, options.tmpPrefix));
     const generatedTsPath = path.join(runRoot, `generated/tools/${options.generatedToolsName}.ts`);
-    const generatedJsPath = path.join(runRoot, `generated/tools/${options.generatedToolsName}.mjs`);
+    const generatedJsPath = path.join(runRoot, `generated/tools/${options.generatedToolsName}.js`);
     const authEnv = options.authEnv ?? DEFAULT_AUTH_ENV;
     const previousDatabaseUrl = process.env[options.databaseEnv];
     const previousAuthToken = process.env[authEnv];
@@ -47,6 +48,7 @@ export async function withGeneratedDirectInvokeFixture(
     try {
         process.env[options.databaseEnv] = options.connectionString;
         await generateAction(options.sourcePath, generatedTsPath);
+        compileGeneratedForSmoke(runRoot);
 
         const imported = (await import(`${pathToFileURL(generatedJsPath).href}?t=${Date.now()}`)) as Record<
             string,

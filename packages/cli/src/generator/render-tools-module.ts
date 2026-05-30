@@ -1,14 +1,26 @@
-import * as path from 'node:path';
 import type { Model } from 'db-2-ai-dsl-language';
 import {
     getAccessKind,
     isSqlQuery,
-    type AccessKind,
     type ResolvedDatabaseDialect,
     type ResolvedSqlParam,
     type SqlParamType
 } from 'db-2-ai-dsl-language';
-import type { ResolvedDbToolCodegen } from '../db-query-codegen.js';
+import {
+    buildInputZodBlock,
+    resolveMcpServerIdentityFromDestination,
+    type ProjectBootstrapConfig
+} from '@core2ai/core/codegen';
+import * as path from 'node:path';
+import {
+    buildInputSchemaByTool,
+    resolveToolsFromModel,
+    type JsonSchemaDict,
+    type ResolvedDbToolCodegen
+} from '../db-query-codegen.js';
+import { renderDbMcpHostAdapterBlock } from './host-adapter-render.js';
+import { renderInvokeBlockTs } from './invoke-render.js';
+import { renderParameterCheckerImports, renderParameterCheckersMap } from './render-check-stubs.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -25,9 +37,18 @@ export type GeneratedToolModule = {
     title: string;
     description: string;
     kind: 'sql';
-    access: AccessKind;
+    access: 'public' | 'protected' | 'checked';
     sqlText: string;
     params?: GeneratedSqlParam[];
+};
+
+export type RenderToolsModuleInput = {
+    model: Model;
+    source: string;
+    destinationTsPath: string;
+    stubPaths: Map<string, string>;
+    bootstrapConfig: ProjectBootstrapConfig;
+    databaseDialect: ResolvedDatabaseDialect;
 };
 
 function serializeSqlParam(param: ResolvedSqlParam): GeneratedSqlParam {
@@ -62,9 +83,8 @@ function requiresAuthLiteral(model: Model): string {
     return needsCredential ? 'true' : 'false';
 }
 
-function renderGeneratedImports(mcpHostJwtImport: string, parameterCheckerImports: string): string {
-    const lines = [mcpHostJwtImport, parameterCheckerImports].filter((line) => line.length > 0);
-    return lines.length > 0 ? `${lines.join('\n')}\n\n` : '';
+function renderGeneratedImports(parameterCheckerImports: string): string {
+    return parameterCheckerImports.length > 0 ? `${parameterCheckerImports}\n\n` : '';
 }
 
 function serializeJsonForModule(value: unknown): string {
@@ -79,13 +99,17 @@ function renderSourceReference(source: string): string {
     return path.basename(source);
 }
 
-export function renderMcpServerIdentityExports(name: string, version: string): string {
+function renderMcpServerIdentityExports(name: string, version: string): string {
     return `export const mcpServerName = ${JSON.stringify(name)};
 export const mcpServerVersion = ${JSON.stringify(version)};
 `;
 }
 
-export function renderTsModule(
+function authRuntimeKind(model: Model): 'none' | 'credential' {
+    return model.auth ? 'credential' : 'none';
+}
+
+function assembleToolsModuleSource(
     tools: ResolvedDbToolCodegen[],
     connectionEnv: string,
     databaseDialect: ResolvedDatabaseDialect,
@@ -93,12 +117,11 @@ export function renderTsModule(
     toolRuntimeBlock: string,
     model: Model,
     source: string,
-    parameterCheckerImports = '',
-    mcpHostJwtImport = ''
+    parameterCheckerImports: string
 ): string {
     const toolsLiteral = serializeToolsForModule(tools);
     const sourceRef = renderSourceReference(source);
-    const importPrefix = renderGeneratedImports(mcpHostJwtImport, parameterCheckerImports);
+    const importPrefix = renderGeneratedImports(parameterCheckerImports);
     return `/**
  * Generated from: ${sourceRef}
  */
@@ -149,31 +172,36 @@ ${toolRuntimeBlock}
 `;
 }
 
-export function renderJsModule(
-    tools: ResolvedDbToolCodegen[],
-    connectionEnv: string,
-    databaseDialect: ResolvedDatabaseDialect,
-    mcpServerIdentityBlock: string,
-    toolRuntimeBlock: string,
-    model: Model,
-    source: string,
-    parameterCheckerImports = '',
-    mcpHostJwtImport = ''
-): string {
-    const sourceRef = renderSourceReference(source);
-    const importPrefix = renderGeneratedImports(mcpHostJwtImport, parameterCheckerImports);
-    return `/**
- * Generated from: ${sourceRef}
- */
-${importPrefix}export const connectionEnv = ${JSON.stringify(connectionEnv)};
+/** Renders `generated/tools/*-tools.ts` source text. */
+export function renderToolsModule(input: RenderToolsModuleInput): string {
+    const { model, source, destinationTsPath, stubPaths, bootstrapConfig, databaseDialect } = input;
+    const envName = String(model.env).trim();
+    const tools = resolveToolsFromModel(model);
+    const inputSchemaByTool = buildInputSchemaByTool(model, tools) as Record<string, JsonSchemaDict>;
+    const authKind = authRuntimeKind(model);
+    const hasAuth = authKind === 'credential';
+    const hasChecked = stubPaths.size > 0;
+    const parameterCheckerImports = hasChecked ? renderParameterCheckerImports(destinationTsPath, stubPaths) : '';
+    const parameterCheckersMap = hasChecked ? renderParameterCheckersMap(stubPaths) : '';
 
-export const databaseDialect = ${JSON.stringify(databaseDialect)};
+    const { name: mcpServerName, version: mcpServerVersion } = resolveMcpServerIdentityFromDestination(
+        destinationTsPath,
+        bootstrapConfig
+    );
+    const mcpServerIdentityBlock = renderMcpServerIdentityExports(mcpServerName, mcpServerVersion);
+    const authRuntimePrefix = parameterCheckersMap.length > 0 ? `${parameterCheckersMap}\n\n` : '';
+    const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
+    const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, hasChecked);
+    const hostAdapterTs = renderDbMcpHostAdapterBlock(authKind, databaseDialect);
 
-export const requiresAuth = ${requiresAuthLiteral(model)};
-
-export const generatedTools = ${serializeToolsForModule(tools)};
-
-${mcpServerIdentityBlock}
-${toolRuntimeBlock}
-`;
+    return assembleToolsModuleSource(
+        tools,
+        envName,
+        databaseDialect,
+        mcpServerIdentityBlock,
+        `${authRuntimePrefix}${inputZodBlock}\n${hostAdapterTs}\n${invokeBlockTs}`,
+        model,
+        source,
+        parameterCheckerImports
+    );
 }

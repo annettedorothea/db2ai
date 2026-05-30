@@ -45,7 +45,7 @@
         "commands": [
             {
                 "command": "db2ai.generateTools",
-                "title": "Generate tool code (.ts + .mjs + MCP host)"
+                "title": "Generate tool code (.ts + MCP host)"
             },
             {
                 "command": "db2ai.createDemoWorkspace",
@@ -63,11 +63,16 @@
         "clean": "shx rm -fr *.tsbuildinfo out syntaxes",
         "vscode:prepublish": "npm run build",
         "build:prepare": "shx mkdir -p ./syntaxes/ && shx cp -f ../language/syntaxes/db-2-ai-dsl.tmLanguage.json ./syntaxes/db-2-ai-dsl.tmLanguage.json",
-        "build": "npm run build:prepare && tsc -b tsconfig.json && node esbuild.mjs && node embed-cli-bundle.mjs",
+        "build": "npm run build:prepare && tsc -b tsconfig.json && node esbuild.mjs && node embed-cli-bundle.mjs && node verify-demos-bundle.mjs",
         "build:clean": "npm run clean && npm run build",
+        "format:check": "prettier --check \"src/**/*.ts\"",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "lint": "eslint src",
+        "check": "npm run format:check && npm run typecheck && npm run lint",
         "watch": "npm run build:prepare && npm run embed-cli:onetime && concurrently -n tsc,esbuild -c blue,yellow \"tsc -b tsconfig.json --watch\" \"node esbuild.mjs --watch\"",
         "embed-cli:onetime": "node embed-cli-bundle.mjs",
-        "extension:vsix": "npm run langium:generate --prefix ../.. && npm run build --prefix ../.. && shx cp ../../LICENSE LICENSE && npx @vscode/vsce package --allow-missing-repository --no-rewrite-relative-links && shx rm -f LICENSE"
+        "extension:vsix": "npm run langium:generate --prefix ../.. && npm run build --prefix ../.. && shx cp ../../LICENSE LICENSE && npx @vscode/vsce package --allow-missing-repository --no-rewrite-relative-links && shx rm -f LICENSE",
+        "release:vsix": "sh -c 'tag=$(node -p \"require(\\\"./package.json\\\").name+\\\"-\\\"+require(\\\"./package.json\\\").version\"); test -f \"$tag.vsix\" || { echo \"[release:vsix] missing $tag.vsix — run npm run extension:vsix first\"; exit 1; }; gh release create \"$tag\" \"$tag.vsix\" --title \"$(node -p \"const p=require(\\\"./package.json\\\");p.name+\\\" \\\"+p.version\")\" --notes \"Internal test build of the Cursor/VS Code extension (prerelease on GitHub).\" --prerelease; echo \"[release:vsix] done $tag\"'"
     },
     "dependencies": {
         "db-2-ai-dsl-language": "*",

@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Codegen And Generated Output Quality
 
-Generated files under `packages/extension/demos/generated/tools/` must be **lint- and typecheck-clean without ESLint `--fix`**. Fix the generator templates, not the committed output.
+Generated files under `packages/extension/demos/generated/` must be **lint- and typecheck-clean without ESLint `--fix`**. Fix the generator templates, not the committed output.
 
 **Always:** do not hand-edit `packages/extension/demos/generated/**` or bundled MCP files to fix behavior — see [generated-output-do-not-edit.mdc](./generated-output-do-not-edit.mdc).
 
@@ -20,19 +20,23 @@ From the **db2ai workspace root**, run in order:
 
 1. `npm run build`
 2. `npm run generate:all`
-3. `npm run check:generated`
+3. `cd packages/extension/demos && npm run build:generated`
+4. `npm run check`
 
-Do **not** run `eslint --fix` on generated files to “repair” output. If `check:generated` fails, fix the generator and regenerate.
+Do **not** run `eslint --fix` on generated files to “repair” output. If `check` fails, fix the generator and regenerate.
 
-## What `check:generated` covers
+Optional: run `npm run format` if you want Prettier-applied output before commit.
 
-- `npm run lint:generated` — ESLint on committed `packages/extension/demos/generated/tools/**/*.ts` (no auto-fix)
-- `npm run typecheck:generated` — `tsc -p packages/extension/demos/tsconfig.generated.json`
+## What root `check` covers
 
-## Prettier only at generate time
+- `format:check` — Prettier on hand-written `.ts` and demo `packages/extension/demos/generated/**/*.ts` (Langium `packages/language/src/generated/` excluded)
+- `typecheck` — workspace `tsc -b` plus demo generated `.ts`
+- `lint` — ESLint on hand-written `.ts`, demo `generated/**`, and auth stubs (Langium `packages/language/src/generated/**` excluded)
 
-The generator may run Prettier (`formatGeneratedFilesWithPrettier`) so output matches repo formatting. ESLint/type errors must be resolved in generator source, not patched after the fact.
+## Langium output
+
+`packages/language/src/generated/**` is excluded from Prettier, ESLint, and type-check (`// @ts-nocheck` after `langium:generate`). Do not fix Langium output by hand.
 
 ## Commit generated output
 
-When demo `.db2ai` files or generator output shape change, include regenerated `packages/extension/demos/generated/tools/*.ts` (and `.mjs` if changed) in the same change set.
+When demo `.db2ai` files or generator output shape change, include regenerated `packages/extension/demos/generated/**/*.ts` in the same change set.

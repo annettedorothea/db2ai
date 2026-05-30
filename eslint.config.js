@@ -16,17 +16,31 @@ const nodeGlobals = {
     TextEncoder: 'readonly'
 };
 
+const generatedTsRules = {
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+            argsIgnorePattern: '^_',
+            caughtErrorsIgnorePattern: '^_',
+            varsIgnorePattern: '^_'
+        }
+    ]
+};
+
 export default [
     {
         ignores: [
+            '**/.cursor/**',
             '**/node_modules/**',
             '**/out/**',
             '**/dist/**',
-            '**/coverage/**',
             '**/*.tsbuildinfo',
-            '**/src/generated/**',
-            '**/syntaxes/**',
+            '**/*.js',
+            '**/*.cjs',
             '**/*.mjs',
+            '**/syntaxes/**',
+            'packages/language/src/generated/**',
             'packages/cli/tmp/**',
             'packages/extension/demos/tmp/**'
         ]
@@ -34,15 +48,12 @@ export default [
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
-        files: ['**/*.{js,cjs,ts,tsx}'],
+        files: ['**/*.{ts,tsx}'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
             globals: nodeGlobals
-        }
-    },
-    {
-        files: ['**/*.{ts,tsx}'],
+        },
         rules: {
             'no-undef': 'off',
             'no-unused-vars': 'off',
@@ -57,17 +68,7 @@ export default [
         }
     },
     {
-        files: ['packages/extension/demos/generated/**/*.ts'],
-        rules: {
-            'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': [
-                'error',
-                {
-                    argsIgnorePattern: '^_',
-                    caughtErrorsIgnorePattern: '^_',
-                    varsIgnorePattern: '^_'
-                }
-            ]
-        }
+        files: ['packages/extension/demos/generated/**/*.{ts,tsx}', 'packages/extension/demos/src/auth/**/*.{ts,tsx}'],
+        rules: generatedTsRules
     }
 ];

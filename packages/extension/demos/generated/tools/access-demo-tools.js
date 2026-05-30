@@ -1,15 +1,10 @@
 /**
  * Generated from: access-demo.db2ai
  */
-import { resolveCredentialAndOptionalJwt } from '@core2ai/core/mcp-host';
-import { checkListCustomerOrdersParameters } from '../../src/auth/listCustomerOrders.mjs';
-
+import { checkListCustomerOrdersParameters } from '../../src/auth/listCustomerOrders.js';
 export const connectionEnv = "ACCESS_DEMO_DATABASE_URL";
-
 export const databaseDialect = "postgres";
-
 export const requiresAuth = true;
-
 export const generatedTools = [
     {
         "kind": "sql",
@@ -69,42 +64,71 @@ export const generatedTools = [
         ]
     }
 ];
-
 export const mcpServerName = "access-demo-tools";
 export const mcpServerVersion = "0.0.4";
-
 const parameterCheckers = {
     "listCustomerOrders": checkListCustomerOrdersParameters
 };
-
 import * as z from 'zod/v4';
-
 export const inputZodByTool = {
     "listProducts": z.object({ "limit": z.number().describe("max rows (SQL $1)") }).strict(),
     "listProductsWithReviews": z.object({ "limit": z.number().describe("max rows (SQL $1)") }).strict(),
     "listCustomerOrders": z.object({ "customerId": z.string().describe("customer id (defaults from JWT) (SQL $1)").optional() }).strict()
 };
-
+function decodeJwtPayloadUnsafe(token) {
+    const parts = String(token).trim().split('.');
+    if (parts.length !== 3) {
+        throw new Error('credential is not a JWT (expected three dot-separated segments).');
+    }
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) {
+        b64 += '=';
+    }
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+}
+function resolveCredentialFromEnv(authEnvKey) {
+    const key = authEnvKey?.trim();
+    if (!key) {
+        return undefined;
+    }
+    const value = process.env[key]?.trim();
+    return value && value.length > 0 ? value : undefined;
+}
+function resolveCredentialAndOptionalJwt(authEnvKey) {
+    const credential = resolveCredentialFromEnv(authEnvKey);
+    if (!credential) {
+        return {};
+    }
+    const segments = String(credential).trim().split('.');
+    if (segments.length !== 3) {
+        return { credential };
+    }
+    try {
+        return { credential, jwt: decodeJwtPayloadUnsafe(credential) };
+    }
+    catch {
+        return { credential };
+    }
+}
 const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
 const META_ENV_DIRS = 'MCP_HOST_ENV_DIRS';
-
 function applyHostEnvKeys(hostConfig, envDirs) {
     if (hostConfig.authEnv) {
         process.env[META_AUTH_ENV_KEY] = hostConfig.authEnv;
-    } else {
+    }
+    else {
         delete process.env[META_AUTH_ENV_KEY];
     }
     if (envDirs.length > 0) {
         process.env[META_ENV_DIRS] = JSON.stringify(envDirs);
-    } else {
+    }
+    else {
         delete process.env[META_ENV_DIRS];
     }
 }
-
 function isExpectedDatabaseUrl(connectionString) {
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }
-
 export const mcpHostAdapter = {
     configureFromArgv(argv, envDirs) {
         let authEnv;
@@ -124,53 +148,38 @@ export const mcpHostAdapter = {
         }
         applyHostEnvKeys({ authEnv }, envDirs);
     },
-
     validateAtStartup(requiresAuth) {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
-            throw new Error(
-                'Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).'
-            );
+            throw new Error('Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).');
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
-            throw new Error(
-                'Environment variable "' +
-                    connectionEnv +
-                    '" does not match generated database dialect "' +
-                    databaseDialect +
-                    '".'
-            );
+            throw new Error('Environment variable "' +
+                connectionEnv +
+                '" does not match generated database dialect "' +
+                databaseDialect +
+                '".');
         }
         if (!requiresAuth) {
             return;
         }
         const authEnvName = process.env[META_AUTH_ENV_KEY]?.trim();
         if (!authEnvName) {
-            throw new Error(
-                'Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.'
-            );
+            throw new Error('Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
         }
-        // Credential value may be empty at startup — public tools work without a token; protected/checked fail at invoke.
     },
-
     resolveHostContext() {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
-            throw new Error(
-                'Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).'
-            );
+            throw new Error('Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).');
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
-            throw new Error(
-                'Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".'
-            );
+            throw new Error('Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".');
         }
-
         const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
         const { credential, jwt } = resolveCredentialAndOptionalJwt(authKey);
         return { connectionString, databaseDialect, credential, jwt };
     },
-
     envDirsForReload() {
         const raw = process.env[META_ENV_DIRS];
         if (!raw?.trim()) {
@@ -181,27 +190,21 @@ export const mcpHostAdapter = {
             if (Array.isArray(dirs) && dirs.every((d) => typeof d === 'string')) {
                 return dirs;
             }
-        } catch {
+        }
+        catch {
             // ignore malformed config
         }
         return [];
     }
 };
-
-import pg from 'pg';
-
+import { Client } from 'pg';
 function resolveConnectionString(hostContext) {
-    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
-        const cs = String(hostContext.connectionString).trim();
-        if (cs.length > 0) {
-            return cs;
-        }
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
     }
-    throw new Error(
-        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
-    );
+    throw new Error('Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).');
 }
-
 function normalizePostgresNumericParamValue(value) {
     if (value === undefined || value === null) {
         return null;
@@ -209,19 +212,17 @@ function normalizePostgresNumericParamValue(value) {
     const n = typeof value === 'number' ? value : Number(String(value));
     return Number.isFinite(n) ? n : null;
 }
-
 export async function invokeTool(toolName, options = {}, hostContext) {
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
-
-    const host = hostContext ?? mcpHostAdapter.resolveHostContext();
+    const host = hostContext !== undefined
+        ? hostContext
+        : mcpHostAdapter.resolveHostContext();
     if (toolMeta.access !== 'public') {
         if (!host.credential || !String(host.credential).trim()) {
-            throw new Error(
-                'Missing host credential. Pass --auth-env on mcp-serve.mjs and set the variable (re-read on every tool call).'
-            );
+            throw new Error('Missing host credential. Pass --auth-env on mcp-serve.js and set the variable (re-read on every tool call).');
         }
     }
     let optionsResolved = options;
@@ -230,43 +231,43 @@ export async function invokeTool(toolName, options = {}, hostContext) {
         if (typeof check !== 'function') {
             throw new Error('No parameter checker for checked tool: ' + toolName);
         }
-        optionsResolved = await Promise.resolve(
-            check(options, {
-                credential: String(host.credential).trim(),
-                jwt: host.jwt
-            })
-        );
+        optionsResolved = await Promise.resolve(check(options, {
+            credential: String(host.credential).trim(),
+            jwt: host.jwt
+        }));
     }
     const connectionString = resolveConnectionString(host);
-    const client = new pg.Client({ connectionString });
+    const client = new Client({ connectionString });
     await client.connect();
     try {
         switch (toolName) {
-        case "listProducts": {
-            const result = await client.query({ text: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1", values: [normalizePostgresNumericParamValue(optionsResolved["limit"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "listProductsWithReviews": {
-            const result = await client.query({ text: "SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)", values: [normalizePostgresNumericParamValue(optionsResolved["limit"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "listCustomerOrders": {
-            const result = await client.query({ text: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id", values: [optionsResolved["customerId"] !== undefined && optionsResolved["customerId"] !== null ? String(optionsResolved["customerId"]) : null] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
+            case "listProducts": {
+                const result = await client.query({ text: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1", values: [normalizePostgresNumericParamValue(optionsResolved["limit"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "listProductsWithReviews": {
+                const result = await client.query({ text: "SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)", values: [normalizePostgresNumericParamValue(optionsResolved["limit"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "listCustomerOrders": {
+                const result = await client.query({ text: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id", values: [optionsResolved["customerId"] !== undefined && optionsResolved["customerId"] !== null ? String(optionsResolved["customerId"]) : null] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
-    } finally {
+    }
+    finally {
         await client.end();
     }
 }
+//# sourceMappingURL=access-demo-tools.js.map

@@ -20,10 +20,14 @@
         "generate:pagila": "node ./scripts/generate.mjs pagila.db2ai generated/tools/pagila-tools.ts",
         "generate:sakila": "node ./scripts/generate.mjs sakila.db2ai generated/tools/sakila-tools.ts",
         "generate:access-demo": "node ./scripts/generate.mjs access-demo.db2ai generated/tools/access-demo-tools.ts",
-        "generate:all": "npm run generate:pagila && npm run generate:sakila && npm run generate:access-demo"
+        "generate:all": "node ./scripts/generate-all.mjs",
+        "build:generated": "tsc -p tsconfig.generated.json",
+        "format:check": "prettier --check \"generated/**/*.ts\" \"src/auth/**/*.ts\"",
+        "typecheck": "tsc -p tsconfig.generated.json --noEmit",
+        "lint": "eslint --config ../../../eslint.config.js \"generated/**/*.ts\" \"src/auth/**/*.ts\"",
+        "check": "npm run format:check && npm run typecheck && npm run lint"
     },
     "dependencies": {
-        "@core2ai/core": "github:annettedorothea/core2ai#v0.0.5",
         "@modelcontextprotocol/sdk": "^1.29.0",
         "mysql2": "^3.22.3",
         "pg": "~8.16.0",

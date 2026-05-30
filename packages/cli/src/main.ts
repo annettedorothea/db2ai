@@ -42,13 +42,13 @@ export default function (): void {
     program
         .command('generate')
         .argument('<file>', `source file (extensions: ${fileExtensions})`)
-        .argument('<destination>', 'destination .ts file (companion .mjs is written alongside)')
+        .argument('<destination>', 'destination .ts file (run tsc to emit companion .js)')
         .description('Generate MCP tool modules from a .db2ai file.')
         .action(generateAction);
 
     program
         .command('smoke-generated')
-        .argument('<generatedModule>', 'path to generated *-tools.mjs')
+        .argument('<generatedModule>', 'path to generated *-tools.js')
         .argument('<toolName>', 'tool name from generated module')
         .argument('[argsJson]', 'optional JSON args, e.g. {"limit":5,"offset":0}')
         .description('Invoke one generated tool directly.')

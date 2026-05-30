@@ -1,18 +1,20 @@
 node_modules/
 out/
 dist/
-coverage/
-**/coverage/
 *.tsbuildinfo
 *.vsix
 package-lock.json
+.cursor/
 
-# esbuild / bundler output (format the .ts source instead)
+# Compile / bundler output (format the .ts source instead)
+**/*.js
 **/*.mjs
 
-# Langium generated artifacts
-**/src/generated/
+# Langium grammar JSON (copied, not hand-edited)
 **/syntaxes/
+
+# Langium-generated parser/AST only (not demo tools under packages/extension/demos/generated/)
+packages/language/src/generated/
 
 # Demo runtime folders
 packages/cli/tmp/

@@ -11,8 +11,8 @@ After code changes in this repository, run:
 
 Exception: If all changed files are inside `packages/extension/demos/` (excluding generator output), skip these commands.
 
-If you changed **`packages/cli/src/generator/`**, follow [codegen-generated-quality.mdc](./codegen-generated-quality.mdc): `npm run build`, `npm run generate:all`, `npm run check:generated`.
+If you changed **`packages/cli/src/generator/`**, follow [codegen-generated-quality.mdc](./codegen-generated-quality.mdc): `npm run build`, `npm run generate:all`, `npm run check`.
 
-If you changed **`@core2ai/core/mcp-host`** (via pin refresh), also follow [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc): `bundle:mcp-runtime`, `generate:all`, MCP restart.
+If you changed **`@core2ai/core/codegen`** (e.g. `renderMcpServeSource`), rebuild in sibling **core2ai** (`npm run watch` or `npm run build`), then `generate:all`, `build:generated`, MCP restart. See `../core2ai/.cursor/rules/core2ai-build.mdc`.
 
 If either command fails, fix the issue before proceeding with more implementation work.

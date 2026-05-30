@@ -1,14 +1,9 @@
 /**
  * Generated from: sakila.db2ai
  */
-import { resolveCredentialAndOptionalJwt } from '@core2ai/core/mcp-host';
-
 export const connectionEnv = "SAKILA_DATABASE_URL";
-
 export const databaseDialect = "mysql";
-
 export const requiresAuth = true;
-
 export const generatedTools = [
     {
         "kind": "sql",
@@ -179,12 +174,9 @@ export const generatedTools = [
         ]
     }
 ];
-
 export const mcpServerName = "sakila-tools";
 export const mcpServerVersion = "0.0.4";
-
 import * as z from 'zod/v4';
-
 export const inputZodByTool = {
     "listFilms": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
     "listActors": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
@@ -193,27 +185,60 @@ export const inputZodByTool = {
     "filmsWithActorLastName": z.object({ "lastNamePrefix": z.string().describe("actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)"), "maxRows": z.number().describe("max rows to return (SQL $2)") }).strict(),
     "searchFilms": z.object({ "searchText": z.string().describe("search text (matched in title or description) (SQL $1)"), "maxRows": z.number().describe("max rows to return (SQL $2)") }).strict()
 };
-
+function decodeJwtPayloadUnsafe(token) {
+    const parts = String(token).trim().split('.');
+    if (parts.length !== 3) {
+        throw new Error('credential is not a JWT (expected three dot-separated segments).');
+    }
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) {
+        b64 += '=';
+    }
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+}
+function resolveCredentialFromEnv(authEnvKey) {
+    const key = authEnvKey?.trim();
+    if (!key) {
+        return undefined;
+    }
+    const value = process.env[key]?.trim();
+    return value && value.length > 0 ? value : undefined;
+}
+function resolveCredentialAndOptionalJwt(authEnvKey) {
+    const credential = resolveCredentialFromEnv(authEnvKey);
+    if (!credential) {
+        return {};
+    }
+    const segments = String(credential).trim().split('.');
+    if (segments.length !== 3) {
+        return { credential };
+    }
+    try {
+        return { credential, jwt: decodeJwtPayloadUnsafe(credential) };
+    }
+    catch {
+        return { credential };
+    }
+}
 const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
 const META_ENV_DIRS = 'MCP_HOST_ENV_DIRS';
-
 function applyHostEnvKeys(hostConfig, envDirs) {
     if (hostConfig.authEnv) {
         process.env[META_AUTH_ENV_KEY] = hostConfig.authEnv;
-    } else {
+    }
+    else {
         delete process.env[META_AUTH_ENV_KEY];
     }
     if (envDirs.length > 0) {
         process.env[META_ENV_DIRS] = JSON.stringify(envDirs);
-    } else {
+    }
+    else {
         delete process.env[META_ENV_DIRS];
     }
 }
-
 function isExpectedDatabaseUrl(connectionString) {
     return connectionString.startsWith('mysql://');
 }
-
 export const mcpHostAdapter = {
     configureFromArgv(argv, envDirs) {
         let authEnv;
@@ -233,53 +258,38 @@ export const mcpHostAdapter = {
         }
         applyHostEnvKeys({ authEnv }, envDirs);
     },
-
     validateAtStartup(requiresAuth) {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
-            throw new Error(
-                'Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).'
-            );
+            throw new Error('Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).');
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
-            throw new Error(
-                'Environment variable "' +
-                    connectionEnv +
-                    '" does not match generated database dialect "' +
-                    databaseDialect +
-                    '".'
-            );
+            throw new Error('Environment variable "' +
+                connectionEnv +
+                '" does not match generated database dialect "' +
+                databaseDialect +
+                '".');
         }
         if (!requiresAuth) {
             return;
         }
         const authEnvName = process.env[META_AUTH_ENV_KEY]?.trim();
         if (!authEnvName) {
-            throw new Error(
-                'Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.'
-            );
+            throw new Error('Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
         }
-        // Credential value may be empty at startup — public tools work without a token; protected/checked fail at invoke.
     },
-
     resolveHostContext() {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
-            throw new Error(
-                'Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).'
-            );
+            throw new Error('Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).');
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
-            throw new Error(
-                'Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".'
-            );
+            throw new Error('Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".');
         }
-
         const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
         const { credential, jwt } = resolveCredentialAndOptionalJwt(authKey);
         return { connectionString, databaseDialect, credential, jwt };
     },
-
     envDirsForReload() {
         const raw = process.env[META_ENV_DIRS];
         if (!raw?.trim()) {
@@ -290,31 +300,24 @@ export const mcpHostAdapter = {
             if (Array.isArray(dirs) && dirs.every((d) => typeof d === 'string')) {
                 return dirs;
             }
-        } catch {
+        }
+        catch {
             // ignore malformed config
         }
         return [];
     }
 };
-
 import mysql from 'mysql2/promise';
-
 function resolveConnectionString(hostContext) {
-    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
-        const cs = String(hostContext.connectionString).trim();
-        if (cs.length > 0) {
-            return cs;
-        }
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
     }
-    throw new Error(
-        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
-    );
+    throw new Error('Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).');
 }
-
 function normalizeMysqlRows(rows) {
     return Array.isArray(rows) ? rows : [];
 }
-
 function normalizeMysqlParamValue(value) {
     if (value === undefined || value === null) {
         return null;
@@ -326,77 +329,77 @@ function normalizeMysqlParamValue(value) {
     }
     return text;
 }
-
 export async function invokeTool(toolName, options = {}, hostContext) {
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
-
-    const host = hostContext ?? mcpHostAdapter.resolveHostContext();
+    const host = hostContext !== undefined
+        ? hostContext
+        : mcpHostAdapter.resolveHostContext();
     if (toolMeta.access !== 'public') {
         if (!host.credential || !String(host.credential).trim()) {
-            throw new Error(
-                'Missing host credential. Pass --auth-env on mcp-serve.mjs and set the variable (re-read on every tool call).'
-            );
+            throw new Error('Missing host credential. Pass --auth-env on mcp-serve.js and set the variable (re-read on every tool call).');
         }
     }
     const connectionString = resolveConnectionString(host);
     const client = await mysql.createConnection(connectionString);
     try {
         switch (toolName) {
-        case "listFilms": {
-            const [rows] = await client.query("SELECT * FROM film LIMIT ? OFFSET ?", [normalizeMysqlParamValue(options["limit"]), normalizeMysqlParamValue(options["offset"])]);
-            const resultRows = normalizeMysqlRows(rows);
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
-        case "listActors": {
-            const [rows] = await client.query("SELECT * FROM actor LIMIT ? OFFSET ?", [normalizeMysqlParamValue(options["limit"]), normalizeMysqlParamValue(options["offset"])]);
-            const resultRows = normalizeMysqlRows(rows);
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
-        case "listCategories": {
-            const [rows] = await client.query("SELECT * FROM category LIMIT ? OFFSET ?", [normalizeMysqlParamValue(options["limit"]), normalizeMysqlParamValue(options["offset"])]);
-            const resultRows = normalizeMysqlRows(rows);
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
-        case "filmsByRating": {
-            const [rows] = await client.query("SELECT film_id, title, rating FROM film WHERE rating = ? ORDER BY title LIMIT ?", [normalizeMysqlParamValue(options["rating"]), normalizeMysqlParamValue(options["maxRows"])]);
-            const resultRows = normalizeMysqlRows(rows);
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
-        case "filmsWithActorLastName": {
-            const [rows] = await client.query("SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name LIKE CONCAT(?, '%') ORDER BY a.last_name, f.title LIMIT ?", [normalizeMysqlParamValue(options["lastNamePrefix"]), normalizeMysqlParamValue(options["maxRows"])]);
-            const resultRows = normalizeMysqlRows(rows);
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
-        case "searchFilms": {
-            const [rows] = await client.query("SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title LIKE CONCAT('%', ?, '%') OR description LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?", [normalizeMysqlParamValue(options["searchText"]), normalizeMysqlParamValue(options["searchText"]), normalizeMysqlParamValue(options["maxRows"])]);
-            const resultRows = normalizeMysqlRows(rows);
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
+            case "listFilms": {
+                const [rows] = await client.query("SELECT * FROM film LIMIT ? OFFSET ?", [normalizeMysqlParamValue(options["limit"]), normalizeMysqlParamValue(options["offset"])]);
+                const resultRows = normalizeMysqlRows(rows);
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case "listActors": {
+                const [rows] = await client.query("SELECT * FROM actor LIMIT ? OFFSET ?", [normalizeMysqlParamValue(options["limit"]), normalizeMysqlParamValue(options["offset"])]);
+                const resultRows = normalizeMysqlRows(rows);
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case "listCategories": {
+                const [rows] = await client.query("SELECT * FROM category LIMIT ? OFFSET ?", [normalizeMysqlParamValue(options["limit"]), normalizeMysqlParamValue(options["offset"])]);
+                const resultRows = normalizeMysqlRows(rows);
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case "filmsByRating": {
+                const [rows] = await client.query("SELECT film_id, title, rating FROM film WHERE rating = ? ORDER BY title LIMIT ?", [normalizeMysqlParamValue(options["rating"]), normalizeMysqlParamValue(options["maxRows"])]);
+                const resultRows = normalizeMysqlRows(rows);
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case "filmsWithActorLastName": {
+                const [rows] = await client.query("SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name LIKE CONCAT(?, '%') ORDER BY a.last_name, f.title LIMIT ?", [normalizeMysqlParamValue(options["lastNamePrefix"]), normalizeMysqlParamValue(options["maxRows"])]);
+                const resultRows = normalizeMysqlRows(rows);
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case "searchFilms": {
+                const [rows] = await client.query("SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title LIKE CONCAT('%', ?, '%') OR description LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?", [normalizeMysqlParamValue(options["searchText"]), normalizeMysqlParamValue(options["searchText"]), normalizeMysqlParamValue(options["maxRows"])]);
+                const resultRows = normalizeMysqlRows(rows);
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
-    } finally {
+    }
+    finally {
         await client.end();
     }
 }
+//# sourceMappingURL=sakila-tools.js.map

@@ -1,30 +1,117 @@
 #!/usr/bin/env node
 /**
- * Thin wrapper — shared logic in @core2ai/core/scripts/demos-generate.mjs
+ * Run CLI generate for one demo DSL file (monorepo cli.js, VSIX embed, or env override).
+ *
+ * Usage: node ./scripts/generate.mjs <file.db2ai> <generated/tools/out.ts>
  */
-import { spawnSync } from 'node:child_process';
-import * as fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const consumerRoot = path.resolve(demosRoot, '../../..');
-
-function resolveCore2aiScript(scriptName) {
-    const candidates = [
-        path.resolve(consumerRoot, '../core2ai/scripts', scriptName),
-        path.join(consumerRoot, 'node_modules/@core2ai/core/scripts', scriptName)
-    ];
-    return candidates.find((candidate) => fs.existsSync(candidate));
-}
-
-const scriptPath = resolveCore2aiScript('demos-generate.mjs');
-if (!scriptPath) {
-    console.error('[generate] missing demos-generate.mjs — install @core2ai/core or clone sibling ../core2ai');
-    process.exit(1);
-}
-
 const configPath = path.join(demosRoot, 'demos-generate.config.json');
-const args = [scriptPath, configPath, ...process.argv.slice(2)];
-const result = spawnSync(process.execPath, args, { cwd: demosRoot, stdio: 'inherit' });
-process.exit(result.status ?? 1);
+
+function loadConfig() {
+    const raw = readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(raw);
+    const required = [
+        'productName',
+        'extensionIdPrefix',
+        'embedDirName',
+        'cliEnvVar',
+        'embedHomeEnvVar',
+        'dslExtension'
+    ];
+    for (const key of required) {
+        if (typeof config[key] !== 'string' || config[key].trim().length === 0) {
+            throw new Error(`[generate] ${path.basename(configPath)} missing "${key}"`);
+        }
+    }
+    return config;
+}
+
+function resolveEmbedHome(cliPath, embedDirName) {
+    const parent = path.dirname(cliPath);
+    if (path.basename(parent) === embedDirName) {
+        return parent;
+    }
+    return undefined;
+}
+
+function findInstalledExtensionCli(config) {
+    const home = os.homedir();
+    const roots = [
+        path.join(home, '.cursor', 'extensions'),
+        path.join(home, '.vscode', 'extensions'),
+        path.join(home, '.vscode-insiders', 'extensions')
+    ];
+    const candidates = [];
+    for (const root of roots) {
+        if (!existsSync(root)) {
+            continue;
+        }
+        for (const entry of readdirSync(root, { withFileTypes: true })) {
+            if (!entry.isDirectory() || !entry.name.startsWith(config.extensionIdPrefix)) {
+                continue;
+            }
+            candidates.push(path.join(root, entry.name, 'out', config.embedDirName, 'cli.cjs'));
+        }
+    }
+    candidates.sort();
+    return candidates.filter((candidate) => existsSync(candidate)).at(-1);
+}
+
+function resolveCliSpawn(config) {
+    const envCli = process.env[config.cliEnvVar];
+    if (envCli && existsSync(envCli)) {
+        return { scriptPath: envCli, embedHome: resolveEmbedHome(envCli, config.embedDirName) };
+    }
+
+    const monorepoCli = path.resolve(demosRoot, '../../cli/bin/cli.js');
+    if (existsSync(monorepoCli)) {
+        return { scriptPath: monorepoCli };
+    }
+
+    const installedCli = findInstalledExtensionCli(config);
+    if (installedCli) {
+        return {
+            scriptPath: installedCli,
+            embedHome: resolveEmbedHome(installedCli, config.embedDirName)
+        };
+    }
+
+    throw new Error(
+        [
+            `${config.productName} CLI not found.`,
+            `• Install the ${config.productName} VS Code/Cursor extension (VSIX), or`,
+            `• Run from the monorepo with packages/extension/demos as cwd, or`,
+            `• Set ${config.cliEnvVar} to cli.js / cli.cjs.`
+        ].join('\n')
+    );
+}
+
+function main() {
+    const dslRelative = process.argv[2];
+    const outRelative = process.argv[3];
+
+    if (!dslRelative || !outRelative) {
+        console.error('Usage: node ./scripts/generate.mjs <file.db2ai> <generated/tools/out.ts>');
+        process.exit(1);
+    }
+
+    const config = loadConfig();
+    const { scriptPath, embedHome } = resolveCliSpawn(config);
+    const dslPath = path.join(demosRoot, dslRelative);
+    const outPath = path.join(demosRoot, outRelative);
+    const env = embedHome ? { ...process.env, [config.embedHomeEnvVar]: embedHome } : process.env;
+
+    execFileSync(process.execPath, [scriptPath, 'generate', dslPath, outPath], {
+        stdio: 'inherit',
+        cwd: demosRoot,
+        env
+    });
+}
+
+main();

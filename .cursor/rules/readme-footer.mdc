@@ -6,7 +6,7 @@ alwaysApply: false
 
 # README Footer
 
-Every **`README.md`** in this repository (root, `packages/**`, `.cursor/plans/**`, etc.) must end with this footer:
+Every **`README.md`** in this repository (root, `packages/**`, `docs/**`, etc.) must end with this footer:
 
 ```markdown
 ---

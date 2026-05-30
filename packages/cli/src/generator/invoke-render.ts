@@ -1,6 +1,6 @@
 import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
-import { renderInvokeCredentialAndParameterCheck } from './auth-stub-render.js';
+import { renderInvokeCredentialAndParameterCheck } from './render-check-stubs.js';
 
 function renderOptionValueExpression(
     propertyName: string,

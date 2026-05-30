@@ -1,14 +1,9 @@
 /**
  * Generated from: pagila.db2ai
  */
-import { resolveCredentialAndOptionalJwt } from '@core2ai/core/mcp-host';
-
 export const connectionEnv = "PAGILA_DATABASE_URL";
-
 export const databaseDialect = "postgres";
-
 export const requiresAuth = true;
-
 export const generatedTools = [
     {
         "kind": "sql",
@@ -263,12 +258,9 @@ export const generatedTools = [
         ]
     }
 ];
-
 export const mcpServerName = "pagila-tools";
 export const mcpServerVersion = "0.0.4";
-
 import * as z from 'zod/v4';
-
 export const inputZodByTool = {
     "listFilms": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
     "listActors": z.object({ "limit": z.number().describe("max rows per page (SQL $1)"), "offset": z.number().describe("rows to skip (SQL $2)") }).strict(),
@@ -280,27 +272,60 @@ export const inputZodByTool = {
     "filmsWithActorLastName": z.object({ "lastNamePrefix": z.string().describe("actor last name prefix (e.g. GAR, BER, HOP) (SQL $1)"), "maxRows": z.number().describe("max rows to return (SQL $2)") }).strict(),
     "searchFilms": z.object({ "searchText": z.string().describe("search text (matched in title or description) (SQL $1)"), "maxRows": z.number().describe("max rows to return (SQL $2)") }).strict()
 };
-
+function decodeJwtPayloadUnsafe(token) {
+    const parts = String(token).trim().split('.');
+    if (parts.length !== 3) {
+        throw new Error('credential is not a JWT (expected three dot-separated segments).');
+    }
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) {
+        b64 += '=';
+    }
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+}
+function resolveCredentialFromEnv(authEnvKey) {
+    const key = authEnvKey?.trim();
+    if (!key) {
+        return undefined;
+    }
+    const value = process.env[key]?.trim();
+    return value && value.length > 0 ? value : undefined;
+}
+function resolveCredentialAndOptionalJwt(authEnvKey) {
+    const credential = resolveCredentialFromEnv(authEnvKey);
+    if (!credential) {
+        return {};
+    }
+    const segments = String(credential).trim().split('.');
+    if (segments.length !== 3) {
+        return { credential };
+    }
+    try {
+        return { credential, jwt: decodeJwtPayloadUnsafe(credential) };
+    }
+    catch {
+        return { credential };
+    }
+}
 const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
 const META_ENV_DIRS = 'MCP_HOST_ENV_DIRS';
-
 function applyHostEnvKeys(hostConfig, envDirs) {
     if (hostConfig.authEnv) {
         process.env[META_AUTH_ENV_KEY] = hostConfig.authEnv;
-    } else {
+    }
+    else {
         delete process.env[META_AUTH_ENV_KEY];
     }
     if (envDirs.length > 0) {
         process.env[META_ENV_DIRS] = JSON.stringify(envDirs);
-    } else {
+    }
+    else {
         delete process.env[META_ENV_DIRS];
     }
 }
-
 function isExpectedDatabaseUrl(connectionString) {
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }
-
 export const mcpHostAdapter = {
     configureFromArgv(argv, envDirs) {
         let authEnv;
@@ -320,53 +345,38 @@ export const mcpHostAdapter = {
         }
         applyHostEnvKeys({ authEnv }, envDirs);
     },
-
     validateAtStartup(requiresAuth) {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
-            throw new Error(
-                'Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).'
-            );
+            throw new Error('Environment variable "' + connectionEnv + '" is missing or empty (database env from .db2ai).');
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
-            throw new Error(
-                'Environment variable "' +
-                    connectionEnv +
-                    '" does not match generated database dialect "' +
-                    databaseDialect +
-                    '".'
-            );
+            throw new Error('Environment variable "' +
+                connectionEnv +
+                '" does not match generated database dialect "' +
+                databaseDialect +
+                '".');
         }
         if (!requiresAuth) {
             return;
         }
         const authEnvName = process.env[META_AUTH_ENV_KEY]?.trim();
         if (!authEnvName) {
-            throw new Error(
-                'Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.'
-            );
+            throw new Error('Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
         }
-        // Credential value may be empty at startup — public tools work without a token; protected/checked fail at invoke.
     },
-
     resolveHostContext() {
         const connectionString = process.env[connectionEnv]?.trim();
         if (!connectionString) {
-            throw new Error(
-                'Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).'
-            );
+            throw new Error('Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).');
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
-            throw new Error(
-                'Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".'
-            );
+            throw new Error('Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".');
         }
-
         const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
         const { credential, jwt } = resolveCredentialAndOptionalJwt(authKey);
         return { connectionString, databaseDialect, credential, jwt };
     },
-
     envDirsForReload() {
         const raw = process.env[META_ENV_DIRS];
         if (!raw?.trim()) {
@@ -377,27 +387,21 @@ export const mcpHostAdapter = {
             if (Array.isArray(dirs) && dirs.every((d) => typeof d === 'string')) {
                 return dirs;
             }
-        } catch {
+        }
+        catch {
             // ignore malformed config
         }
         return [];
     }
 };
-
-import pg from 'pg';
-
+import { Client } from 'pg';
 function resolveConnectionString(hostContext) {
-    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
-        const cs = String(hostContext.connectionString).trim();
-        if (cs.length > 0) {
-            return cs;
-        }
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
     }
-    throw new Error(
-        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
-    );
+    throw new Error('Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).');
 }
-
 function normalizePostgresNumericParamValue(value) {
     if (value === undefined || value === null) {
         return null;
@@ -405,93 +409,93 @@ function normalizePostgresNumericParamValue(value) {
     const n = typeof value === 'number' ? value : Number(String(value));
     return Number.isFinite(n) ? n : null;
 }
-
 export async function invokeTool(toolName, options = {}, hostContext) {
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
-
-    const host = hostContext ?? mcpHostAdapter.resolveHostContext();
+    const host = hostContext !== undefined
+        ? hostContext
+        : mcpHostAdapter.resolveHostContext();
     if (toolMeta.access !== 'public') {
         if (!host.credential || !String(host.credential).trim()) {
-            throw new Error(
-                'Missing host credential. Pass --auth-env on mcp-serve.mjs and set the variable (re-read on every tool call).'
-            );
+            throw new Error('Missing host credential. Pass --auth-env on mcp-serve.js and set the variable (re-read on every tool call).');
         }
     }
     const connectionString = resolveConnectionString(host);
-    const client = new pg.Client({ connectionString });
+    const client = new Client({ connectionString });
     await client.connect();
     try {
         switch (toolName) {
-        case "listFilms": {
-            const result = await client.query({ text: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "listActors": {
-            const result = await client.query({ text: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "listCustomers": {
-            const result = await client.query({ text: "SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "listCategories": {
-            const result = await client.query({ text: "SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "listCountries": {
-            const result = await client.query({ text: "SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "listInventory": {
-            const result = await client.query({ text: "SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "filmsByMpaaRating": {
-            const result = await client.query({ text: "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2", values: [options["rating"] !== undefined && options["rating"] !== null ? String(options["rating"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "filmsWithActorLastName": {
-            const result = await client.query({ text: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2", values: [options["lastNamePrefix"] !== undefined && options["lastNamePrefix"] !== null ? String(options["lastNamePrefix"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
-        case "searchFilms": {
-            const result = await client.query({ text: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2", values: [options["searchText"] !== undefined && options["searchText"] !== null ? String(options["searchText"]) : null, options["searchText"] !== undefined && options["searchText"] !== null ? String(options["searchText"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
-        }
+            case "listFilms": {
+                const result = await client.query({ text: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "listActors": {
+                const result = await client.query({ text: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "listCustomers": {
+                const result = await client.query({ text: "SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "listCategories": {
+                const result = await client.query({ text: "SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "listCountries": {
+                const result = await client.query({ text: "SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "listInventory": {
+                const result = await client.query({ text: "SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2", values: [normalizePostgresNumericParamValue(options["limit"]), normalizePostgresNumericParamValue(options["offset"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "filmsByMpaaRating": {
+                const result = await client.query({ text: "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2", values: [options["rating"] !== undefined && options["rating"] !== null ? String(options["rating"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "filmsWithActorLastName": {
+                const result = await client.query({ text: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2", values: [options["lastNamePrefix"] !== undefined && options["lastNamePrefix"] !== null ? String(options["lastNamePrefix"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case "searchFilms": {
+                const result = await client.query({ text: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2", values: [options["searchText"] !== undefined && options["searchText"] !== null ? String(options["searchText"]) : null, options["searchText"] !== undefined && options["searchText"] !== null ? String(options["searchText"]) : null, normalizePostgresNumericParamValue(options["maxRows"])] });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
-    } finally {
+    }
+    finally {
         await client.end();
     }
 }
+//# sourceMappingURL=pagila-tools.js.map

@@ -3,12 +3,12 @@
     "scenarios": {
         "pagila": {
             "kind": "smoke-generated",
-            "module": "./packages/extension/demos/generated/tools/pagila-tools.mjs",
+            "module": "./packages/extension/demos/generated/tools/pagila-tools.js",
             "tool": "listFilms"
         },
         "access-demo": {
             "kind": "smoke-generated",
-            "module": "./packages/extension/demos/generated/tools/access-demo-tools.mjs",
+            "module": "./packages/extension/demos/generated/tools/access-demo-tools.js",
             "tool": "listProducts"
         },
         "mcp-pagila": {

@@ -123,6 +123,12 @@ function registerGenerateOnSave(context: vscode.ExtensionContext): void {
 
 const DEMO_COPY_SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp']);
 const DEMO_COPY_SKIP_FILES = new Set(['package-lock.json', '.env', '.env.local']);
+const DEMO_BUNDLE_REQUIRED = [
+    'package.json',
+    'demos-generate.config.json',
+    'scripts/generate.mjs',
+    'scripts/generate-all.mjs'
+];
 
 function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): void {
     const disposable = vscode.commands.registerCommand('db2ai.createDemoWorkspace', async () => {
@@ -148,6 +154,13 @@ function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): v
             );
             return;
         }
+        const missingBundled = DEMO_BUNDLE_REQUIRED.filter((relative) => !existsSync(path.join(sourceDir, relative)));
+        if (missingBundled.length > 0) {
+            void vscode.window.showErrorMessage(
+                `db2ai: Bundled demo workspace is incomplete (missing ${missingBundled.join(', ')}). Reinstall the extension or rebuild the VSIX.`
+            );
+            return;
+        }
         try {
             cpSync(sourceDir, targetDir, {
                 recursive: true,
@@ -160,7 +173,7 @@ function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): v
         }
         const openFolder = 'Open folder';
         const choice = await vscode.window.showInformationMessage(
-            `db2ai: Demo workspace created in ${targetDir}. Run npm install, npm run db:up, copy .env.example to .env, then npm run generate:pagila (or save pagila.db2ai).`,
+            `db2ai: Demo workspace created in ${targetDir}. Run npm install, npm run db:up, copy .env.example to .env, then npm run generate:all (or save .db2ai files).`,
             openFolder
         );
         if (choice === openFolder) {

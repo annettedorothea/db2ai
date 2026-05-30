@@ -11,16 +11,12 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 const cliPkgJsonPath = path.join(workspaceRoot, 'packages', 'cli', 'package.json');
 const cliVersion = JSON.parse(fs.readFileSync(cliPkgJsonPath, 'utf-8')).version;
-const cliResourcesDir = path.join(workspaceRoot, 'packages', 'cli', 'resources');
-const mcpSource = path.join(cliResourcesDir, 'mcp-serve-emitted.mjs');
 const entry = path.join(workspaceRoot, 'packages', 'cli', 'src', 'vscode-bundle-cli-entry.ts');
 const extOutDir = path.join(__dirname, 'out');
 
 const embedRoot = path.join(extOutDir, 'embed-db2ai');
 const bundlePath = path.join(embedRoot, 'cli.cjs');
 const embedPkgDest = path.join(embedRoot, 'package.json');
-const mcpDest = path.join(embedRoot, 'resources', 'mcp-serve-emitted.mjs');
-
 await esbuild.build({
     entryPoints: [entry],
     outfile: bundlePath,
@@ -40,7 +36,6 @@ await esbuild.build({
     define: {
         __DB2AI_CLI_BUNDLE_VERSION__: JSON.stringify(cliVersion)
     }
-    // Bundle LSP/jsonrpc deps so cli.cjs works from the terminal (npm run generate:*), not only inside the extension host.
 });
 
 function copyEsbuildForEmbedCli() {
@@ -64,15 +59,5 @@ function copyEsbuildForEmbedCli() {
 
 copyEsbuildForEmbedCli();
 
-const dir = path.dirname(mcpDest);
-if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-}
 fs.copyFileSync(cliPkgJsonPath, embedPkgDest);
-if (!fs.existsSync(mcpSource)) {
-    throw new Error(
-        `Bundled MCP host missing (${mcpSource}). Run "npm run bundle:mcp-runtime" from the db2ai workspace root before building the extension.`
-    );
-}
-fs.copyFileSync(mcpSource, mcpDest);
-console.log(`[embed-cli] wrote ${bundlePath} and embed resources`);
+console.log(`[embed-cli] wrote ${bundlePath}`);

@@ -1,13 +1,15 @@
 {
     "extends": "../../../tsconfig.json",
     "compilerOptions": {
-        "noEmit": true,
+        "noEmit": false,
         "declaration": false,
         "composite": false,
         "rootDir": ".",
+        "outDir": ".",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
         "skipLibCheck": true
     },
-    "include": ["generated/tools/**/*.ts", "src/auth/**/*.ts"]
+    "include": ["generated/**/*.ts", "src/auth/**/*.ts"],
+    "exclude": []
 }

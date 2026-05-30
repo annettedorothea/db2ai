@@ -30,10 +30,13 @@
         "clean": "shx rm -fr *.tsbuildinfo out",
         "build": "echo 'No build step'",
         "build:clean": "npm run clean && npm run build",
-        "langium:generate": "langium generate",
+        "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "lint": "eslint src test",
+        "check": "npm run format:check && npm run typecheck && npm run lint",
+        "langium:generate": "langium generate && node ../../scripts/langium-generated-skip-check.mjs",
         "langium:watch": "langium generate --watch",
-        "test": "vitest run",
-        "test:coverage": "vitest run --coverage"
+        "test": "vitest run"
     },
     "dependencies": {
         "langium": "~4.2.0",

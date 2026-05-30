@@ -1,8 +1,6 @@
 /**
  * Generated from: pagila.db2ai
  */
-import { resolveCredentialAndOptionalJwt } from '@core2ai/core/mcp-host';
-
 export const connectionEnv = 'PAGILA_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
@@ -371,6 +369,45 @@ export const inputZodByTool = {
         .strict()
 };
 
+function decodeJwtPayloadUnsafe(token: string): Record<string, unknown> {
+    const parts = String(token).trim().split('.');
+    if (parts.length !== 3) {
+        throw new Error('credential is not a JWT (expected three dot-separated segments).');
+    }
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) {
+        b64 += '=';
+    }
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as Record<string, unknown>;
+}
+
+function resolveCredentialFromEnv(authEnvKey: string | undefined): string | undefined {
+    const key = authEnvKey?.trim();
+    if (!key) {
+        return undefined;
+    }
+    const value = process.env[key]?.trim();
+    return value && value.length > 0 ? value : undefined;
+}
+
+function resolveCredentialAndOptionalJwt(authEnvKey: string | undefined): {
+    credential?: string;
+    jwt?: Record<string, unknown>;
+} {
+    const credential = resolveCredentialFromEnv(authEnvKey);
+    if (!credential) {
+        return {};
+    }
+    const segments = String(credential).trim().split('.');
+    if (segments.length !== 3) {
+        return { credential };
+    }
+    try {
+        return { credential, jwt: decodeJwtPayloadUnsafe(credential) };
+    } catch {
+        return { credential };
+    }
+}
 const META_AUTH_ENV_KEY = 'MCP_HOST_AUTH_ENV_KEY';
 const META_ENV_DIRS = 'MCP_HOST_ENV_DIRS';
 
@@ -436,7 +473,6 @@ export const mcpHostAdapter = {
                 'Generated tools include protected or checked access; pass --auth-env <ENV_VAR_NAME> on the MCP host.'
             );
         }
-        // Credential value may be empty at startup — public tools work without a token; protected/checked fail at invoke.
     },
 
     resolveHostContext(): DbHostContext {
@@ -513,7 +549,7 @@ export async function invokeTool(
     if (toolMeta.access !== 'public') {
         if (!host.credential || !String(host.credential).trim()) {
             throw new Error(
-                'Missing host credential. Pass --auth-env on mcp-serve.mjs and set the variable (re-read on every tool call).'
+                'Missing host credential. Pass --auth-env on mcp-serve.js and set the variable (re-read on every tool call).'
             );
         }
     }

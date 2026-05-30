@@ -1,31 +1,14 @@
 ---
-description: Never patch generated or bundled output; fix the generator or rebuild pipeline
+description: Never hand-edit build or generated artifacts
 alwaysApply: true
 ---
 
 # Generated Output — Do Not Edit
 
-**Never** fix bugs, lint, or type errors by hand-editing generated or bundled artifacts. Change the **source** (generator, DSL, core2ai, or bundle input), then rebuild and regenerate.
+**Never** fix bugs by hand-editing generated or compiled output. Change **source** (`src/` here, or the consumer generator / DSL), then rebuild or regenerate.
 
-## Do not edit (fix upstream instead)
+## Do not edit
 
-| Path | Fix in |
-|------|--------|
-| `packages/extension/demos/generated/tools/**` | `packages/cli/src/generator/**` → `npm run build`, `npm run generate:all` |
-| `packages/extension/demos/generated/cli/mcp-serve.mjs` | `npm run bundle:mcp-runtime`, then `npm run generate:all` (or core2ai pin refresh first) |
-| `packages/cli/resources/mcp-serve-emitted.mjs` | `npm run bundle:mcp-runtime` after `@core2ai/core/mcp-host` is current |
-| `node_modules/@core2ai/core/**` | Tag + `npm run core2ai:use-pin`, then bundle + generate |
-
-Do **not** run `eslint --fix` on generated files. Do **not** use manual `cp` into `generated/**` or `node_modules` as a permanent fix.
-
-## Allowed to edit (not generator output)
-
-- Demo DSL: `packages/extension/demos/*.db2ai`
-- Hand-written auth stubs: `packages/extension/demos/src/auth/**`
-- Demo scripts, compose, README, env templates under `packages/extension/demos/` (excluding `generated/**`)
-
-Regenerated `generated/**` files may be **committed** after a generator or DSL change — that is output of the pipeline, not a manual patch.
-
-## Verification
-
-After generator changes, follow [codegen-generated-quality.mdc](./codegen-generated-quality.mdc). After core2ai or MCP-host changes, follow [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc).
+- **`out/**`** in core2ai — run `npm run build` or `npm run watch`
+- **`node_modules/**`** in any repo — fix upstream and relink/reinstall; no manual patches or `cp`
+- **Consumer `generated/**`** (api2ai, db2ai) — change generator or DSL, then `generate:all` and `build:generated`
