@@ -9,7 +9,7 @@ After code changes in this repository, run:
 
 `npm run langium:generate && npm run build && npm run check`
 
-Exception: If all changed files are inside `packages/extension/demos/` (excluding generator output), skip these commands.
+Exception: If all changed files are inside `packages/extension/demos/` (excluding generator output), skip these commands — but still run `build:generated` when demo generated `.ts` or auth stubs change; see [demos-build-generated.mdc](./demos-build-generated.mdc).
 
 If you changed **`packages/cli/src/generator/`**, follow [codegen-generated-quality.mdc](./codegen-generated-quality.mdc): `npm run build`, `npm run generate:all`, `npm run check`.
 

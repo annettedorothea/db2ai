@@ -20,7 +20,7 @@ From the **db2ai workspace root**, run in order:
 
 1. `npm run build`
 2. `npm run generate:all`
-3. `cd packages/extension/demos && npm run build:generated`
+3. `npm run build:generated --prefix packages/extension/demos`
 4. `npm run check`
 
 Do **not** run `eslint --fix` on generated files to “repair” output. If `check` fails, fix the generator and regenerate.
@@ -39,4 +39,4 @@ Optional: run `npm run format` if you want Prettier-applied output before commit
 
 ## Commit generated output
 
-When demo `.db2ai` files or generator output shape change, include regenerated `packages/extension/demos/generated/**/*.ts` in the same change set.
+When demo `.db2ai` files or generator output shape change, include regenerated `packages/extension/demos/generated/**/*.ts` and emitted `.js` (plus `.map` if tracked) in the same change set. See [demos-build-generated.mdc](./demos-build-generated.mdc).

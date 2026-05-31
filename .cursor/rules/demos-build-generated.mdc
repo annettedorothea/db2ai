@@ -1,0 +1,39 @@
+---
+description: Regenerate demo .js with build:generated or generate:all when sources change
+alwaysApply: true
+---
+
+# Demo Generated JS Sync
+
+`packages/extension/demos/generated/**/*.js` is emitted by `tsc` (`build:generated`), not Prettier. Keep committed `.ts` and `.js` in sync.
+
+**Do not** add pre-commit logic that rebuilds and `git add`s files during commit. Regenerate explicitly; the user stages the result.
+
+## When to run `npm run generate:all`
+
+From the **db2ai workspace root**, when any of:
+
+- `packages/cli/src/generator/**` changed
+- Demo DSL changed (`packages/extension/demos/*.db2ai`)
+- After `@core2ai/core` pin refresh affecting codegen or MCP host — see [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc)
+
+Always run `build:generated` afterward (below).
+
+## When to run `build:generated` only
+
+From workspace root:
+
+`npm run build:generated --prefix packages/extension/demos`
+
+After:
+
+- Every `generate:all`
+- Edits to `packages/extension/demos/generated/**/*.ts` or `packages/extension/demos/src/auth/**/*.ts`
+
+## Commit
+
+Include regenerated `.ts`, emitted `.js`, and `.map` (if tracked) in the same change set. Do not hand-edit `.js`.
+
+## Verify
+
+Run `npm run check` after regeneration. For generator changes, follow [codegen-generated-quality.mdc](./codegen-generated-quality.mdc).
