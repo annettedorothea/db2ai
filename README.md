@@ -25,7 +25,7 @@ SQL {
 }
 ```
 
-Connection strings are **not** in the DSL — only the **env var name** (`database env "…"`). Values live in `.env` / MCP host config.
+Connection strings are **not** in the DSL — only the **env var name** (`database env "…"`). Values live in `.env` / MCP host config. More demos: [`./packages/extension/demos/`](./packages/extension/demos/).
 
 ## MCP demos
 
@@ -35,7 +35,7 @@ Bundled demos: **[`./packages/extension/demos/README.md`](./packages/extension/d
 
 ## Getting started
 
-Prerequisite: **Node.js 20+**, **Docker** for database demos.
+Prerequisite: **Node.js 20+**, sibling checkout **`../core2ai`**, **Docker** for database demos.
 
 ```bash
 npm install
@@ -47,52 +47,64 @@ npm run langium:generate && npm run build && npm run check
 
 Edit `.db2ai` under `packages/extension/demos/`, then:
 
-- **Extension dev:** **Run db2ai Extension** (opens demos workspace; save regenerates tools).
-- **CLI:** `node ./packages/cli/bin/cli.js parse|validate|generate <file> …`
+| Workflow                    | How                                                                                                             |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Extension dev (usual)**   | **Run db2ai Extension** — save regenerates tools; run **`npm run build:generated`** in demos for MCP **`.js`**  |
+| **All demos from terminal** | `npm run generate:all` in demos, then `npm run build:generated`                                                 |
+| **One demo file**           | scripts in [`packages/extension/demos/`](./packages/extension/demos/) (`generate:pagila`, `generate:sakila`, …) |
+| **CLI (debug / scripts)**   | `npx db-2-ai-dsl-cli parse\|validate\|generate …` — see [`packages/cli/README.md`](./packages/cli/README.md)    |
 
 ## Documentation
 
-Shared architecture (three layers, core2ai pin, build cheatsheet): **[core2ai docs hub](../core2ai/docs/README.md)** (sibling repo).
+Shared architecture: **[core2ai docs hub](../core2ai/docs/README.md)** (sibling repo).
 
-| Doc                                                                                 | When to read                           |
-| ----------------------------------------------------------------------------------- | -------------------------------------- |
-| [Three layers overview](../core2ai/docs/00-three-layers-overview.md)                | First visit — how db2ai fits the stack |
-| [Layer 2 — MCP server and tools](../core2ai/docs/02-layer2-mcp-server-and-tools.md) | SQL tools and `mcp-serve.mjs`          |
-| [Layer 3 — Cursor and agent](../core2ai/docs/03-layer3-cursor-and-agent.md)         | Demos, `mcp.json`, chat testing        |
-| [Build cheatsheet](../core2ai/docs/consumer-build-cheatsheet.md)                    | Which npm script to run                |
+| Doc                                                                      | When to read                     |
+| ------------------------------------------------------------------------ | -------------------------------- |
+| [Layer 1 — Tool Factory](../core2ai/docs/01-layer-1-tool-factory.md)     | Langium, generators, extensions  |
+| [Layer 2 — Tool Authoring](../core2ai/docs/02-layer-2-tool-authoring.md) | `.db2ai` and generated SQL tools |
+| [Layer 3 — AI Runtime](../core2ai/docs/03-layer-3-ai-runtime.md)         | MCP, agents, execution           |
+| [Personas](../core2ai/docs/04-personas.md)                               | Roles across the stack           |
 
 ## Project layout
 
-| Path                 | Role                                               |
-| -------------------- | -------------------------------------------------- |
-| `packages/language`  | Langium grammar, SQL/schema validation, completion |
-| `packages/cli`       | `parse`, `validate`, `generate`, smoke tests       |
-| `packages/extension` | VS Code / Cursor extension; **`demos/`**           |
+| Path                        | Role                                               |
+| --------------------------- | -------------------------------------------------- |
+| `packages/language`         | Langium grammar, SQL/schema validation, completion |
+| `packages/cli`              | `parse`, `validate`, `generate`, unit tests        |
+| `packages/extension`        | VS Code / Cursor extension; **`demos/`**           |
+| `packages/extension/demos/` | Sample DSL, Docker DBs, `generate:*`, MCP setup    |
 
 Package notes: [`packages/language/README.md`](./packages/language/README.md) · [`packages/cli/README.md`](./packages/cli/README.md)
 
 ## Daily npm scripts (repository root)
 
-| Script         | Purpose                                                                                                        |
-| -------------- | -------------------------------------------------------------------------------------------------------------- |
-| `build`        | TypeScript project references + workspace builds                                                               |
-| `check`        | format + typecheck + lint + generated tools                                                                    |
-| `test`         | `langium:generate`, `build`, all Vitest (language + CLI integration incl. MCP stdio; Docker for Pagila/Sakila) |
-| `generate:all` | regenerate all demo tools (forwards to demos)                                                                  |
-| `release:vsix` | GitHub prerelease of tested VSIX (build with `extension:vsix` first)                                           |
+| Script         | Purpose                                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `build`        | TypeScript project references + workspace builds                                                           |
+| `check`        | `format:check` + `typecheck` + `lint`                                                                      |
+| `watch`        | TypeScript watch (monorepo)                                                                                |
+| `test`         | `langium:generate`, `build`, all Vitest (language + CLI unit + demo integration; Docker for Pagila/Sakila) |
+| `generate:all` | regenerate all demo tools (forwards to demos)                                                              |
+| `release:vsix` | GitHub prerelease of tested VSIX (build with `extension:vsix` first)                                       |
 
-All tests: `npm test` (from repo root). Docker must be running for Pagila/Sakila integration tests; Pagila is started automatically when needed.
+All tests: `npm test` (from repo root). Docker must be running for Pagila/Sakila integration tests; containers are started automatically when needed.
 
-Regenerate tools: `npm run generate:all` or `npm run generate:pagila|sakila|access-demo` inside **`packages/extension/demos/`**.
+Regenerate tools: `npm run generate:all` or per-demo scripts inside **`packages/extension/demos/`** (then **`npm run build:generated`** for MCP **`.js`**).
 
 ## Extension (VSIX)
+
+Build locally:
+
+```bash
+npm run extension:vsix -w packages/extension
+```
+
+Prerelease (after local VSIX build + manual test):
 
 ```bash
 npm run extension:vsix -w packages/extension   # build + install/test in Cursor
 npm run release:vsix                           # upload that VSIX to GitHub
 ```
-
-Build and test the VSIX locally before `release:vsix` — the script does not rebuild or re-run tests.
 
 Bump extension version: `npm run version:patch` (or `minor` / `major`). Details: [`./packages/extension/README.md`](./packages/extension/README.md).
 
@@ -103,7 +115,7 @@ Bump extension version: `npm run version:patch` (or `minor` / `major`). Details:
 | **Run db2ai Extension**                  | Extension Development Host with `demos/` workspace |
 | **Attach: db2ai Language Server (6010)** | attach debugger (port 6010)                        |
 
-Pre-launch task **Build db-2-ai-dsl**: `langium:generate` + `build`.
+Pre-launch task **Build db-2-ai-dsl**: `langium:generate` + `build` ([`./.vscode/tasks.json`](./.vscode/tasks.json) / workspace [`mcp-dsl.code-workspace`](../mcp-dsl.code-workspace)).
 
 ## License
 

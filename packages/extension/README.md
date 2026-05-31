@@ -14,8 +14,8 @@ The full project (DSL, CLI, demos) lives in the [db2ai](https://github.com/annet
 
 1. Open a workspace folder that contains `.db2ai` files.
 2. Set `database env "YOUR_VAR"` or `database mysql env "YOUR_VAR"` and define `YOUR_VAR` in `.env`.
-3. Edit `.db2ai` — on **save**, generated files appear under `generated/tools/` and `generated/cli/mcp-serve.mjs` (paths relative to the workspace).
-4. Command Palette: **Generate tool code (.ts + .mjs + MCP host)** for manual generation of the focused `.db2ai` file.
+3. Edit `.db2ai` — on **save**, the extension writes **`generated/tools/*.ts`** and **`generated/cli/mcp-serve.ts`**; run **`npm run build:generated`** for **`.js`** used by MCP.
+4. Command Palette: **Generate tool code (.ts + MCP host)** for manual generation of the focused `.db2ai` file.
 
 Connection strings belong in `.env` / MCP host config, not in the DSL.
 
@@ -30,7 +30,7 @@ Connection strings belong in `.env` / MCP host config, not in the DSL.
     - Run `npm install`.
     - Copy `.env.example` to `.env`.
     - Start databases with `npm run db:up:all`.
-    - Generate tools with `npm run generate:all`.
+    - Generate and compile: `npm run generate:all`, then `npm run build:generated`.
 4. Open and enable:
     - Open the demo folder as the workspace.
     - In Cursor Settings, open **Tools & MCP**.

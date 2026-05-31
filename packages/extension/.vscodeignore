@@ -5,7 +5,6 @@ tsconfig.json
 tsconfig.tsbuildinfo
 esbuild.mjs
 embed-cli-bundle.mjs
-langium-quickstart.md
 **/*.map
 demos/node_modules/**
 demos/generated/**

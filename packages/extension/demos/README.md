@@ -26,7 +26,7 @@ Use the **db2ai** extension (VSIX or Extension Development Host). This folder is
 
 ## What you can do here
 
-- Edit **`.db2ai`** — on save, the extension generates `generated/tools/*` and `generated/cli/mcp-serve.mjs`
+- Edit **`.db2ai`** — on save, the extension writes **`generated/tools/*.ts`** and **`generated/cli/mcp-serve.ts`**; run **`npm run build:generated`** for **`.js`** used by MCP.
 - Run **Pagila** (PostgreSQL) and **Sakila** (MySQL) DVD rental demos in Docker
 - Run the **access-demo** PostgreSQL database to try **`public`**, **`protected`**, and **`checked`** tools with demo JWTs
 - Chat in Cursor with prompts prefixed by **`db2ai`** (see [Demo prompts](#demo-prompts))
@@ -47,8 +47,8 @@ Prerequisites: **Node.js 20+**, **Docker Desktop** (running), **db2ai** extensio
     - MySQL Sakila: `npm run db:sakila:up`.
     - Access demo: `npm run db:access-demo:up` (PostgreSQL on port **55433** by default).
 5. Generate tool code:
-    - All demos: `npm run generate:all`.
-    - Or per demo: `generate:pagila`, `generate:sakila`, `generate:access-demo`.
+    - All demos: `npm run generate:all`, then `npm run build:generated`.
+    - Or per demo: `generate:pagila`, `generate:sakila`, `generate:access-demo` (each followed by `npm run build:generated` when MCP should pick up changes).
     - Alternative: save a `.db2ai` file or run **Generate tool code** from the Command Palette.
 6. For **access-demo** — optional demo JWT in `.env` (see [`.env.example`](./.env.example)):
     - **`ACCESS_DEMO_TOKEN` unset or empty:** MCP starts; **`listProducts`** (`public`) works.
@@ -194,7 +194,7 @@ After DSL changes: run the matching `generate:*` script, save the file, or **Gen
 
 ## MCP transport and credentials
 
-These demos serve tools through a **local MCP server over stdio**. Cursor (or another MCP client) starts [`generated/cli/mcp-serve.mjs`](./generated/cli/mcp-serve.mjs), loads the matching `generated/tools/*-tools.mjs`, and talks MCP on the stdio transport configured in [`.cursor/mcp.json`](./.cursor/mcp.json).
+These demos serve tools through a **local MCP server over stdio**. Cursor (or another MCP client) starts [`generated/cli/mcp-serve.js`](./generated/cli/mcp-serve.js), loads the matching `generated/tools/*-tools.js`, and talks MCP on the stdio transport configured in [`.cursor/mcp.json`](./.cursor/mcp.json).
 
 There is **no sign-in step in MCP** itself.
 
@@ -203,7 +203,7 @@ There is **no sign-in step in MCP** itself.
 
 ## MCP configuration
 
-[`./.cursor/mcp.json`](./.cursor/mcp.json) registers all three servers. Connection URLs come from env, not from the DSL. **Argument order:** `mcp-serve.mjs`, then `*-tools.mjs`, then host flags.
+[`./.cursor/mcp.json`](./.cursor/mcp.json) registers all three servers. Connection URLs come from env, not from the DSL. **Argument order:** `mcp-serve.js`, then `*-tools.js`, then host flags.
 
 | MCP server          | `--auth-env` variable |
 | ------------------- | --------------------- |
