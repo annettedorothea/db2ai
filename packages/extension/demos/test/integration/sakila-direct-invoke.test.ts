@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { asRecord, withGeneratedDirectInvokeFixture } from '../support/direct-invoke.js';
+import { demosRoot, demosTmpRoot } from '../support/paths.js';
 import { ensureSakilaDocker } from '../support/sakila-docker.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = path.resolve(__dirname, '../../../..');
-const cliRoot = path.resolve(__dirname, '../..');
-const demosRoot = path.join(workspaceRoot, 'packages/extension/demos');
 const sakilaSourcePath = path.join(demosRoot, 'sakila.db2ai');
-const tmpRoot = path.join(cliRoot, 'tmp');
 
 describe('Sakila generated module direct invocation', () => {
     it('ensures Sakila in Docker, generates MySQL tools, and invokes SQL tools', async () => {
@@ -17,7 +12,7 @@ describe('Sakila generated module direct invocation', () => {
         await withGeneratedDirectInvokeFixture(
             {
                 demosRoot,
-                tmpRoot,
+                tmpRoot: demosTmpRoot,
                 tmpPrefix: 'sakila-direct-',
                 sourcePath: sakilaSourcePath,
                 generatedToolsName: 'sakila-tools',

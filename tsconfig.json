@@ -15,5 +15,12 @@
         "composite": true
     },
     "include": ["**/src/**/*", "**/test/**/*"],
-    "exclude": ["**/lib/**/*", "**/out/**/*", "**/node_modules/**/*"]
+    "exclude": [
+        "**/lib/**/*",
+        "**/out/**/*",
+        "**/node_modules/**/*",
+        "packages/extension/demos/generated/**",
+        "packages/extension/demos/src/**",
+        "packages/extension/demos/test/**"
+    ]
 }

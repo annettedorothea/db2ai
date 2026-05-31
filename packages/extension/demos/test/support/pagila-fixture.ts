@@ -1,17 +1,14 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { generateAction } from '../../src/generate-command.js';
+import { generateAction } from '../../../../cli/src/generate-command.js';
 import { compileGeneratedForSmoke } from './compile-generated-fixture.js';
 import { ensurePagilaDocker } from './pagila-docker.js';
+import { demosRoot, demosTmpRoot } from './paths.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = path.resolve(__dirname, '../../../..');
-const cliRoot = path.resolve(__dirname, '../..');
-export const demosRoot = path.join(workspaceRoot, 'packages/extension/demos');
+export { demosRoot };
 export const pagilaSourcePath = path.join(demosRoot, 'pagila.db2ai');
 export const pagilaDatabaseEnv = 'PAGILA_DATABASE_URL';
-export const pagilaTmpRoot = path.join(cliRoot, 'tmp');
+export const pagilaTmpRoot = demosTmpRoot;
 
 export type PagilaGeneratedFixture = {
     fixtureRoot: string;

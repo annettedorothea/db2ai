@@ -2,78 +2,80 @@
  * Generated from: access-demo.db2ai
  */
 import { checkListCustomerOrdersParameters } from '../../src/auth/listCustomerOrders.js';
-export const connectionEnv = "ACCESS_DEMO_DATABASE_URL";
-export const databaseDialect = "postgres";
+export const connectionEnv = 'ACCESS_DEMO_DATABASE_URL';
+export const databaseDialect = 'postgres';
 export const requiresAuth = true;
 export const generatedTools = [
     {
-        "kind": "sql",
-        "toolName": "listProducts",
-        "title": "Product catalog rows",
-        "description": "list products in the access-demo catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50",
-        "access": "public",
-        "sqlText": "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1",
-        "params": [
+        kind: 'sql',
+        toolName: 'listProducts',
+        title: 'Product catalog rows',
+        description: 'list products in the access-demo catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
+        access: 'public',
+        sqlText: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
+        params: [
             {
-                "placeholder": "$1",
-                "index": 1,
-                "name": "limit",
-                "propertyName": "limit",
-                "description": "max rows",
-                "example": "50",
-                "jsonSchemaType": "integer"
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows',
+                example: '50',
+                jsonSchemaType: 'integer'
             }
         ]
     },
     {
-        "kind": "sql",
-        "toolName": "listProductsWithReviews",
-        "title": "Products with reviews (requires credential)",
-        "description": "list products that have at least one review, with review details\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50",
-        "access": "protected",
-        "sqlText": "SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)",
-        "params": [
+        kind: 'sql',
+        toolName: 'listProductsWithReviews',
+        title: 'Products with reviews (requires credential)',
+        description: 'list products that have at least one review, with review details\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
+        access: 'protected',
+        sqlText: 'SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)',
+        params: [
             {
-                "placeholder": "$1",
-                "index": 1,
-                "name": "limit",
-                "propertyName": "limit",
-                "description": "max rows",
-                "example": "50",
-                "jsonSchemaType": "integer"
+                placeholder: '$1',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows',
+                example: '50',
+                jsonSchemaType: 'integer'
             }
         ]
     },
     {
-        "kind": "sql",
-        "toolName": "listCustomerOrders",
-        "title": "Customer order rows",
-        "description": "list orders for a customer; customerId may be taken from the JWT when omitted\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId ($1): customer id (defaults from JWT) (example: alice)\n\nExample call: customerId=alice",
-        "access": "checked",
-        "sqlText": "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id",
-        "params": [
+        kind: 'sql',
+        toolName: 'listCustomerOrders',
+        title: 'Customer order rows',
+        description: 'list orders for a customer; customerId may be taken from the JWT when omitted\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId ($1): customer id (defaults from JWT) (example: alice)\n\nExample call: customerId=alice',
+        access: 'checked',
+        sqlText: 'SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id',
+        params: [
             {
-                "placeholder": "$1",
-                "index": 1,
-                "name": "customerId",
-                "propertyName": "customerId",
-                "description": "customer id (defaults from JWT)",
-                "example": "alice",
-                "jsonSchemaType": "string"
+                placeholder: '$1',
+                index: 1,
+                name: 'customerId',
+                propertyName: 'customerId',
+                description: 'customer id (defaults from JWT)',
+                example: 'alice',
+                jsonSchemaType: 'string'
             }
         ]
     }
 ];
-export const mcpServerName = "access-demo-tools";
-export const mcpServerVersion = "0.0.4";
+export const mcpServerName = 'access-demo-tools';
+export const mcpServerVersion = '0.0.4';
 const parameterCheckers = {
-    "listCustomerOrders": checkListCustomerOrdersParameters
+    listCustomerOrders: checkListCustomerOrdersParameters
 };
 import * as z from 'zod/v4';
 export const inputZodByTool = {
-    "listProducts": z.object({ "limit": z.number().describe("max rows (SQL $1)") }).strict(),
-    "listProductsWithReviews": z.object({ "limit": z.number().describe("max rows (SQL $1)") }).strict(),
-    "listCustomerOrders": z.object({ "customerId": z.string().describe("customer id (defaults from JWT) (SQL $1)").optional() }).strict()
+    listProducts: z.object({ limit: z.number().describe('max rows (SQL $1)') }).strict(),
+    listProductsWithReviews: z.object({ limit: z.number().describe('max rows (SQL $1)') }).strict(),
+    listCustomerOrders: z
+        .object({ customerId: z.string().describe('customer id (defaults from JWT) (SQL $1)').optional() })
+        .strict()
 };
 function decodeJwtPayloadUnsafe(token) {
     const parts = String(token).trim().split('.');
@@ -174,7 +176,11 @@ export const mcpHostAdapter = {
             throw new Error('Missing database URL. Set environment variable "' + connectionEnv + '" (from database env in .db2ai).');
         }
         if (!isExpectedDatabaseUrl(connectionString)) {
-            throw new Error('Database URL from "' + connectionEnv + '" does not match generated database dialect "' + databaseDialect + '".');
+            throw new Error('Database URL from "' +
+                connectionEnv +
+                '" does not match generated database dialect "' +
+                databaseDialect +
+                '".');
         }
         const authKey = process.env[META_AUTH_ENV_KEY]?.trim();
         const { credential, jwt } = resolveCredentialAndOptionalJwt(authKey);
@@ -217,9 +223,7 @@ export async function invokeTool(toolName, options = {}, hostContext) {
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
-    const host = hostContext !== undefined
-        ? hostContext
-        : mcpHostAdapter.resolveHostContext();
+    const host = hostContext !== undefined ? hostContext : mcpHostAdapter.resolveHostContext();
     if (toolMeta.access !== 'public') {
         if (!host.credential || !String(host.credential).trim()) {
             throw new Error('Missing host credential. Pass --auth-env on mcp-serve.js and set the variable (re-read on every tool call).');
@@ -241,22 +245,35 @@ export async function invokeTool(toolName, options = {}, hostContext) {
     await client.connect();
     try {
         switch (toolName) {
-            case "listProducts": {
-                const result = await client.query({ text: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1", values: [normalizePostgresNumericParamValue(optionsResolved["limit"])] });
+            case 'listProducts': {
+                const result = await client.query({
+                    text: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
+                    values: [normalizePostgresNumericParamValue(optionsResolved['limit'])]
+                });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
-            case "listProductsWithReviews": {
-                const result = await client.query({ text: "SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)", values: [normalizePostgresNumericParamValue(optionsResolved["limit"])] });
+            case 'listProductsWithReviews': {
+                const result = await client.query({
+                    text: 'SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)',
+                    values: [normalizePostgresNumericParamValue(optionsResolved['limit'])]
+                });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
-            case "listCustomerOrders": {
-                const result = await client.query({ text: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id", values: [optionsResolved["customerId"] !== undefined && optionsResolved["customerId"] !== null ? String(optionsResolved["customerId"]) : null] });
+            case 'listCustomerOrders': {
+                const result = await client.query({
+                    text: 'SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id',
+                    values: [
+                        optionsResolved['customerId'] !== undefined && optionsResolved['customerId'] !== null
+                            ? String(optionsResolved['customerId'])
+                            : null
+                    ]
+                });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length

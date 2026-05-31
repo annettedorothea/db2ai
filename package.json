@@ -19,10 +19,10 @@
         "langium:generate": "npm run --workspace packages/language langium:generate",
         "langium:watch": "npm run --workspace packages/language langium:watch",
         "generate:all": "npm run generate:all --prefix ./packages/extension/demos",
-        "test": "npm run langium:generate && npm run build && npm run --workspace packages/language test && npm run --workspace packages/cli test",
+        "test": "npm run langium:generate && npm run build && npm run --workspace packages/language test && npm run --workspace packages/cli test && npm run test --prefix packages/extension/demos",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "typecheck": "tsc -b tsconfig.build.json --pretty false && tsc -p packages/extension/demos/tsconfig.generated.json --pretty false --noEmit",
+        "typecheck": "tsc -b tsconfig.build.json --pretty false && tsc -p packages/extension/demos/tsconfig.json --pretty false --noEmit",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "check": "npm run format:check && npm run typecheck && npm run lint"

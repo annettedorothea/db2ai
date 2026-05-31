@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { asRecord, withGeneratedDirectInvokeFixture } from '../support/direct-invoke.js';
+import { demosRoot, demosTmpRoot } from '../support/paths.js';
 import { ensurePagilaDocker } from '../support/pagila-docker.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = path.resolve(__dirname, '../../../..');
-const cliRoot = path.resolve(__dirname, '../..');
-const demosRoot = path.join(workspaceRoot, 'packages/extension/demos');
 const pagilaSourcePath = path.join(demosRoot, 'pagila.db2ai');
-const tmpRoot = path.join(cliRoot, 'tmp');
 
 describe('Pagila generated module direct invocation', () => {
     it('ensures Pagila in Docker, generates tools, and invokes SQL tools', async () => {
@@ -17,7 +12,7 @@ describe('Pagila generated module direct invocation', () => {
         await withGeneratedDirectInvokeFixture(
             {
                 demosRoot,
-                tmpRoot,
+                tmpRoot: demosTmpRoot,
                 tmpPrefix: 'pagila-direct-',
                 sourcePath: pagilaSourcePath,
                 generatedToolsName: 'pagila-tools',

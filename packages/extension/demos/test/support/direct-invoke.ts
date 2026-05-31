@@ -1,11 +1,13 @@
 import { readGeneratedToolModule, type GeneratedToolModule } from './generated-module.js';
+import { asRecord, restoreEnv } from '@core2ai/core/test-helpers';
 import * as fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { expect } from 'vitest';
-import { generateAction } from '../../src/generate-command.js';
+import { generateAction } from '../../../../cli/src/generate-command.js';
 import { compileGeneratedForSmoke } from './compile-generated-fixture.js';
-import { restoreEnv } from './env.js';
+
+export { asRecord, restoreEnv };
 
 /** Matches Pagila/Sakila MCP config in packages/extension/demos/.cursor/mcp.json */
 const DEFAULT_AUTH_ENV = 'DB2AI_AUTH_TOKEN';
@@ -20,6 +22,10 @@ export type DirectInvokeFixtureOptions = {
     connectionString: string;
     /** Env var name for --auth-env when generated tools include protected/checked access */
     authEnv?: string;
+    /** Credential/JWT value for authEnv before host context is resolved (empty string allowed) */
+    authToken?: string;
+    /** Copy source + auth stubs into tmp fixture so checked-access imports resolve locally */
+    isolateFixtureProjectRoot?: boolean;
 };
 
 export type DirectInvokeFixture = {
@@ -27,12 +33,6 @@ export type DirectInvokeFixture = {
     generated: GeneratedToolModule;
     hostContext: unknown;
 };
-
-export function asRecord(value: unknown): Record<string, unknown> {
-    expect(value).toBeTypeOf('object');
-    expect(value).not.toBeNull();
-    return value as Record<string, unknown>;
-}
 
 export async function withGeneratedDirectInvokeFixture(
     options: DirectInvokeFixtureOptions,
@@ -47,7 +47,27 @@ export async function withGeneratedDirectInvokeFixture(
 
     try {
         process.env[options.databaseEnv] = options.connectionString;
-        await generateAction(options.sourcePath, generatedTsPath);
+
+        let generateSourcePath = options.sourcePath;
+        const envDirs = [options.demosRoot];
+
+        if (options.isolateFixtureProjectRoot) {
+            const demosAuthDir = path.join(options.demosRoot, 'src', 'auth');
+            const fixtureAuthDir = path.join(runRoot, 'src', 'auth');
+            if (existsSync(demosAuthDir)) {
+                await fs.mkdir(fixtureAuthDir, { recursive: true });
+                for (const entry of await fs.readdir(demosAuthDir)) {
+                    if (entry.endsWith('.ts')) {
+                        await fs.copyFile(path.join(demosAuthDir, entry), path.join(fixtureAuthDir, entry));
+                    }
+                }
+            }
+            generateSourcePath = path.join(runRoot, path.basename(options.sourcePath));
+            await fs.copyFile(options.sourcePath, generateSourcePath);
+            envDirs.unshift(runRoot);
+        }
+
+        await generateAction(generateSourcePath, generatedTsPath);
         compileGeneratedForSmoke(runRoot);
 
         const imported = (await import(`${pathToFileURL(generatedJsPath).href}?t=${Date.now()}`)) as Record<
@@ -56,9 +76,13 @@ export async function withGeneratedDirectInvokeFixture(
         >;
         const generated = readGeneratedToolModule(imported);
         const hostArgv = generated.requiresAuth === true ? (['--auth-env', authEnv] as const) : ([] as const);
-        generated.adapter.configureFromArgv([...hostArgv], [options.demosRoot]);
-        if (generated.requiresAuth === true && previousAuthToken === undefined) {
-            process.env[authEnv] = '';
+        generated.adapter.configureFromArgv([...hostArgv], envDirs);
+        if (generated.requiresAuth === true) {
+            if (options.authToken !== undefined) {
+                process.env[authEnv] = options.authToken;
+            } else if (previousAuthToken === undefined) {
+                process.env[authEnv] = '';
+            }
         }
         generated.adapter.validateAtStartup(generated.requiresAuth === true);
         const hostContext = generated.adapter.resolveHostContext();
