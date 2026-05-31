@@ -1,9 +1,10 @@
 import {
-    readGeneratedToolModule,
+    asRecord,
     compileGeneratedForSmoke,
+    readGeneratedToolModule,
+    restoreEnv,
     type GeneratedToolModule
-} from '@core2ai/core/test-fixtures';
-import { asRecord, restoreEnv } from '@core2ai/core/test-helpers';
+} from '../generated/index.js';
 import * as fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import * as path from 'node:path';

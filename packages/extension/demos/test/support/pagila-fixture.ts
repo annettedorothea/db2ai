@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { compileGeneratedForSmoke } from '@core2ai/core/test-fixtures';
+import { compileGeneratedForSmoke } from '../generated/index.js';
 import { ensurePagilaDocker } from './pagila-docker.js';
 import { demosRoot, demosTmpRoot } from './paths.js';
 import { runDemoGenerate } from './run-demo-generate.js';

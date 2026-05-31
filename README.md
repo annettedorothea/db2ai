@@ -85,7 +85,8 @@ Package notes: [`packages/language/README.md`](./packages/language/README.md) ·
 | `watch`        | TypeScript watch (monorepo)                                                                                |
 | `test`         | `langium:generate`, `build`, all Vitest (language + CLI unit + demo integration; Docker for Pagila/Sakila) |
 | `generate:all` | regenerate all demo tools (forwards to demos)                                                              |
-| `vsix:build`   | build VSIX (`packages/extension/vscode-*-X.Y.Z.vsix`)                                                      |
+| `vsix:prepare` | full verify pipeline before packaging (generate, demos JS, check, tests)                                   |
+| `vsix:build`   | build VSIX (`packages/extension/vscode-*-X.Y.Z.vsix`; runs `langium:generate` + `build` again)             |
 | `vsix:release` | GitHub prerelease of tested VSIX (after `vsix:build` + manual preview)                                     |
 
 ## Extension (VSIX)
@@ -93,13 +94,15 @@ Package notes: [`packages/language/README.md`](./packages/language/README.md) ·
 Build locally:
 
 ```bash
+npm run vsix:prepare  # optional but recommended before release
 npm run vsix:build
 ```
 
 Prerelease (after local VSIX build + manual test):
 
 ```bash
-npm run vsix:build    # build + install/test in Cursor
+npm run vsix:prepare  # regenerate + check + tests
+npm run vsix:build    # package VSIX; install/test in Cursor
 npm run vsix:release  # upload that VSIX to GitHub
 ```
 

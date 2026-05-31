@@ -39,4 +39,4 @@ Optional: run `npm run format` if you want Prettier-applied output before commit
 
 ## Commit generated output
 
-When demo `.db2ai` files or generator output shape change, include regenerated `packages/extension/demos/generated/**/*.ts` and emitted `.js` (plus `.map` if tracked) in the same change set. See [demos-build-generated.mdc](./demos-build-generated.mdc).
+When demo `.db2ai` files or generator output shape change, include regenerated `packages/extension/demos/generated/**/*.ts` in the same change set (run `build:generated` locally; do not commit `.js`). See [demos-build-generated.mdc](./demos-build-generated.mdc).

@@ -4,6 +4,7 @@ import {
     ensureParentDir,
     resolveBootstrapProjectRootFromSource,
     resolveGeneratedCliDir,
+    writeGeneratedDemosTestSupport,
     type ProjectBootstrapConfig
 } from '@core2ai/core/codegen';
 import * as fs from 'node:fs';
@@ -76,7 +77,9 @@ export async function generateOutput(model: Model, source: string, destination: 
 
     const cliDir = resolveGeneratedCliDir(tsPath);
     const mcpServePath = renderMcpServe(cliDir, bootstrapConfig);
-    renderBootstrap(resolveBootstrapProjectRootFromSource(source), bootstrapConfig);
+    const projectRoot = resolveBootstrapProjectRootFromSource(source);
+    renderBootstrap(projectRoot, bootstrapConfig);
+    writeGeneratedDemosTestSupport(projectRoot);
 
     return { tsPath, mcpServePath };
 }

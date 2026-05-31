@@ -37,9 +37,9 @@
         "zod": "^4.4.3"
     },
     "devDependencies": {
-        "@core2ai/core": "0.0.5",
         "@eslint/js": "^10.0.1",
         "@types/node": "~20.17.48",
+        "@types/pg": "~8.15.0",
         "eslint": "^10.4.0",
         "prettier": "^3.8.3",
         "typescript": "~5.8.3",

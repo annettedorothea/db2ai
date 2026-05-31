@@ -2,3 +2,7 @@
 src/auth/*.js
 src/auth/*.js.map
 src/auth/*.mjs
+
+# tsc emit from build:generated — commit generated/**/*.ts only
+generated/**/*.js
+generated/**/*.js.map

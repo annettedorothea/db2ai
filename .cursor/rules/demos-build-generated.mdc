@@ -5,7 +5,9 @@ alwaysApply: true
 
 # Demo Generated JS Sync
 
-`packages/extension/demos/generated/**/*.js` is emitted by `tsc` (`build:generated`), not Prettier. Keep committed `.ts` and `.js` in sync.
+`packages/extension/demos/generated/**/*.js` is emitted by `tsc` (`build:generated`), not Prettier. **Do not commit** `.js` or `.js.map` — they are gitignored; commit **`generated/**/*.ts`** only.
+
+After clone or `generate:all`, run **`npm run build:generated`** (or save `.db2ai` with the extension) so MCP can load `*.js` locally.
 
 **Do not** add pre-commit logic that rebuilds and `git add`s files during commit. Regenerate explicitly; the user stages the result.
 
@@ -16,8 +18,11 @@ From the **db2ai workspace root**, when any of:
 - `packages/cli/src/generator/**` changed
 - Demo DSL changed (`packages/extension/demos/*.db2ai`)
 - After `@core2ai/core` pin refresh affecting codegen or MCP host — see [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc)
+- `core2ai/src/test-fixtures/render-*.ts` changed (rewrites `packages/extension/demos/test/generated/**/*.ts` via `writeGeneratedDemosTestSupport`)
 
 Always run `build:generated` afterward (below).
+
+`test/generated/**/*.ts` is emitted on `generate:all` (not hand-edited). Commit with the same change set when render templates change.
 
 ## When to run `build:generated` only
 
@@ -29,10 +34,11 @@ After:
 
 - Every `generate:all`
 - Edits to `packages/extension/demos/generated/**/*.ts` or `packages/extension/demos/src/auth/**/*.ts`
+- Fresh clone before MCP (`.cursor/mcp.json` points at `.js`)
 
 ## Commit
 
-Include regenerated `.ts`, emitted `.js`, and `.map` (if tracked) in the same change set. Do not hand-edit `.js`.
+Include regenerated **`generated/**/*.ts`** (and `test/generated/**/*.ts` when templates change). Do not hand-edit `.js`.
 
 ## Verify
 

@@ -6,6 +6,9 @@ import { cpSync, existsSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node.js';
 import demoBundleRequired from '../../demo-bundle-required.json' with { type: 'json' };
+import { runBuildGenerated } from './build-generated.js';
+
+const PRODUCT_LABEL = 'db2ai';
 
 let client: LanguageClient;
 const generateByFileQueue = new Map<string, Promise<void>>();
@@ -264,30 +267,32 @@ async function generateForSourceFile(
         return;
     }
     const env = spawn.embedHome?.length ? { ...process.env, DB2AI_EMBED_HOME: spawn.embedHome } : process.env;
-    await new Promise<void>((resolve, reject) => {
-        execFile(
-            process.execPath,
-            [spawn.scriptPath, 'generate', sourcePath, destinationPath],
-            { env },
-            (error, stdout, stderr) => {
-                if (error) {
-                    const details = stderr || stdout || error.message;
-                    reject(new Error(details));
-                    return;
+    try {
+        await new Promise<void>((resolve, reject) => {
+            execFile(
+                process.execPath,
+                [spawn.scriptPath, 'generate', sourcePath, destinationPath],
+                { env },
+                (error, stdout, stderr) => {
+                    if (error) {
+                        const details = stderr || stdout || error.message;
+                        reject(new Error(details));
+                        return;
+                    }
+                    resolve();
                 }
-                resolve();
-            }
-        );
-    })
-        .then(() => {
-            if (reportSuccess) {
-                void vscode.window.showInformationMessage(`db2ai: generated tools for ${path.basename(sourcePath)}.`);
-            }
-        })
-        .catch((error) => {
-            const message = error instanceof Error ? error.message.trim() : String(error);
-            reportGenerateFailure('db2ai', sourcePath, message, reportSuccess);
+            );
         });
+        const compiled = await runBuildGenerated(PRODUCT_LABEL, sourcePath);
+        if (reportSuccess) {
+            const baseName = path.basename(sourcePath);
+            const suffix = compiled.ok ? ' and compiled' : '';
+            void vscode.window.showInformationMessage(`${PRODUCT_LABEL}: generated${suffix} tools for ${baseName}.`);
+        }
+    } catch (error) {
+        const message = error instanceof Error ? error.message.trim() : String(error);
+        reportGenerateFailure(PRODUCT_LABEL, sourcePath, message, reportSuccess);
+    }
 }
 
 function resolveCliSpawn(context: vscode.ExtensionContext): CliSpawn | undefined {

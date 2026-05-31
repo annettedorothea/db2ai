@@ -26,7 +26,7 @@ Use the **db2ai** extension (VSIX or Extension Development Host). This folder is
 
 ## What you can do here
 
-- Edit **`.db2ai`** — on save, the extension writes **`generated/tools/*.ts`** and **`generated/cli/mcp-serve.ts`**; run **`npm run build:generated`** for **`.js`** used by MCP.
+- Edit **`.db2ai`** — on save, the extension writes **`generated/tools/*.ts`**, **`generated/cli/mcp-serve.ts`**, and compiles **`.js`** for MCP (requires **`npm install`** in this folder for TypeScript). Only **`.ts`** is committed; **`.js`** is gitignored (run **`build:generated`** after clone).
 - Run **Pagila** (PostgreSQL) and **Sakila** (MySQL) DVD rental demos in Docker
 - Run the **access-demo** PostgreSQL database to try **`public`**, **`protected`**, and **`checked`** tools with demo JWTs
 - Chat in Cursor with prompts prefixed by **`db2ai`** (see [Demo prompts](#demo-prompts))
