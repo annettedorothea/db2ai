@@ -20,11 +20,6 @@
     "scripts": {
         "clean": "shx rm -fr *.tsbuildinfo out",
         "build": "echo 'No build step'",
-        "build:clean": "npm run clean && npm run build",
-        "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
-        "typecheck": "tsc -p tsconfig.json --noEmit",
-        "lint": "eslint src test",
-        "check": "npm run format:check && npm run typecheck && npm run lint",
         "test": "vitest run"
     },
     "dependencies": {

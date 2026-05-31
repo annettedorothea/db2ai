@@ -1,5 +1,5 @@
 /**
- * Bundled into the VS Code extension VSIX (see packages/extension/embed-cli-bundle.mjs).
+ * Bundled into the VS Code extension VSIX (see packages/extension/scripts/embed-cli-bundle.mjs).
  */
 import { Db2AiDslLanguageMetaData } from 'db-2-ai-dsl-language';
 import { Command } from 'commander';

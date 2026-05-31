@@ -1,9 +1,9 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { generateAction } from '../../../../cli/src/generate-command.js';
 import { compileGeneratedForSmoke } from '@core2ai/core/test-fixtures';
 import { ensurePagilaDocker } from './pagila-docker.js';
 import { demosRoot, demosTmpRoot } from './paths.js';
+import { runDemoGenerate } from './run-demo-generate.js';
 
 export { demosRoot };
 export const pagilaSourcePath = path.join(demosRoot, 'pagila.db2ai');
@@ -22,7 +22,7 @@ export async function preparePagilaGeneratedFixture(fixtureRoot: string): Promis
     const mcpServePath = path.join(fixtureRoot, 'generated/cli/mcp-serve.js');
 
     await fs.mkdir(fixtureRoot, { recursive: true });
-    await generateAction(pagilaSourcePath, generatedTsPath);
+    runDemoGenerate(pagilaSourcePath, generatedTsPath);
     compileGeneratedForSmoke(fixtureRoot);
 
     return { fixtureRoot, generatedJsPath, mcpServePath };

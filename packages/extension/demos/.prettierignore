@@ -1,0 +1,7 @@
+node_modules/
+*.tsbuildinfo
+**/*.js
+**/*.mjs
+tmp/
+package-lock.json
+.cursor/

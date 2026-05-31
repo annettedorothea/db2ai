@@ -1,3 +1,9 @@
+/**
+ * Bundles the extension host and language-server entry points into `out/` as `.cjs` files
+ * (after `tsc`; `vscode` stays external for the VSIX runtime).
+ *
+ * Called by: `packages/extension/package.json` — `build` (optional `--watch` / `--minify` flags)
+ */
 //@ts-check
 import * as esbuild from 'esbuild';
 

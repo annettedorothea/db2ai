@@ -1,3 +1,9 @@
+/**
+ * Esbuild-bundles the CLI into `out/embed-db2ai/cli.cjs` for demo `generate:*` scripts and VSIX embed.
+ *
+ * Called by: `packages/extension/package.json` — `build`
+ * Entry: `packages/cli/src/vscode-bundle-cli-entry.ts`
+ */
 //@ts-check
 import * as esbuild from 'esbuild';
 import { createRequire } from 'node:module';
@@ -7,12 +13,13 @@ import * as url from 'node:url';
 
 const requireFromHere = createRequire(import.meta.url);
 
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const workspaceRoot = path.resolve(__dirname, '..', '..');
+const scriptDir = path.dirname(url.fileURLToPath(import.meta.url));
+const extensionRoot = path.resolve(scriptDir, '..');
+const workspaceRoot = path.resolve(extensionRoot, '..', '..');
 const cliPkgJsonPath = path.join(workspaceRoot, 'packages', 'cli', 'package.json');
 const cliVersion = JSON.parse(fs.readFileSync(cliPkgJsonPath, 'utf-8')).version;
 const entry = path.join(workspaceRoot, 'packages', 'cli', 'src', 'vscode-bundle-cli-entry.ts');
-const extOutDir = path.join(__dirname, 'out');
+const extOutDir = path.join(extensionRoot, 'out');
 
 const embedRoot = path.join(extOutDir, 'embed-db2ai');
 const bundlePath = path.join(embedRoot, 'cli.cjs');

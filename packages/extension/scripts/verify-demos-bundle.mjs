@@ -1,9 +1,15 @@
 #!/usr/bin/env node
+/**
+ * Verifies bundled demo workspace files exist before packaging the VSIX.
+ *
+ * Called by: `packages/extension/package.json` — `build`
+ * Config: `packages/extension/demo-bundle-required.json` (paths relative to `demos/`)
+ */
 import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
+const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const demosRoot = path.join(extensionRoot, 'demos');
 const required = JSON.parse(readFileSync(path.join(extensionRoot, 'demo-bundle-required.json'), 'utf8'));
 

@@ -43,27 +43,27 @@ npm run install:demos
 npm run langium:generate && npm run build && npm run check
 ```
 
-**`@core2ai/core`:** not on npm — link sibling core2ai once (see **[core2ai README](../core2ai/README.md#npm-link-api2ai--db2ai)**). While hacking core2ai, run **`npm run watch`** there so `out/` stays current.
+**`@core2ai/core`:** not on npm — link sibling core2ai once (see **[core2ai README](https://github.com/annettedorothea/core2ai/blob/main/README.md#npm-link-api2ai--db2ai)**). While hacking core2ai, run **`npm run watch`** there so `out/` stays current.
 
 Edit `.db2ai` under `packages/extension/demos/`, then:
 
-| Workflow                    | How                                                                                                             |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Extension dev (usual)**   | **Run db2ai Extension** — save regenerates tools; run **`npm run build:generated`** in demos for MCP **`.js`**  |
-| **All demos from terminal** | `npm run generate:all` in demos, then `npm run build:generated`                                                 |
-| **One demo file**           | scripts in [`packages/extension/demos/`](./packages/extension/demos/) (`generate:pagila`, `generate:sakila`, …) |
-| **CLI (debug / scripts)**   | `npx db-2-ai-dsl-cli parse\|validate\|generate …` — see [`packages/cli/README.md`](./packages/cli/README.md)    |
+| Workflow                    | How                                                                                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Extension dev (usual)**   | **Run db2ai Extension** — save regenerates tools; then **`npm run build:generated --prefix packages/extension/demos`** for MCP **`.js`** |
+| **All demos from terminal** | **`npm run generate:all`**, then **`npm run build:generated --prefix packages/extension/demos`**                                         |
+| **One demo file**           | scripts in [`packages/extension/demos/`](./packages/extension/demos/) (`generate:pagila`, `generate:sakila`, …)                          |
+| **CLI (debug / scripts)**   | `npx db-2-ai-dsl-cli parse\|validate\|generate …` — see [`packages/cli/README.md`](./packages/cli/README.md)                             |
 
 ## Documentation
 
-Shared architecture: **[core2ai docs hub](../core2ai/docs/README.md)** (sibling repo).
+Shared architecture: **[core2ai docs hub](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md)**.
 
-| Doc                                                                      | When to read                     |
-| ------------------------------------------------------------------------ | -------------------------------- |
-| [Layer 1 — Tool Factory](../core2ai/docs/01-layer-1-tool-factory.md)     | Langium, generators, extensions  |
-| [Layer 2 — Tool Authoring](../core2ai/docs/02-layer-2-tool-authoring.md) | `.db2ai` and generated SQL tools |
-| [Layer 3 — AI Runtime](../core2ai/docs/03-layer-3-ai-runtime.md)         | MCP, agents, execution           |
-| [Personas](../core2ai/docs/04-personas.md)                               | Roles across the stack           |
+| Doc                                                                                                                | When to read                     |
+| ------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| [Layer 1 — Tool Factory](https://github.com/annettedorothea/core2ai/blob/main/docs/01-layer-1-tool-factory.md)     | Langium, generators, extensions  |
+| [Layer 2 — Tool Authoring](https://github.com/annettedorothea/core2ai/blob/main/docs/02-layer-2-tool-authoring.md) | `.db2ai` and generated SQL tools |
+| [Layer 3 — AI Runtime](https://github.com/annettedorothea/core2ai/blob/main/docs/03-layer-3-ai-runtime.md)         | MCP, agents, execution           |
+| [Personas](https://github.com/annettedorothea/core2ai/blob/main/docs/04-personas.md)                               | Roles across the stack           |
 
 ## Project layout
 
@@ -85,28 +85,25 @@ Package notes: [`packages/language/README.md`](./packages/language/README.md) ·
 | `watch`        | TypeScript watch (monorepo)                                                                                |
 | `test`         | `langium:generate`, `build`, all Vitest (language + CLI unit + demo integration; Docker for Pagila/Sakila) |
 | `generate:all` | regenerate all demo tools (forwards to demos)                                                              |
-| `release:vsix` | GitHub prerelease of tested VSIX (build with `extension:vsix` first)                                       |
-
-All tests: `npm test` (from repo root). Docker must be running for Pagila/Sakila integration tests; containers are started automatically when needed.
-
-Regenerate tools: `npm run generate:all` or per-demo scripts inside **`packages/extension/demos/`** (then **`npm run build:generated`** for MCP **`.js`**).
+| `vsix:build`   | build VSIX (`packages/extension/vscode-*-X.Y.Z.vsix`)                                                      |
+| `vsix:release` | GitHub prerelease of tested VSIX (after `vsix:build` + manual preview)                                     |
 
 ## Extension (VSIX)
 
 Build locally:
 
 ```bash
-npm run extension:vsix -w packages/extension
+npm run vsix:build
 ```
 
 Prerelease (after local VSIX build + manual test):
 
 ```bash
-npm run extension:vsix -w packages/extension   # build + install/test in Cursor
-npm run release:vsix                           # upload that VSIX to GitHub
+npm run vsix:build    # build + install/test in Cursor
+npm run vsix:release  # upload that VSIX to GitHub
 ```
 
-Bump extension version: `npm run version:patch` (or `minor` / `major`). Details: [`./packages/extension/README.md`](./packages/extension/README.md).
+Version bump before VSIX: skill **guided release** (CP2) — agent sets the same `X.Y.Z` in root, `packages/cli`, `packages/language`, and `packages/extension`. Details: [`./packages/extension/README.md`](./packages/extension/README.md).
 
 ## Launch configurations
 
@@ -115,7 +112,7 @@ Bump extension version: `npm run version:patch` (or `minor` / `major`). Details:
 | **Run db2ai Extension**                  | Extension Development Host with `demos/` workspace |
 | **Attach: db2ai Language Server (6010)** | attach debugger (port 6010)                        |
 
-Pre-launch task **Build db-2-ai-dsl**: `langium:generate` + `build` ([`./.vscode/tasks.json`](./.vscode/tasks.json) / workspace [`mcp-dsl.code-workspace`](../mcp-dsl.code-workspace)).
+Pre-launch task **Build db-2-ai-dsl**: `langium:generate` + `build` ([`./.vscode/tasks.json`](./.vscode/tasks.json) / multi-repo workspace `mcp-dsl.code-workspace`).
 
 ## License
 

@@ -3,8 +3,7 @@
 src/**
 tsconfig.json
 tsconfig.tsbuildinfo
-esbuild.mjs
-embed-cli-bundle.mjs
+scripts/**
 **/*.map
 demos/node_modules/**
 demos/generated/**

@@ -1,15 +1,12 @@
 {
-    "extends": "../../../tsconfig.json",
+    "extends": "./tsconfig.base.json",
     "compilerOptions": {
         "noEmit": false,
         "declaration": false,
-        "composite": false,
         "rootDir": ".",
         "outDir": ".",
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
-        "skipLibCheck": true
+        "types": ["node"]
     },
     "include": ["generated/**/*.ts", "src/auth/**/*.ts"],
-    "exclude": []
+    "exclude": ["node_modules", "tmp"]
 }

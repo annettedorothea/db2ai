@@ -29,11 +29,6 @@
     "scripts": {
         "clean": "shx rm -fr *.tsbuildinfo out",
         "build": "echo 'No build step'",
-        "build:clean": "npm run clean && npm run build",
-        "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
-        "typecheck": "tsc -p tsconfig.json --noEmit",
-        "lint": "eslint src test",
-        "check": "npm run format:check && npm run typecheck && npm run lint",
         "langium:generate": "langium generate && node ../../scripts/langium-generated-skip-check.mjs",
         "langium:watch": "langium generate --watch",
         "test": "vitest run"

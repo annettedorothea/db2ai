@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Run CLI generate for one demo DSL file (monorepo cli.js, VSIX embed, or env override).
+ * Run CLI generate for one demo DSL file (VSIX embed or env override).
  *
  * Usage: node ./scripts/generate.mjs <file.db2ai> <generated/tools/out.ts>
  */
@@ -40,6 +40,12 @@ function resolveEmbedHome(cliPath, embedDirName) {
     return undefined;
 }
 
+/** Monorepo embed: demos folder → ../out/embed-…/cli.cjs (after extension build). */
+function findMonorepoEmbedCli(config) {
+    const candidate = path.join(demosRoot, '..', 'out', config.embedDirName, 'cli.cjs');
+    return existsSync(candidate) ? candidate : undefined;
+}
+
 function findInstalledExtensionCli(config) {
     const home = os.homedir();
     const roots = [
@@ -69,9 +75,12 @@ function resolveCliSpawn(config) {
         return { scriptPath: envCli, embedHome: resolveEmbedHome(envCli, config.embedDirName) };
     }
 
-    const monorepoCli = path.resolve(demosRoot, '../../cli/bin/cli.js');
-    if (existsSync(monorepoCli)) {
-        return { scriptPath: monorepoCli };
+    const monorepoCli = findMonorepoEmbedCli(config);
+    if (monorepoCli) {
+        return {
+            scriptPath: monorepoCli,
+            embedHome: resolveEmbedHome(monorepoCli, config.embedDirName)
+        };
     }
 
     const installedCli = findInstalledExtensionCli(config);
@@ -85,9 +94,9 @@ function resolveCliSpawn(config) {
     throw new Error(
         [
             `${config.productName} CLI not found.`,
+            '• Run npm run build in the ' + config.productName + ' repo (embed under packages/extension/out), or',
             `• Install the ${config.productName} VS Code/Cursor extension (VSIX), or`,
-            `• Run from the monorepo with packages/extension/demos as cwd, or`,
-            `• Set ${config.cliEnvVar} to cli.js / cli.cjs.`
+            `• Set ${config.cliEnvVar} to cli.cjs from the extension embed folder.`
         ].join('\n')
     );
 }
@@ -103,13 +112,14 @@ function main() {
 
     const config = loadConfig();
     const { scriptPath, embedHome } = resolveCliSpawn(config);
-    const dslPath = path.join(demosRoot, dslRelative);
-    const outPath = path.join(demosRoot, outRelative);
+    const dslPath = path.isAbsolute(dslRelative) ? dslRelative : path.join(demosRoot, dslRelative);
+    const outPath = path.isAbsolute(outRelative) ? outRelative : path.join(demosRoot, outRelative);
+    const generateCwd = path.isAbsolute(dslRelative) ? path.dirname(dslPath) : demosRoot;
     const env = embedHome ? { ...process.env, [config.embedHomeEnvVar]: embedHome } : process.env;
 
     execFileSync(process.execPath, [scriptPath, 'generate', dslPath, outPath], {
         stdio: 'inherit',
-        cwd: demosRoot,
+        cwd: generateCwd,
         env
     });
 }

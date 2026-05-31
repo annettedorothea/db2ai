@@ -197,4 +197,3 @@ async function runMcpStandaloneFromArgv(argv) {
     await runMcpServer(generated);
 }
 await runMcpStandaloneFromArgv(process.argv.slice(2));
-//# sourceMappingURL=mcp-serve.js.map

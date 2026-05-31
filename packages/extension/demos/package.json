@@ -23,9 +23,11 @@
         "generate:all": "node ./scripts/generate-all.mjs",
         "build:generated": "tsc -p tsconfig.generated.json",
         "test": "vitest run",
-        "format:check": "prettier --check \"generated/**/*.ts\" \"src/auth/**/*.ts\" \"test/**/*.ts\"",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
         "typecheck": "tsc -p tsconfig.json --noEmit",
-        "lint": "eslint --config ../../../eslint.config.js \"generated/**/*.ts\" \"src/auth/**/*.ts\" \"test/**/*.ts\"",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
         "check": "npm run format:check && npm run typecheck && npm run lint"
     },
     "dependencies": {
@@ -36,6 +38,12 @@
     },
     "devDependencies": {
         "@core2ai/core": "0.0.5",
+        "@eslint/js": "^10.0.1",
+        "@types/node": "~20.17.48",
+        "eslint": "^10.4.0",
+        "prettier": "^3.8.3",
+        "typescript": "~5.8.3",
+        "typescript-eslint": "^8.59.4",
         "vitest": "~3.1.3"
     }
 }
