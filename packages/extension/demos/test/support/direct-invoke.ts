@@ -1,11 +1,14 @@
-import { readGeneratedToolModule, type GeneratedToolModule } from './generated-module.js';
+import {
+    readGeneratedToolModule,
+    compileGeneratedForSmoke,
+    type GeneratedToolModule
+} from '@core2ai/core/test-fixtures';
 import { asRecord, restoreEnv } from '@core2ai/core/test-helpers';
 import * as fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { generateAction } from '../../../../cli/src/generate-command.js';
-import { compileGeneratedForSmoke } from './compile-generated-fixture.js';
 
 export { asRecord, restoreEnv };
 
