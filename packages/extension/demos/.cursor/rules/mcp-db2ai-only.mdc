@@ -43,7 +43,7 @@ alwaysApply: true
 - Schlaegt ein erlaubter `db2ai*`-MCP-Aufruf fehl (Tool nicht gefunden, Server nicht erreichbar, Auth/Abbruch durch Nutzer, Laufzeitfehler, Timeout), **sofort aufhoeren** — keine weiteren Umwege ausprobieren.
 - **Nicht** erlaubt als Ersatz fuer den fehlgeschlagenen MCP-Aufruf:
   - direktes `invokeTool` / Import aus `generated/**`,
-  - `db2ai invoke`, `node …/pagila-tools.mjs`, Smoke-/CLI-Skripte,
+  - `db2ai invoke`, `node …/*-tools.js`, Vitest-/CLI-Unit-Tests,
   - `psql`, SQL per Shell, Docker-Exec gegen die DB,
   - andere MCP-Server-IDs oder Server-Namen durchprobieren,
   - erneute Aufrufe mit anderen Parametern, nur um denselben Fehler zu umgehen.
