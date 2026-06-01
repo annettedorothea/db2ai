@@ -76,7 +76,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated Sakila actor rows',
         description:
-            'list actors with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'List actors from Sakila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'protected',
         sqlText: 'SELECT * FROM actor LIMIT $1 OFFSET $2',
         params: [
@@ -136,7 +136,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating ($1): rating (G, PG, PG-13, R, or NC-17) (example: PG)\n- maxRows ($2): max rows to return (example: 20)\n\nExample call: rating=PG, maxRows=20',
         access: 'public',
-        sqlText: 'SELECT film_id, title, rating FROM film WHERE rating = $1 ORDER BY title LIMIT $2',
+        sqlText:
+            '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ',
         params: [
             {
                 placeholder: '$1',
@@ -163,10 +164,10 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsWithActorLastName',
         title: 'Actor-film cast via film_actor join',
         description:
-            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix ($1): actor last name prefix (e.g. GAR, BER, HOP) (example: GAR)\n- maxRows ($2): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
+            'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix ($1): actor last name prefix (e.g. GAR, BER, HOP) (example: GAR)\n- maxRows ($2): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         access: 'public',
         sqlText:
-            "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name LIKE CONCAT($1, '%') ORDER BY a.last_name, f.title LIMIT $2",
+            "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT($1, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ",
         params: [
             {
                 placeholder: '$1',
@@ -193,17 +194,18 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Film search across title and description',
         description:
-            'search films by free text in title or description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText ($1): search text (matched in title or description) (example: cat)\n- maxRows ($2): max rows to return (example: 15)\n\nExample call: searchText=cat, maxRows=15',
+            'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText ($1): \n                Search text matched in title or description.\n                Example: cat, dog, academy.\n             (example: cat)\n- maxRows ($2): max rows to return (example: 15)\n\nExample call: searchText=cat, maxRows=15',
         access: 'public',
         sqlText:
-            "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title LIKE CONCAT('%', $1, '%') OR description LIKE CONCAT('%', $1, '%') ORDER BY title LIMIT $2",
+            "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', $1, '%')\n            OR description LIKE CONCAT('%', $1, '%')\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ",
         params: [
             {
                 placeholder: '$1',
                 index: 1,
                 name: 'searchText',
                 propertyName: 'searchText',
-                description: 'search text (matched in title or description)',
+                description:
+                    '\n                Search text matched in title or description.\n                Example: cat, dog, academy.\n            ',
                 example: 'cat',
                 jsonSchemaType: 'string'
             },
@@ -258,7 +260,11 @@ export const inputZodByTool = {
         .strict(),
     searchFilms: z
         .object({
-            searchText: z.string().describe('search text (matched in title or description) (SQL $1)'),
+            searchText: z
+                .string()
+                .describe(
+                    'Search text matched in title or description.\n                Example: cat, dog, academy.\n             (SQL $1)'
+                ),
             maxRows: z.number().describe('max rows to return (SQL $2)')
         })
         .strict()
@@ -495,7 +501,7 @@ export async function invokeTool(
             }
             case 'filmsByRating': {
                 const [rows] = await client.query(
-                    'SELECT film_id, title, rating FROM film WHERE rating = ? ORDER BY title LIMIT ?',
+                    '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ',
                     [normalizeMysqlParamValue(options['rating']), normalizeMysqlParamValue(options['maxRows'])]
                 );
                 const resultRows = normalizeMysqlRows(rows);
@@ -506,7 +512,7 @@ export async function invokeTool(
             }
             case 'filmsWithActorLastName': {
                 const [rows] = await client.query(
-                    "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name LIKE CONCAT(?, '%') ORDER BY a.last_name, f.title LIMIT ?",
+                    "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ",
                     [normalizeMysqlParamValue(options['lastNamePrefix']), normalizeMysqlParamValue(options['maxRows'])]
                 );
                 const resultRows = normalizeMysqlRows(rows);
@@ -517,7 +523,7 @@ export async function invokeTool(
             }
             case 'searchFilms': {
                 const [rows] = await client.query(
-                    "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title LIKE CONCAT('%', ?, '%') OR description LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?",
+                    "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ",
                     [
                         normalizeMysqlParamValue(options['searchText']),
                         normalizeMysqlParamValue(options['searchText']),

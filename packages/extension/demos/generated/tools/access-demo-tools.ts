@@ -67,12 +67,12 @@ export const generatedTools: GeneratedTool[] = [
     {
         kind: 'sql',
         toolName: 'listProductsWithReviews',
-        title: 'Products with reviews (requires credential)',
+        title: 'Products with reviews (requires credential).\n        Join products and reviews; cap 200 rows in SQL.',
         description:
-            'list products that have at least one review, with review details\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
+            'List products that have at least one review, with review details.\n        Protected: requires ACCESS_DEMO_TOKEN (or host credential).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
         access: 'protected',
         sqlText:
-            'SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)',
+            '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ',
         params: [
             {
                 placeholder: '$1',
@@ -90,7 +90,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCustomerOrders',
         title: 'Customer order rows',
         description:
-            'list orders for a customer; customerId may be taken from the JWT when omitted\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId ($1): customer id (defaults from JWT) (example: alice)\n\nExample call: customerId=alice',
+            'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId ($1): \n                Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (example: alice)\n\nExample call: customerId=alice',
         access: 'checked',
         sqlText:
             'SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id',
@@ -100,7 +100,8 @@ export const generatedTools: GeneratedTool[] = [
                 index: 1,
                 name: 'customerId',
                 propertyName: 'customerId',
-                description: 'customer id (defaults from JWT)',
+                description:
+                    '\n                Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n            ',
                 example: 'alice',
                 jsonSchemaType: 'string'
             }
@@ -124,7 +125,14 @@ export const inputZodByTool = {
     listProducts: z.object({ limit: z.number().describe('max rows (SQL $1)') }).strict(),
     listProductsWithReviews: z.object({ limit: z.number().describe('max rows (SQL $1)') }).strict(),
     listCustomerOrders: z
-        .object({ customerId: z.string().describe('customer id (defaults from JWT) (SQL $1)').optional() })
+        .object({
+            customerId: z
+                .string()
+                .describe(
+                    'Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (SQL $1)'
+                )
+                .optional()
+        })
         .strict()
 };
 
@@ -342,7 +350,7 @@ export async function invokeTool(
             }
             case 'listProductsWithReviews': {
                 const result = await client.query({
-                    text: 'SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)',
+                    text: '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ',
                     values: [normalizePostgresNumericParamValue(optionsResolved['limit'])]
                 });
                 return {

@@ -17,16 +17,22 @@ SQL {
 SQL {
     toolName: listActors
     access: protected
-    intent: "list actors with pagination"
+    intent: '''
+        List actors from Pagila with pagination.
+        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.
+    '''
     query: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2"
     summary: "Paginated actor rows"
     params: {
-        $1: { 
-            name: limit 
-            description: "max rows per page" 
-            example: "100" 
-            type: integer 
-        }       
+        $1: {
+            name: limit
+            description: '''
+                Max rows per page.
+                SQL caps at 500 via LEAST($1, 500).
+            '''
+            example: "100"
+            type: integer
+        }
         $2: { name: offset description: "rows to skip" example: "0" type: integer }
     }
 }
@@ -71,7 +77,16 @@ SQL {
     toolName: listInventory
     access: public
     intent: "list inventory with pagination"
-    query: "SELECT * FROM inventory LIMIT LEAST($1, 500) OFFSET $2"
+    query: '''
+        SELECT
+            *
+        FROM
+            inventory
+        LIMIT
+            LEAST($1, 500)
+        OFFSET
+            $2
+    '''
     summary: "Paginated inventory rows"
     params: {
         $1: { name: limit description: "max rows per page" example: "100" type: integer }
@@ -82,7 +97,11 @@ SQL {
 SQL {
     toolName: filmsByMpaaRating
     access: public
-    intent: "list films with a given MPAA age rating"
+    intent: '''
+        List films with a given MPAA age rating.
+        Valid ratings: G, PG, PG-13, R, NC-17.
+        Results ordered by title.
+    '''
     query: '''
         SELECT
             film_id,
@@ -140,7 +159,10 @@ SQL {
     params: {
         $1: {
             name: lastNamePrefix
-            description: "actor last name prefix (e.g. GAR, BER, HOP)"
+            description: '''
+                Actor last name prefix (case-insensitive).
+                Examples: GAR, BER, HOP — matches last names starting with the prefix.
+            '''
             example: "GAR"
         }
         $2: {
@@ -155,7 +177,11 @@ SQL {
 SQL {
     toolName: searchFilms
     access: public
-    intent: "search films by free text in title or description"
+    intent: '''
+        Search films by free text in title or description.
+        Case-insensitive substring match (PostgreSQL ILIKE).
+        Useful for demo queries such as dog, cat, or grace.
+    '''
     query: '''
         SELECT
             film_id,

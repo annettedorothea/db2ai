@@ -3,6 +3,7 @@ import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
 import { getAccessKind } from '../src/query-access.js';
+import { parseSqlParamSpec } from '../src/sql-param-spec.js';
 import { isSqlParamNameField, isSqlQuery } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
 
@@ -36,6 +37,44 @@ describe('Parsing tests', () => {
         expect(entry.toolName).toBe('listFilms');
         if (isSqlQuery(entry)) {
             expect(getAccessKind(entry)).toBe('public');
+        }
+    });
+
+    test('parses multiline intent and param description', async () => {
+        document = await parse(`
+            database env "PAGILA_DATABASE_URL"
+
+            SQL {
+                toolName: listFilms
+                access: public
+                intent: '''
+                    List films with pagination.
+                    Use for catalog browsing only.
+                '''
+                query: "SELECT 1 LIMIT $1"
+                params: {
+                    $1: {
+                        name: limit
+                        description: '''
+                            Max rows per page.
+                            Capped in SQL.
+                        '''
+                        example: "10"
+                        type: integer
+                    }
+                }
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        const entry = document.parseResult.value.entries[0];
+        expect(isSqlQuery(entry)).toBe(true);
+        if (isSqlQuery(entry)) {
+            expect(entry.intent).toContain('catalog browsing');
+            expect(entry.intent).toContain('\n');
+            const paramSpec = parseSqlParamSpec(entry.params?.entries[0]?.spec);
+            expect(paramSpec.description).toContain('Max rows');
+            expect(paramSpec.description).toContain('\n');
         }
     });
 

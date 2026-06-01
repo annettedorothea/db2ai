@@ -213,7 +213,7 @@ There is **no sign-in step in MCP** itself.
 
 ## Example DSL
 
-- [`./pagila.db2ai`](./pagila.db2ai) and [`./sakila.db2ai`](./sakila.db2ai) — `SQL { … }` tools with `access`, `params`, and `$n` placeholders. Multi-line SQL: `query: ''' … '''` or `query: """ … """` (same `$n` rules; PostgreSQL reuses one bind per `$n`, MySQL one bind per `?`).
+- [`./pagila.db2ai`](./pagila.db2ai) and [`./sakila.db2ai`](./sakila.db2ai) — `SQL { … }` tools with `access`, `params`, and `$n` placeholders. Text fields (`intent`, `query`, `summary`, param `description` / `example`) accept `"…"` or multiline `'''…'''` / `"""…"""`. PostgreSQL reuses one bind per `$n`; MySQL one bind per `?`.
 - [`./access-demo.db2ai`](./access-demo.db2ai) — `auth`, `listProducts` (`public`), `listProductsWithReviews` (`protected`), `listCustomerOrders` (`checked`).
 
 ## MCP server

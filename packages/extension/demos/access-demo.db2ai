@@ -16,9 +16,33 @@ SQL {
 SQL {
     toolName: listProductsWithReviews
     access: protected
-    intent: "list products that have at least one review, with review details"
-    query: "SELECT p.product_id, p.name, p.price, r.review_id, r.rating, r.comment FROM products p INNER JOIN reviews r ON r.product_id = p.product_id ORDER BY p.product_id, r.review_id LIMIT LEAST($1, 200)"
-    summary: "Products with reviews (requires credential)"
+    intent: '''
+        List products that have at least one review, with review details.
+        Protected: requires ACCESS_DEMO_TOKEN (or host credential).
+        One row per review; same product may appear multiple times.
+    '''
+    query: '''
+        SELECT
+            p.product_id,
+            p.name,
+            p.price,
+            r.review_id,
+            r.rating,
+            r.comment
+        FROM
+            products p
+        INNER JOIN
+            reviews r ON r.product_id = p.product_id
+        ORDER BY
+            p.product_id,
+            r.review_id
+        LIMIT
+            LEAST($1, 200)
+    '''
+    summary: '''
+        Products with reviews (requires credential).
+        Join products and reviews; cap 200 rows in SQL.
+    '''
     params: {
         $1: { name: limit description: "max rows" example: "50" type: integer }
     }
@@ -29,10 +53,22 @@ SQL {
     access: checked {
         optionalParams: [customerId]
     }
-    intent: "list orders for a customer; customerId may be taken from the JWT when omitted"
+    intent: '''
+        List orders for a customer.
+        When customerId is omitted, the value from the JWT is used.
+        Checked access: customerId must match the token claim when provided.
+    '''
     query: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id"
     summary: "Customer order rows"
     params: {
-        $1: { name: customerId description: "customer id (defaults from JWT)" example: "alice" type: string }
+        $1: {
+            name: customerId
+            description: '''
+                Customer id (e.g. alice, bob).
+                Defaults from JWT when omitted on checked tools.
+            '''
+            example: "alice"
+            type: string
+        }
     }
 }

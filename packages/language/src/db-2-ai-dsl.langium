@@ -12,9 +12,9 @@ SqlQuery:
     'SQL' '{'
         ('toolName' ':' toolName=ID)?
         'access' ':' access=Access
-        ('intent' ':' intent=STRING)?
-        ('query' ':' query=(STRING | MULTILINE_STRING))?
-        ('summary' ':' summary=STRING)?
+        ('intent' ':' intent=DslText)?
+        ('query' ':' query=DslText)?
+        ('summary' ':' summary=DslText)?
         ('params' ':' params=SqlParamMap)?
     '}';
 
@@ -44,8 +44,8 @@ SqlParamSpec:
 
 SqlParamSpecField:
     SqlParamNameField |
-    'description' ':' description=STRING |
-    'example' ':' example=STRING |
+    'description' ':' description=DslText |
+    'example' ':' example=DslText |
     'type' ':' paramType=SqlParamType;
 
 SqlParamNameField:
@@ -53,6 +53,9 @@ SqlParamNameField:
 
 SqlParamType returns string:
     'string' | 'integer' | 'number' | 'boolean';
+
+DslText returns string:
+    STRING | MULTILINE_STRING;
 
 terminal PARAM_REF: /\$[0-9]+/;
 terminal ID: /[a-zA-Z_][a-zA-Z0-9_]*/;
