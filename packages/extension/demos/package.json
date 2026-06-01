@@ -3,6 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "init": "node ./scripts/init.mjs",
         "db:pagila:up": "docker compose up -d --wait pagila",
         "db:sakila:up": "docker compose up -d --wait sakila",
         "db:access-demo:up": "docker compose up -d --wait access-demo",
