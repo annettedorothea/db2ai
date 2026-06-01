@@ -21,7 +21,12 @@ SQL {
     query: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2"
     summary: "Paginated actor rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
+        $1: { 
+            name: limit 
+            description: "max rows per page" 
+            example: "100" 
+            type: integer 
+        }       
         $2: { name: offset description: "rows to skip" example: "0" type: integer }
     }
 }
@@ -78,7 +83,20 @@ SQL {
     toolName: filmsByMpaaRating
     access: public
     intent: "list films with a given MPAA age rating"
-    query: "SELECT film_id, title, rating FROM film WHERE rating::text = $1 ORDER BY title LIMIT $2"
+    query: '''
+        SELECT
+            film_id,
+            title,
+            rating
+        FROM
+            film
+        WHERE
+            rating::text = $1
+        ORDER BY
+            title
+        LIMIT
+            $2
+    '''
     summary: "Films by MPAA rating (G, PG, PG-13, R, NC-17)"
     params: {
         $1: {
@@ -99,7 +117,25 @@ SQL {
     toolName: filmsWithActorLastName
     access: public
     intent: "which films feature actors whose last name starts with a given prefix"
-    query: "SELECT a.first_name, a.last_name, f.title FROM actor a INNER JOIN film_actor fa ON a.actor_id = fa.actor_id INNER JOIN film f ON f.film_id = fa.film_id WHERE a.last_name ILIKE $1 || '%' ORDER BY a.last_name, f.title LIMIT $2"
+    query: '''
+        SELECT
+            a.first_name,
+            a.last_name,
+            f.title
+        FROM
+            actor a
+        INNER JOIN
+            film_actor fa ON a.actor_id = fa.actor_id
+        INNER JOIN
+            film f ON f.film_id = fa.film_id
+        WHERE
+            a.last_name ILIKE $1 || '%'
+        ORDER BY
+            a.last_name,
+            f.title
+        LIMIT
+            $2
+    '''
     summary: "Actor–film cast via film_actor join"
     params: {
         $1: {
@@ -120,7 +156,22 @@ SQL {
     toolName: searchFilms
     access: public
     intent: "search films by free text in title or description"
-    query: "SELECT film_id, title, rating, LEFT(description, 120) AS description_preview FROM film WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' ORDER BY title LIMIT $2"
+    query: '''
+        SELECT
+            film_id,
+            title,
+            rating,
+            LEFT(description, 120) AS description_preview
+        FROM
+            film
+        WHERE
+            title ILIKE '%' || $1 || '%'
+            OR description ILIKE '%' || $1 || '%'
+        ORDER BY
+            title
+        LIMIT
+            $2
+    '''
     summary: "Film full-text style search (title and description)"
     params: {
         $1: {

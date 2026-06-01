@@ -64,7 +64,7 @@ const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     toolName: 'toolName: $1$0',
     access: 'access: public$0',
     intent: 'intent: "$1"$0',
-    query: 'query: "$1"$0',
+    query: "query: '''\n$1\n'''$0",
     summary: 'summary: "$1"$0',
     params: 'params: {\n    $1: {\n        name: $2\n        description: "$3"\n        example: "$4"\n        type: $5\n    }\n}$0'
 };

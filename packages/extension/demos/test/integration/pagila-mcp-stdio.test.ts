@@ -59,6 +59,21 @@ describe('Pagila generated mcp-serve (MCP stdio)', () => {
         });
     });
 
+    it('calls searchFilms via MCP stdio (duplicate $1 bind)', async () => {
+        await withMcpStdioSession(mcpConnectOptions(), async (session) => {
+            const response = await session.callTool('searchFilms', {
+                searchText: 'LOVE',
+                maxRows: 3
+            });
+            expect(response).toMatchObject({
+                rowCount: expect.any(Number),
+                rows: expect.any(Array)
+            });
+            const result = response as { rowCount: number; rows: unknown[] };
+            expect(result.rowCount).toBeGreaterThan(0);
+        });
+    });
+
     it('calls listFilms via MCP stdio (callTool)', async () => {
         await withMcpStdioSession(mcpConnectOptions(), async (session) => {
             const response = await session.callTool('listFilms', {

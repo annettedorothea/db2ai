@@ -29,6 +29,12 @@ describe('Pagila generated module direct invocation', () => {
                 );
                 expect(ratedFilms.rowCount).toBeGreaterThan(0);
                 expect(ratedFilms.rows).toBeInstanceOf(Array);
+
+                const searchFilms = asRecord(
+                    await generated.invokeTool('searchFilms', { searchText: 'DRAGON', maxRows: 5 }, hostContext)
+                );
+                expect(searchFilms.rowCount).toBeGreaterThan(0);
+                expect(searchFilms.rows).toBeInstanceOf(Array);
             }
         );
     }, 180_000);

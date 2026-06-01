@@ -13,7 +13,7 @@ SqlQuery:
         ('toolName' ':' toolName=ID)?
         'access' ':' access=Access
         ('intent' ':' intent=STRING)?
-        ('query' ':' query=STRING)?
+        ('query' ':' query=(STRING | MULTILINE_STRING))?
         ('summary' ':' summary=STRING)?
         ('params' ':' params=SqlParamMap)?
     '}';
@@ -56,6 +56,7 @@ SqlParamType returns string:
 
 terminal PARAM_REF: /\$[0-9]+/;
 terminal ID: /[a-zA-Z_][a-zA-Z0-9_]*/;
+terminal MULTILINE_STRING: /'''[\s\S]*?'''|"""[\s\S]*?"""/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
 hidden terminal WS: /\s+/;
 hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;

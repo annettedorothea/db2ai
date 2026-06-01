@@ -28,20 +28,46 @@ function rewriteLogicalPlaceholdersForMysql(sqlText: string): string {
     return sqlText.replace(/\$[0-9]+/g, '?');
 }
 
+function uniquePlaceholdersInSql(sqlText: string): string[] {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    for (const match of sqlText.matchAll(/\$([0-9]+)/g)) {
+        const placeholder = `$${match[1]}`;
+        if (!seen.has(placeholder)) {
+            seen.add(placeholder);
+            ordered.push(placeholder);
+        }
+    }
+    return ordered.sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+}
+
+/** Postgres: one bind value per $N. MySQL: one per ? (each $N occurrence becomes ?). */
+export function collectSqlBindValueExpressions(
+    sqlText: string,
+    dialect: ResolvedDatabaseDialect,
+    params: ResolvedSqlToolCodegen['params'],
+    optionsVar: string
+): string[] {
+    const paramsByPlaceholder = new Map(params.map((p) => [p.placeholder, p]));
+    const placeholders =
+        dialect === 'mysql'
+            ? Array.from(sqlText.matchAll(/\$[0-9]+/g), (match) => match[0])
+            : uniquePlaceholdersInSql(sqlText);
+    return placeholders.map((placeholder) => {
+        const param = paramsByPlaceholder.get(placeholder);
+        if (!param) {
+            throw new Error(`Codegen: SQL query references ${placeholder}, but no matching param was resolved.`);
+        }
+        return renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType, optionsVar);
+    });
+}
+
 function renderSqlInvokeCase(
     tool: ResolvedSqlToolCodegen,
     dialect: ResolvedDatabaseDialect,
     optionsVar: string
 ): string {
-    const paramsByPlaceholder = new Map(tool.params.map((p) => [p.placeholder, p]));
-    const orderedExprs = Array.from(tool.sqlText.matchAll(/\$[0-9]+/g), (match) => {
-        const param = paramsByPlaceholder.get(match[0]);
-        if (!param) {
-            throw new Error(`Codegen: SQL query references ${match[0]}, but no matching param was resolved.`);
-        }
-        return renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType, optionsVar);
-    });
-    const valueExprs = orderedExprs.join(', ');
+    const valueExprs = collectSqlBindValueExpressions(tool.sqlText, dialect, tool.params, optionsVar).join(', ');
     if (dialect === 'mysql') {
         return `        case ${JSON.stringify(tool.toolName)}: {
             const [rows] = await client.query(${JSON.stringify(rewriteLogicalPlaceholdersForMysql(tool.sqlText))}, [${valueExprs}]);

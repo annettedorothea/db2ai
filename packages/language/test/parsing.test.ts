@@ -39,6 +39,35 @@ describe('Parsing tests', () => {
         }
     });
 
+    test('parses multiline query with triple quotes', async () => {
+        document = await parse(`
+            database env "PAGILA_DATABASE_URL"
+
+            SQL {
+                toolName: listFilms
+                access: public
+                intent: "list films"
+                query: '''
+                    SELECT film_id, title
+                    FROM film
+                    LIMIT $1
+                '''
+                params: {
+                    $1: { name: limit description: "max" example: "10" type: integer }
+                }
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        const entry = document.parseResult.value.entries[0];
+        expect(isSqlQuery(entry)).toBe(true);
+        if (isSqlQuery(entry)) {
+            expect(entry.query).toContain('SELECT film_id');
+            expect(entry.query).toContain('\n');
+            expect(entry.query).not.toContain("'''");
+        }
+    });
+
     test('parses auth keyword and checked access', async () => {
         document = await parse(`
             database env "ACCESS_DEMO_DATABASE_URL"
