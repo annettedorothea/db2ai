@@ -50,6 +50,12 @@
             "headers": {
                 "x-api-token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXN0b21lcklkIjoiYm9iIiwicm9sZSI6InVzZXIifQ.UECZOURyZVt3uXNQvbQX2puJUzkj3cNaHVHOyqcqAR8"
             }
+        },
+        "oauth-db2ai-access-demo": {
+            "url": "http://127.0.0.1:3871/mcp",
+            "auth": {
+                "CLIENT_ID": "mcp-demo-local"
+            }
         }
     }
 }
