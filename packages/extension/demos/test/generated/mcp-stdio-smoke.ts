@@ -4,7 +4,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 export type McpStdioConnectOptions = {
-    mcpServePath: string;
+    stdioMcpServerPath: string;
     generatedModulePath: string;
     hostArgs?: string[];
     cwd?: string;
@@ -57,12 +57,13 @@ function extractTextContent(result: Awaited<ReturnType<Client['callTool']>>, std
     return text.text;
 }
 
-/** Spawn generated `mcp-serve.js` and connect an MCP client over stdio. */
+/** Spawn generated `stdio-mcp-server.js` and connect an MCP client over stdio. */
 export async function connectMcpStdio(options: McpStdioConnectOptions): Promise<McpStdioSession> {
+    const hostPath = options.stdioMcpServerPath;
     const timeout = options.timeoutMs ?? 15_000;
     const transport = new StdioClientTransport({
         command: process.execPath,
-        args: [options.mcpServePath, options.generatedModulePath, ...(options.hostArgs ?? [])],
+        args: [hostPath, options.generatedModulePath, ...(options.hostArgs ?? [])],
         cwd: options.cwd,
         env: mergeEnv(options.env),
         stderr: 'pipe'

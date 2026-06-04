@@ -13,7 +13,7 @@ The full project (DSL, CLI, demos) lives in the [db2ai](https://github.com/annet
 ## Usage
 
 1. Open a workspace folder that contains `.db2ai` files.
-2. Edit `.db2ai` — on **save**, the extension writes **`generated/tools/*.ts`**, **`generated/cli/mcp-serve.ts`**, and compiles **`.js`** for MCP (same as **`npm run build:generated`**). Run **`npm install`** once in the workspace so TypeScript is available.
+2. Edit `.db2ai` — on **save**, the extension writes **`generated/tools/*.ts`**, **`generated/cli/stdio-mcp-server.ts`**, and compiles **`.js`** for MCP (same as **`npm run build:generated`**). Run **`npm install`** once in the workspace so TypeScript is available.
 3. Command Palette: **Generate tool code (.ts + MCP host)** for manual generation of the focused `.db2ai` file.
 
 Set `database env "YOUR_VAR"` (or `database mysql env "YOUR_VAR"`) in the DSL and define **`YOUR_VAR`** in `.env` / MCP config — not in the DSL file itself.

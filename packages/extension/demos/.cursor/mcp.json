@@ -3,7 +3,7 @@
         "db2ai-pagila": {
             "command": "node",
             "args": [
-                "./generated/cli/mcp-serve.js",
+                "./generated/cli/stdio-mcp-server.js",
                 "./generated/tools/pagila-tools.js",
                 "--auth-env",
                 "DB2AI_AUTH_TOKEN"
@@ -12,7 +12,7 @@
         "db2ai-sakila": {
             "command": "node",
             "args": [
-                "./generated/cli/mcp-serve.js",
+                "./generated/cli/stdio-mcp-server.js",
                 "./generated/tools/sakila-tools.js",
                 "--auth-env",
                 "DB2AI_AUTH_TOKEN"
@@ -21,7 +21,7 @@
         "db2ai-access-demo": {
             "command": "node",
             "args": [
-                "./generated/cli/mcp-serve.js",
+                "./generated/cli/stdio-mcp-server.js",
                 "./generated/tools/access-demo-tools.js",
                 "--auth-env",
                 "ACCESS_DEMO_TOKEN"

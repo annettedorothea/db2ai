@@ -14,5 +14,5 @@ export async function generateAction(source: string, destination: string): Promi
     const generatedFiles = await generateOutput(model, source, destination);
     console.log(chalk.green('Code generated successfully:'));
     console.log(chalk.green(`- TS: ${generatedFiles.tsPath}`));
-    console.log(chalk.green(`- MCP host: ${generatedFiles.mcpServePath}`));
+    console.log(chalk.green(`- MCP stdio host: ${generatedFiles.stdioMcpHostPath}`));
 }

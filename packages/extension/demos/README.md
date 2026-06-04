@@ -12,9 +12,9 @@ Demo workspace for **db2ai** MCP examples: `.db2ai` files, generated tools, and 
 ## How it works
 
 - You author **`.db2ai`** SQL tool definitions (`database env "…"` / `database mysql env "…"`).
-- The **db2ai** extension or CLI generates **`generated/tools/*.ts`** and **`generated/cli/mcp-serve.ts`**.
-- **`npm run build:generated`** compiles **`generated/cli/mcp-serve.js`** for MCP.
-- [`.cursor/mcp.json`](./.cursor/mcp.json) starts `mcp-serve.js` per server over **stdio** and loads the matching tool module.
+- The **db2ai** extension or CLI generates **`generated/tools/*.ts`** and **`generated/cli/stdio-mcp-server.ts`**.
+- **`npm run build:generated`** compiles **`generated/cli/stdio-mcp-server.js`** for MCP.
+- [`.cursor/mcp.json`](./.cursor/mcp.json) starts `stdio-mcp-server.js` per server over **stdio** and loads the matching tool module.
 
 ## Example DSL
 
@@ -65,7 +65,7 @@ Text fields accept `"…"` or multiline `'''…'''`. PostgreSQL: one bind per `$
 | `db2ai-sakila`      | `SAKILA_DATABASE_URL`, `DB2AI_AUTH_TOKEN`       | Sakila up; token for `protected` tools      |
 | `db2ai-access-demo` | `ACCESS_DEMO_DATABASE_URL`, `ACCESS_DEMO_TOKEN` | access-demo up; token for protected/checked |
 
-Argument order in `mcp.json`: `mcp-serve.js`, tool module, then `--auth-env` (see [`.env.example`](./.env.example)).
+Argument order in `mcp.json`: `stdio-mcp-server.js`, tool module, then `--auth-env` (see [`.env.example`](./.env.example)).
 
 ## Credentials and env
 

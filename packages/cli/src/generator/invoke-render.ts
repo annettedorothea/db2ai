@@ -122,15 +122,18 @@ function renderInvokeSwitchCases(
 }
 
 function renderHostBinding(typescript: boolean): string {
+    const guard = `
+    if (hostContext === undefined) {
+        throw new Error(
+            'invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).'
+        );
+    }`;
     if (typescript) {
-        return `
-    const host: DbHostContext =
-        hostContext !== undefined
-            ? (hostContext as DbHostContext)
-            : mcpHostAdapter.resolveHostContext();`;
+        return `${guard}
+    const host = hostContext as DbHostContext;`;
     }
-    return `
-    const host = hostContext ?? mcpHostAdapter.resolveHostContext();`;
+    return `${guard}
+    const host = hostContext;`;
 }
 
 function renderPostgresClientSetup(typescript: boolean): string {

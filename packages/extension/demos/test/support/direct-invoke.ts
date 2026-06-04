@@ -1,6 +1,7 @@
 import {
     asRecord,
     compileGeneratedForSmoke,
+    credentialWithOptionalJwt,
     readGeneratedToolModule,
     restoreEnv,
     type GeneratedToolModule
@@ -15,6 +16,31 @@ export { asRecord, restoreEnv };
 
 /** Matches Pagila/Sakila MCP config in packages/extension/demos/.cursor/mcp.json */
 const DEFAULT_AUTH_ENV = 'DB2AI_AUTH_TOKEN';
+
+function resolveDirectInvokeHostContext(
+    imported: Record<string, unknown>,
+    generated: GeneratedToolModule,
+    options: DirectInvokeFixtureOptions,
+    authEnv: string
+): unknown {
+    const connectionEnvKey = typeof imported.connectionEnv === 'string' ? imported.connectionEnv : options.databaseEnv;
+    const connectionString = process.env[connectionEnvKey]?.trim();
+    if (!connectionString) {
+        throw new Error(`Missing database URL in environment variable "${connectionEnvKey}".`);
+    }
+    const databaseDialect =
+        imported.databaseDialect === 'mysql' || imported.databaseDialect === 'postgres'
+            ? imported.databaseDialect
+            : 'postgres';
+    const hostContext: Record<string, unknown> = { connectionString, databaseDialect };
+    if (generated.requiresAuth === true) {
+        const credential = process.env[authEnv]?.trim();
+        if (credential) {
+            Object.assign(hostContext, credentialWithOptionalJwt(credential));
+        }
+    }
+    return hostContext;
+}
 
 export type DirectInvokeFixtureOptions = {
     demosRoot: string;
@@ -53,7 +79,6 @@ export async function withGeneratedDirectInvokeFixture(
         process.env[options.databaseEnv] = options.connectionString;
 
         let generateSourcePath = options.sourcePath;
-        const envDirs = [options.demosRoot];
 
         if (options.isolateFixtureProjectRoot) {
             const demosAuthDir = path.join(options.demosRoot, 'src', 'auth');
@@ -68,7 +93,6 @@ export async function withGeneratedDirectInvokeFixture(
             }
             generateSourcePath = path.join(runRoot, path.basename(options.sourcePath));
             await fs.copyFile(options.sourcePath, generateSourcePath);
-            envDirs.unshift(runRoot);
         }
 
         runDemoGenerate(generateSourcePath, generatedTsPath);
@@ -79,8 +103,6 @@ export async function withGeneratedDirectInvokeFixture(
             unknown
         >;
         const generated = readGeneratedToolModule(imported);
-        const hostArgv = generated.requiresAuth === true ? (['--auth-env', authEnv] as const) : ([] as const);
-        generated.adapter.configureFromArgv([...hostArgv], envDirs);
         if (generated.requiresAuth === true) {
             if (options.authToken !== undefined) {
                 process.env[authEnv] = options.authToken;
@@ -88,8 +110,7 @@ export async function withGeneratedDirectInvokeFixture(
                 process.env[authEnv] = '';
             }
         }
-        generated.adapter.validateAtStartup(generated.requiresAuth === true);
-        const hostContext = generated.adapter.resolveHostContext();
+        const hostContext = resolveDirectInvokeHostContext(imported, generated, options, authEnv);
 
         await run({ imported, generated, hostContext });
     } finally {

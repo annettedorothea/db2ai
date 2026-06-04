@@ -14,11 +14,11 @@ import {
 const authEnv = 'DB2AI_AUTH_TOKEN';
 const hostArgs = ['--auth-env', authEnv];
 
-describe('Pagila generated mcp-serve (MCP stdio)', () => {
+describe('Pagila generated stdio-mcp-server (MCP stdio)', () => {
     let connectionString = '';
     let runRoot = '';
     let fixtureRoot = '';
-    let mcpServePath = '';
+    let stdioMcpServerPath = '';
     let generatedJsPath = '';
 
     beforeAll(async () => {
@@ -28,7 +28,7 @@ describe('Pagila generated mcp-serve (MCP stdio)', () => {
         runRoot = await fs.mkdtemp(path.join(pagilaTmpRoot, 'pagila-mcp-'));
         fixtureRoot = path.join(runRoot, 'fixture');
         const fixture = await preparePagilaGeneratedFixture(fixtureRoot);
-        mcpServePath = fixture.mcpServePath;
+        stdioMcpServerPath = fixture.stdioMcpServerPath;
         generatedJsPath = fixture.generatedJsPath;
     }, 180_000);
 
@@ -40,7 +40,7 @@ describe('Pagila generated mcp-serve (MCP stdio)', () => {
 
     function mcpConnectOptions() {
         return {
-            mcpServePath,
+            stdioMcpServerPath,
             generatedModulePath: generatedJsPath,
             hostArgs,
             cwd: fixtureRoot,

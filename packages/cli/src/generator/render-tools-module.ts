@@ -18,7 +18,6 @@ import {
     type JsonSchemaDict,
     type ResolvedDbToolCodegen
 } from '../db-query-codegen.js';
-import { renderDbMcpHostAdapterBlock } from './host-adapter-render.js';
 import { renderInvokeBlockTs } from './invoke-render.js';
 import { renderParameterCheckerImports, renderParameterCheckersMap } from './render-check-stubs.js';
 
@@ -192,14 +191,13 @@ export function renderToolsModule(input: RenderToolsModuleInput): string {
     const authRuntimePrefix = parameterCheckersMap.length > 0 ? `${parameterCheckersMap}\n\n` : '';
     const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
     const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, hasChecked);
-    const hostAdapterTs = renderDbMcpHostAdapterBlock(authKind, databaseDialect);
 
     return assembleToolsModuleSource(
         tools,
         envName,
         databaseDialect,
         mcpServerIdentityBlock,
-        `${authRuntimePrefix}${inputZodBlock}\n${hostAdapterTs}\n${invokeBlockTs}`,
+        `${authRuntimePrefix}${inputZodBlock}\n${invokeBlockTs}`,
         model,
         source,
         parameterCheckerImports

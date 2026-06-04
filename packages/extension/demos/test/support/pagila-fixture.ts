@@ -13,19 +13,19 @@ export const pagilaTmpRoot = demosTmpRoot;
 export type PagilaGeneratedFixture = {
     fixtureRoot: string;
     generatedJsPath: string;
-    mcpServePath: string;
+    stdioMcpServerPath: string;
 };
 
 export async function preparePagilaGeneratedFixture(fixtureRoot: string): Promise<PagilaGeneratedFixture> {
     const generatedTsPath = path.join(fixtureRoot, 'generated/tools/pagila-tools.ts');
     const generatedJsPath = path.join(fixtureRoot, 'generated/tools/pagila-tools.js');
-    const mcpServePath = path.join(fixtureRoot, 'generated/cli/mcp-serve.js');
+    const stdioMcpServerPath = path.join(fixtureRoot, 'generated/cli/stdio-mcp-server.js');
 
     await fs.mkdir(fixtureRoot, { recursive: true });
     runDemoGenerate(pagilaSourcePath, generatedTsPath);
     compileGeneratedForSmoke(fixtureRoot);
 
-    return { fixtureRoot, generatedJsPath, mcpServePath };
+    return { fixtureRoot, generatedJsPath, stdioMcpServerPath };
 }
 
 export { ensurePagilaDocker };

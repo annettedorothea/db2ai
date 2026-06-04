@@ -12,12 +12,12 @@ import * as path from 'node:path';
 import * as url from 'node:url';
 import { renderBootstrap } from './generator/render-bootstrap.js';
 import { renderCheckStubs } from './generator/render-check-stubs.js';
-import { renderMcpServe } from './generator/render-mcp-serve.js';
+import { renderStdioMcpHost } from './generator/render-stdio-mcp-host.js';
 import { renderToolsModule } from './generator/render-tools-module.js';
 
 export type GeneratedOutputFiles = {
     tsPath: string;
-    mcpServePath: string;
+    stdioMcpHostPath: string;
 };
 
 declare const __dirname: string | undefined;
@@ -52,7 +52,7 @@ function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialec
             return path.resolve(dir, '..', '..');
         },
         missingDepsMessage(pjsonPath, missing) {
-            return `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then generated/cli/mcp-serve.js can run.`;
+            return `[generate] "${pjsonPath}": install runtime dependencies: ${missing.join(', ')} (npm install), then generated/cli/stdio-mcp-server.js can run.`;
         }
     };
 }
@@ -76,10 +76,10 @@ export async function generateOutput(model: Model, source: string, destination: 
     fs.writeFileSync(tsPath, toolsModuleSource);
 
     const cliDir = resolveGeneratedCliDir(tsPath);
-    const mcpServePath = renderMcpServe(cliDir, bootstrapConfig);
+    const stdioMcpHostPath = renderStdioMcpHost(cliDir, bootstrapConfig);
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
     renderBootstrap(projectRoot, bootstrapConfig);
     writeGeneratedDemosTestSupport(projectRoot);
 
-    return { tsPath, mcpServePath };
+    return { tsPath, stdioMcpHostPath };
 }
