@@ -12,6 +12,7 @@ import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import * as z from 'zod/v4';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -35,10 +36,6 @@ type GeneratedHostModule = {
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
 };
-
-function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' ? value : undefined;
-}
 
 function stripOptionalQuotes(value: string): string {
     if (value.length < 2) {
@@ -149,6 +146,10 @@ function credentialWithOptionalJwt(credential: string | undefined): {
     }
 }
 
+function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
+    return value === 'postgres' || value === 'mysql' ? value : undefined;
+}
+
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
     if (dialect === 'mysql') {
         return connectionString.startsWith('mysql://');
@@ -221,7 +222,7 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 async function registerMcpTools(
     server: McpServer,
     generated: GeneratedHostModule,
-    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext }
+    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext | Promise<ApiLikeHostContext> }
 ): Promise<void> {
     for (const tool of generated.generatedTools) {
         const inputSchema = requireInputZodSchema(generated.inputZodByTool, tool.toolName);
@@ -234,7 +235,7 @@ async function registerMcpTools(
             },
             async (args) => {
                 loadLocalEnvFiles(options.envDirs, { refresh: true });
-                const hostContext = options.resolveContext();
+                const hostContext = await Promise.resolve(options.resolveContext());
                 try {
                     const result = await generated.invokeTool(
                         tool.toolName,
@@ -265,6 +266,41 @@ async function registerMcpTools(
     }
 }
 
+async function readMcpHttpJsonBody(req: IncomingMessage): Promise<unknown> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    if (chunks.length === 0) {
+        return undefined;
+    }
+    const text = Buffer.concat(chunks).toString('utf-8');
+    if (text.trim().length === 0) {
+        return undefined;
+    }
+    return JSON.parse(text) as unknown;
+}
+
+function writeJsonRpcError(res: ServerResponse, status: number, code: number, message: string): void {
+    if (res.headersSent) {
+        return;
+    }
+    res.writeHead(status, { 'content-type': 'application/json' });
+    res.end(
+        JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code, message },
+            id: null
+        })
+    );
+}
+
+function writeJsonRpcInternalError(res: ServerResponse): void {
+    writeJsonRpcError(res, 500, -32_603, 'Internal server error');
+}
+
+type OAuthTokenValidationMode = 'hs256' | 'oidc';
+
 type OAuthHttpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
     envDirs: string[];
@@ -272,7 +308,13 @@ type OAuthHttpHostRuntimeConfig = {
     port: number;
     mcpPath: string;
     oauthIdpUrl: string;
-    jwtSecretEnvKey: string;
+    oauthScope: string;
+    tokenValidation: OAuthTokenValidationMode;
+    jwtSecretEnvKey?: string;
+    oauthIssuer: string;
+    oauthAudience?: string;
+    jwtClaimCustomerId: string;
+    jwtClaimRole: string;
 };
 
 type McpOAuthSession = {
@@ -281,6 +323,9 @@ type McpOAuthSession = {
     createdAt: number;
 };
 
+let oidcJwks: ReturnType<typeof createRemoteJWKSet> | undefined;
+let oidcJwksIssuer = '';
+
 function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let listenHost = '127.0.0.1';
@@ -288,6 +333,12 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
     let mcpPath = '/mcp';
     let oauthIdpUrl: string | undefined;
     let jwtSecretEnvKey: string | undefined;
+    let tokenValidation: OAuthTokenValidationMode = 'hs256';
+    let oauthIssuer: string | undefined;
+    let oauthAudience: string | undefined;
+    let jwtClaimCustomerId = 'customerId';
+    let jwtClaimRole = 'role';
+    let oauthScope = 'mcp';
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--base-url-env') {
@@ -304,10 +355,53 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
             }
             continue;
         }
+        if (arg === '--oauth-scope') {
+            oauthScope = argv[++i];
+            if (!oauthScope?.trim()) {
+                throw new Error('Missing value after --oauth-scope');
+            }
+            continue;
+        }
+        if (arg === '--oauth-token-validation') {
+            const raw = argv[++i];
+            if (raw !== 'hs256' && raw !== 'oidc') {
+                throw new Error('Invalid --oauth-token-validation (expected hs256 or oidc): ' + raw);
+            }
+            tokenValidation = raw;
+            continue;
+        }
         if (arg === '--jwt-secret-env') {
             jwtSecretEnvKey = argv[++i];
             if (!jwtSecretEnvKey) {
                 throw new Error('Missing value after --jwt-secret-env');
+            }
+            continue;
+        }
+        if (arg === '--oauth-issuer') {
+            oauthIssuer = argv[++i];
+            if (!oauthIssuer) {
+                throw new Error('Missing value after --oauth-issuer');
+            }
+            continue;
+        }
+        if (arg === '--oauth-audience') {
+            oauthAudience = argv[++i];
+            if (!oauthAudience) {
+                throw new Error('Missing value after --oauth-audience');
+            }
+            continue;
+        }
+        if (arg === '--jwt-claim-customer-id') {
+            jwtClaimCustomerId = argv[++i];
+            if (!jwtClaimCustomerId) {
+                throw new Error('Missing value after --jwt-claim-customer-id');
+            }
+            continue;
+        }
+        if (arg === '--jwt-claim-role') {
+            jwtClaimRole = argv[++i];
+            if (!jwtClaimRole) {
+                throw new Error('Missing value after --jwt-claim-role');
             }
             continue;
         }
@@ -350,8 +444,10 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
     if (!oauthIdpUrl?.trim()) {
         throw new Error('Required: --oauth-idp-url <url>');
     }
-    if (!jwtSecretEnvKey?.trim()) {
-        throw new Error('Required: --jwt-secret-env <ENV_VAR_NAME>');
+    const idpUrl = oauthIdpUrl.replace(/\/$/, '');
+    const issuer = (oauthIssuer ?? idpUrl).replace(/\/$/, '');
+    if (tokenValidation === 'hs256' && !jwtSecretEnvKey?.trim()) {
+        throw new Error('Required for hs256: --jwt-secret-env <ENV_VAR_NAME>');
     }
     return {
         baseUrlEnvKey: baseUrlEnv,
@@ -359,8 +455,14 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
         listenHost,
         port,
         mcpPath,
-        oauthIdpUrl: oauthIdpUrl.replace(/\/$/, ''),
-        jwtSecretEnvKey: jwtSecretEnvKey.trim()
+        oauthIdpUrl: idpUrl,
+        oauthScope: oauthScope.trim(),
+        tokenValidation,
+        jwtSecretEnvKey: jwtSecretEnvKey?.trim(),
+        oauthIssuer: issuer,
+        oauthAudience: oauthAudience?.trim(),
+        jwtClaimCustomerId: jwtClaimCustomerId.trim(),
+        jwtClaimRole: jwtClaimRole.trim()
     };
 }
 
@@ -422,6 +524,80 @@ function verifyAccessTokenJwt(
     }
 }
 
+async function ensureOidcJwks(issuer: string): Promise<ReturnType<typeof createRemoteJWKSet>> {
+    const normalized = issuer.replace(/\/$/, '');
+    if (oidcJwks && oidcJwksIssuer === normalized) {
+        return oidcJwks;
+    }
+    const discoveryUrl = normalized + '/.well-known/openid-configuration';
+    const response = await fetch(discoveryUrl);
+    if (!response.ok) {
+        throw new Error('OIDC discovery failed (' + response.status + '): ' + discoveryUrl);
+    }
+    const document = (await response.json()) as { jwks_uri?: string };
+    const jwksUri = document.jwks_uri;
+    if (typeof jwksUri !== 'string' || jwksUri.trim().length === 0) {
+        throw new Error('OIDC discovery document missing jwks_uri: ' + discoveryUrl);
+    }
+    oidcJwks = createRemoteJWKSet(new URL(jwksUri));
+    oidcJwksIssuer = normalized;
+    return oidcJwks;
+}
+
+function normalizeHostJwtClaims(
+    payload: Record<string, unknown>,
+    httpHostConfig: OAuthHttpHostRuntimeConfig
+): Record<string, unknown> {
+    const customerRaw = payload[httpHostConfig.jwtClaimCustomerId];
+    const roleRaw = payload[httpHostConfig.jwtClaimRole];
+    const customerId = customerRaw !== undefined && customerRaw !== null ? String(customerRaw).trim() : '';
+    const role = roleRaw !== undefined && roleRaw !== null ? String(roleRaw).trim() : '';
+    const normalized: Record<string, unknown> = { ...payload };
+    if (customerId.length > 0) {
+        normalized.customerId = customerId;
+    }
+    if (role.length > 0) {
+        normalized.role = role;
+    }
+    return normalized;
+}
+
+async function verifyOAuthBearerToken(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    token: string
+): Promise<{ ok: true; payload: Record<string, unknown> } | { ok: false }> {
+    if (httpHostConfig.tokenValidation === 'hs256') {
+        const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
+        return verifyAccessTokenJwt(token, secret);
+    }
+    try {
+        const jwks = await ensureOidcJwks(httpHostConfig.oauthIssuer);
+        const verifyOptions: { issuer: string; audience?: string } = { issuer: httpHostConfig.oauthIssuer };
+        if (httpHostConfig.oauthAudience) {
+            verifyOptions.audience = httpHostConfig.oauthAudience;
+        }
+        const { payload } = await jwtVerify(token, jwks, verifyOptions);
+        return { ok: true, payload: payload as Record<string, unknown> };
+    } catch {
+        return { ok: false };
+    }
+}
+
+function hostContextFromOAuthCredential(
+    httpHostConfig: OAuthHttpHostRuntimeConfig,
+    credential: string | undefined,
+    verifiedPayload: Record<string, unknown> | undefined
+): { credential?: string; jwt?: Record<string, unknown> } {
+    if (!credential?.trim()) {
+        return {};
+    }
+    const trimmed = credential.trim();
+    if (verifiedPayload) {
+        return { credential: trimmed, jwt: normalizeHostJwtClaims(verifiedPayload, httpHostConfig) };
+    }
+    return credentialWithOptionalJwt(trimmed);
+}
+
 function generatedHasPublicTool(generated: GeneratedHostModule): boolean {
     return generated.generatedTools.some((t) => t.access === 'public');
 }
@@ -430,11 +606,15 @@ function generatedHasProtectedOrCheckedTool(generated: GeneratedHostModule): boo
     return generated.generatedTools.some((t) => t.access === 'protected' || t.access === 'checked');
 }
 
-function validateOAuthHttpHostAtStartup(
+async function validateOAuthHttpHostAtStartup(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule
-): void {
-    readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
+): Promise<void> {
+    if (httpHostConfig.tokenValidation === 'hs256') {
+        readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
+    } else {
+        await ensureOidcJwks(httpHostConfig.oauthIssuer);
+    }
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -466,20 +646,21 @@ function validateOAuthHttpHostAtStartup(
     }
 }
 
-function resolveHostContextForOAuthSession(
+async function resolveHostContextForOAuthSession(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule,
     headers: Record<string, string | string[] | undefined>,
     sessionStore: Map<string, McpOAuthSession>,
     sessionId: string | undefined
-): ApiLikeHostContext {
-    const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
+): Promise<ApiLikeHostContext> {
     let credential: string | undefined;
+    let verifiedPayload: Record<string, unknown> | undefined;
     const bearer = readBearerFromHeaders(headers);
     if (bearer) {
-        const verified = verifyAccessTokenJwt(bearer, secret);
+        const verified = await verifyOAuthBearerToken(httpHostConfig, bearer);
         if (verified.ok) {
             credential = bearer;
+            verifiedPayload = verified.payload;
             if (sessionId) {
                 const existing = sessionStore.get(sessionId);
                 if (existing) {
@@ -496,8 +677,16 @@ function resolveHostContextForOAuthSession(
     }
     if (!credential && sessionId) {
         credential = sessionStore.get(sessionId)?.upstreamCredential;
+        if (credential) {
+            const cached = await verifyOAuthBearerToken(httpHostConfig, credential);
+            if (cached.ok) {
+                verifiedPayload = cached.payload;
+            } else {
+                credential = undefined;
+            }
+        }
     }
-    const { credential: c, jwt } = credentialWithOptionalJwt(credential);
+    const { credential: c, jwt } = hostContextFromOAuthCredential(httpHostConfig, credential, verifiedPayload);
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -521,15 +710,13 @@ function resolveHostContextForOAuthSession(
     return { baseUrl, credential: c, jwt };
 }
 
-const MCP_OAUTH_SCOPE = 'mock-api';
-
 function oauthResourceMetadataDocument(httpHostConfig: OAuthHttpHostRuntimeConfig): Record<string, unknown> {
     const resource = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     return {
         resource,
         authorization_servers: [httpHostConfig.oauthIdpUrl],
         bearer_methods_supported: ['header'],
-        scopes_supported: [MCP_OAUTH_SCOPE]
+        scopes_supported: [httpHostConfig.oauthScope]
     };
 }
 
@@ -545,7 +732,7 @@ function sendOAuthUnauthorized(res: ServerResponse, httpHostConfig: OAuthHttpHos
             '", resource="' +
             resource +
             '", scope="' +
-            MCP_OAUTH_SCOPE +
+            httpHostConfig.oauthScope +
             '"'
     });
     res.end(
@@ -578,35 +765,6 @@ function isInitializeRequestBody(body: unknown): boolean {
     return record.jsonrpc === '2.0' && record.method === 'initialize';
 }
 
-async function readJsonBody(req: IncomingMessage): Promise<unknown> {
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    if (chunks.length === 0) {
-        return undefined;
-    }
-    const text = Buffer.concat(chunks).toString('utf-8');
-    if (text.trim().length === 0) {
-        return undefined;
-    }
-    return JSON.parse(text) as unknown;
-}
-
-function jsonRpcError(res: ServerResponse, status: number, code: number, message: string): void {
-    if (res.headersSent) {
-        return;
-    }
-    res.writeHead(status, { 'content-type': 'application/json' });
-    res.end(
-        JSON.stringify({
-            jsonrpc: '2.0',
-            error: { code, message },
-            id: null
-        })
-    );
-}
-
 function mcpRequiresBearerOnInitialize(generated: GeneratedHostModule): boolean {
     return generated.requiresAuth && generatedHasProtectedOrCheckedTool(generated);
 }
@@ -632,9 +790,9 @@ async function createMcpServerForSession(
     sessionStore.set(sessionId, session);
     await registerMcpTools(server, generated, {
         envDirs: httpHostConfig.envDirs,
-        resolveContext: () => {
+        resolveContext: async () => {
             const hdr = sessionHeaders.get(sessionId) ?? headers;
-            return resolveHostContextForOAuthSession(httpHostConfig, generated, hdr, sessionStore, sessionId);
+            return await resolveHostContextForOAuthSession(httpHostConfig, generated, hdr, sessionStore, sessionId);
         }
     });
     const transport = new StreamableHTTPServerTransport({
@@ -661,12 +819,12 @@ async function handleOAuthMcpRequest(
 ): Promise<void> {
     const headers = req.headers as Record<string, string | string[] | undefined>;
     const sessionIdHeader = readSessionId(req);
-    const parsedBody = req.method === 'POST' ? await readJsonBody(req) : undefined;
+    const parsedBody = req.method === 'POST' ? await readMcpHttpJsonBody(req) : undefined;
 
     if (mcpRequiresBearerOnInitialize(generated)) {
         const bearer = readBearerFromHeaders(headers);
-        const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey);
-        if (!bearer || !verifyAccessTokenJwt(bearer, secret).ok) {
+        const verified = bearer ? await verifyOAuthBearerToken(httpHostConfig, bearer) : { ok: false as const };
+        if (!verified.ok) {
             if (!sessionIdHeader && isInitializeRequestBody(parsedBody)) {
                 sendOAuthUnauthorized(res, httpHostConfig);
                 return;
@@ -686,10 +844,10 @@ async function handleOAuthMcpRequest(
         entry = await createMcpServerForSession(generated, httpHostConfig, newSessionId, headers);
         sessionEntries.set(newSessionId, entry);
     } else if (sessionIdHeader) {
-        jsonRpcError(res, 404, -32_001, 'Session not found');
+        writeJsonRpcError(res, 404, -32_001, 'Session not found');
         return;
     } else if (req.method === 'POST') {
-        jsonRpcError(res, 400, -32_000, 'Bad Request: Session ID required');
+        writeJsonRpcError(res, 400, -32_000, 'Bad Request: Session ID required');
         return;
     } else {
         res.writeHead(400).end('Missing session ID');
@@ -697,7 +855,7 @@ async function handleOAuthMcpRequest(
     }
 
     if (!entry) {
-        jsonRpcError(res, 500, -32_603, 'Internal server error');
+        writeJsonRpcInternalError(res);
         return;
     }
 
@@ -709,7 +867,7 @@ async function handleOAuthMcpRequest(
     } catch (err) {
         console.error('[mcp] oauth HTTP request failed:', err);
         if (!res.headersSent) {
-            jsonRpcError(res, 500, -32_603, 'Internal server error');
+            writeJsonRpcInternalError(res);
         }
     }
 }
@@ -718,7 +876,7 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --jwt-secret-env ENV --port N [--host HOST] [--path /mcp]'
+            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
@@ -731,13 +889,17 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     const httpHostConfig = parseOAuthHttpHostArgv(argv.slice(1), envDirs);
     if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
         throw new Error(
-            'Required: --base-url-env <ENV_VAR_NAME> (api2ai tools). db2ai uses connectionEnv from the tool module.'
+            'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
         );
     }
-    validateOAuthHttpHostAtStartup(httpHostConfig, generated);
+    await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
     const resourceUrl = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     console.error('[mcp] oauth HTTP on ' + resourceUrl);
     console.error('[mcp] authorization server: ' + httpHostConfig.oauthIdpUrl);
+    console.error('[mcp] token validation: ' + httpHostConfig.tokenValidation);
+    if (httpHostConfig.tokenValidation === 'oidc') {
+        console.error('[mcp] oauth issuer: ' + httpHostConfig.oauthIssuer);
+    }
     console.error(
         '[mcp] OAuth on initialize: ' +
             (mcpRequiresBearerOnInitialize(generated)

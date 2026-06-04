@@ -14,7 +14,7 @@ beforeAll(async () => {
 });
 
 const checkedSqlWithOptionalParam = `
-database env "ACCESS_DEMO_DATABASE_URL"
+database env "ORDERS_DEMO_DATABASE_URL"
 
 auth
 

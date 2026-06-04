@@ -38,6 +38,7 @@ const __generatorDirname = bundleSafeGeneratorImplementationDir();
 function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialectFromModel>): ProjectBootstrapConfig {
     const databaseDriverDep = databaseDialect === 'mysql' ? 'mysql2' : 'pg';
     return {
+        hostProduct: 'db2ai',
         generatorImplementationDir: __generatorDirname,
         embedHomeEnv: 'DB2AI_EMBED_HOME',
         fallbackProjectName: 'db2ai-project',

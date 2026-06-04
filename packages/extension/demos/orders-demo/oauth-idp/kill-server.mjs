@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execSync } from 'node:child_process';
 
-const PORT = Number(process.env.ACCESS_DEMO_OAUTH_IDP_PORT) || 3862;
+const PORT = Number(process.env.ORDERS_DEMO_OAUTH_IDP_PORT) || 3862;
 
 try {
     const pids = execSync(`lsof -ti :${PORT}`, { encoding: 'utf8' }).trim();

@@ -24,7 +24,7 @@ type ApiLikeHostContext = {
 };
 
 type GeneratedHostModule = {
-    generatedTools: Array<{ toolName: string; title?: string; description: string }>;
+    generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
     invokeTool: (toolName: string, args?: Record<string, unknown>, hostContext?: unknown) => Promise<unknown>;
     inputZodByTool?: Record<string, unknown>;
     mcpServerName?: string;
@@ -33,10 +33,6 @@ type GeneratedHostModule = {
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
 };
-
-function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' ? value : undefined;
-}
 
 function stripOptionalQuotes(value: string): string {
     if (value.length < 2) {
@@ -147,6 +143,10 @@ function credentialWithOptionalJwt(credential: string | undefined): {
     }
 }
 
+function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
+    return value === 'postgres' || value === 'mysql' ? value : undefined;
+}
+
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
     if (dialect === 'mysql') {
         return connectionString.startsWith('mysql://');
@@ -219,7 +219,7 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 async function registerMcpTools(
     server: McpServer,
     generated: GeneratedHostModule,
-    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext }
+    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext | Promise<ApiLikeHostContext> }
 ): Promise<void> {
     for (const tool of generated.generatedTools) {
         const inputSchema = requireInputZodSchema(generated.inputZodByTool, tool.toolName);
@@ -232,7 +232,7 @@ async function registerMcpTools(
             },
             async (args) => {
                 loadLocalEnvFiles(options.envDirs, { refresh: true });
-                const hostContext = options.resolveContext();
+                const hostContext = await Promise.resolve(options.resolveContext());
                 try {
                     const result = await generated.invokeTool(
                         tool.toolName,
@@ -261,6 +261,43 @@ async function registerMcpTools(
             }
         );
     }
+}
+
+async function readMcpHttpJsonBody(req: IncomingMessage): Promise<unknown> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    if (chunks.length === 0) {
+        return undefined;
+    }
+    const text = Buffer.concat(chunks).toString('utf-8');
+    if (text.trim().length === 0) {
+        return undefined;
+    }
+    return JSON.parse(text) as unknown;
+}
+
+function writeJsonRpcError(res: ServerResponse, status: number, code: number, message: string): void {
+    if (res.headersSent) {
+        return;
+    }
+    res.writeHead(status, { 'content-type': 'application/json' });
+    res.end(
+        JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code, message },
+            id: null
+        })
+    );
+}
+
+function writeJsonRpcInternalError(res: ServerResponse): void {
+    writeJsonRpcError(res, 500, -32_603, 'Internal server error');
+}
+
+function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
+    writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
 }
 
 type StatelessHttpHostRuntimeConfig = {
@@ -410,35 +447,6 @@ function resolveHostContextForHttpCall(
     return { baseUrl, credential: c, jwt };
 }
 
-async function readJsonBody(req: IncomingMessage): Promise<unknown> {
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    if (chunks.length === 0) {
-        return undefined;
-    }
-    const text = Buffer.concat(chunks).toString('utf-8');
-    if (text.trim().length === 0) {
-        return undefined;
-    }
-    return JSON.parse(text) as unknown;
-}
-
-function jsonRpcMethodNotAllowed(res: ServerResponse): void {
-    if (res.headersSent) {
-        return;
-    }
-    res.writeHead(405, { 'content-type': 'application/json' });
-    res.end(
-        JSON.stringify({
-            jsonrpc: '2.0',
-            error: { code: -32000, message: 'Method not allowed.' },
-            id: null
-        })
-    );
-}
-
 async function handleStatelessMcpPost(
     req: IncomingMessage,
     res: ServerResponse,
@@ -455,7 +463,7 @@ async function handleStatelessMcpPost(
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     try {
         await server.connect(transport);
-        const parsedBody = await readJsonBody(req);
+        const parsedBody = await readMcpHttpJsonBody(req);
         res.on('close', () => {
             void transport.close();
             void server.close();
@@ -464,14 +472,7 @@ async function handleStatelessMcpPost(
     } catch (err) {
         console.error('[mcp] stateless HTTP request failed:', err);
         if (!res.headersSent) {
-            res.writeHead(500, { 'content-type': 'application/json' });
-            res.end(
-                JSON.stringify({
-                    jsonrpc: '2.0',
-                    error: { code: -32603, message: 'Internal server error' },
-                    id: null
-                })
-            );
+            writeJsonRpcInternalError(res);
         }
     }
 }
@@ -493,7 +494,7 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
     const httpHostConfig = parseStatelessHttpHostArgv(argv.slice(1), envDirs);
     if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
         throw new Error(
-            'Required: --base-url-env <ENV_VAR_NAME> (api2ai tools). db2ai uses connectionEnv from the tool module.'
+            'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
         );
     }
     validateStatelessHttpHostAtStartup(httpHostConfig, generated);
@@ -520,7 +521,7 @@ async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<vo
             return;
         }
         if (req.method === 'GET' || req.method === 'DELETE') {
-            jsonRpcMethodNotAllowed(res);
+            writeJsonRpcMethodNotAllowed(res);
             return;
         }
         res.writeHead(405).end('Method not allowed');

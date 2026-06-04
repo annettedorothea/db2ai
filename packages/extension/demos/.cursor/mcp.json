@@ -1,24 +1,8 @@
 {
     "mcpServers": {
-        "stdio-db2ai-pagila": {
+        "sakila-stdio": {
             "command": "node",
-            "envFile": ".env.local",
-            "args": [
-                "./generated/cli/stdio-mcp-server.js",
-                "./generated/tools/pagila-tools.js",
-                "--auth-env",
-                "DB2AI_AUTH_TOKEN"
-            ],
-            "env": {
-                "PAGILA_DATABASE_URL": "postgresql://postgres:postgres@localhost:55432/pagila"
-            }
-        },
-        "http-db2ai-pagila": {
-            "url": "http://127.0.0.1:3853/mcp"
-        },
-        "stdio-db2ai-sakila": {
-            "command": "node",
-            "envFile": ".env.local",
+            "envFile": ".env",
             "args": [
                 "./generated/cli/stdio-mcp-server.js",
                 "./generated/tools/sakila-tools.js",
@@ -29,29 +13,13 @@
                 "SAKILA_DATABASE_URL": "mysql://sakila:p_ssW0rd@localhost:53306/sakila"
             }
         },
-        "http-db2ai-sakila": {
-            "url": "http://127.0.0.1:3854/mcp"
-        },
-        "stdio-db2ai-access-demo": {
-            "command": "node",
-            "envFile": ".env.local",
-            "args": [
-                "./generated/cli/stdio-mcp-server.js",
-                "./generated/tools/access-demo-tools.js",
-                "--auth-env",
-                "ACCESS_DEMO_TOKEN"
-            ],
-            "env": {
-                "ACCESS_DEMO_DATABASE_URL": "postgresql://postgres:postgres@localhost:55433/access_demo"
-            }
-        },
-        "http-db2ai-access-demo": {
-            "url": "http://127.0.0.1:3852/mcp",
+        "pagila-http-stateless": {
+            "url": "http://127.0.0.1:3853/mcp",
             "headers": {
-                "x-api-token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXN0b21lcklkIjoiYm9iIiwicm9sZSI6InVzZXIifQ.UECZOURyZVt3uXNQvbQX2puJUzkj3cNaHVHOyqcqAR8"
+                "x-api-token": "demo"
             }
         },
-        "oauth-db2ai-access-demo": {
+        "orders-demo-oauth": {
             "url": "http://127.0.0.1:3871/mcp",
             "auth": {
                 "CLIENT_ID": "mcp-demo-local"

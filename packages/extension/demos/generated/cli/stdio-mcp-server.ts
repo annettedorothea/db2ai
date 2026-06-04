@@ -22,7 +22,7 @@ type ApiLikeHostContext = {
 };
 
 type GeneratedHostModule = {
-    generatedTools: Array<{ toolName: string; title?: string; description: string }>;
+    generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
     invokeTool: (toolName: string, args?: Record<string, unknown>, hostContext?: unknown) => Promise<unknown>;
     inputZodByTool?: Record<string, unknown>;
     mcpServerName?: string;
@@ -31,10 +31,6 @@ type GeneratedHostModule = {
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
 };
-
-function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' ? value : undefined;
-}
 
 function stripOptionalQuotes(value: string): string {
     if (value.length < 2) {
@@ -145,6 +141,10 @@ function credentialWithOptionalJwt(credential: string | undefined): {
     }
 }
 
+function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
+    return value === 'postgres' || value === 'mysql' ? value : undefined;
+}
+
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
     if (dialect === 'mysql') {
         return connectionString.startsWith('mysql://');
@@ -217,7 +217,7 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 async function registerMcpTools(
     server: McpServer,
     generated: GeneratedHostModule,
-    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext }
+    options: { envDirs: string[]; resolveContext: () => ApiLikeHostContext | Promise<ApiLikeHostContext> }
 ): Promise<void> {
     for (const tool of generated.generatedTools) {
         const inputSchema = requireInputZodSchema(generated.inputZodByTool, tool.toolName);
@@ -230,7 +230,7 @@ async function registerMcpTools(
             },
             async (args) => {
                 loadLocalEnvFiles(options.envDirs, { refresh: true });
-                const hostContext = options.resolveContext();
+                const hostContext = await Promise.resolve(options.resolveContext());
                 try {
                     const result = await generated.invokeTool(
                         tool.toolName,
@@ -393,7 +393,7 @@ async function runStdioMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     const hostConfig = parseHostArgv(argv.slice(1), envDirs);
     if (!generated.connectionEnv && !hostConfig.baseUrlEnvKey) {
         throw new Error(
-            'Required: --base-url-env <ENV_VAR_NAME> (api2ai tools). db2ai uses connectionEnv from the tool module.'
+            'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
         );
     }
     validateHostAtStartup(hostConfig, generated);

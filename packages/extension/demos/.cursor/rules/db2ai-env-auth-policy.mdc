@@ -11,13 +11,13 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 - **Nicht lesen, schreiben oder aendern:** `.env`, `.env.local`, `.env.*` und vergleichbare Secret-/Config-Dateien.
 - **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
-- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `ACCESS_DEMO_TOKEN`, `DB2AI_AUTH_TOKEN`, `PAGILA_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
+- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `ORDERS_DEMO_TOKEN`, `DB2AI_AUTH_TOKEN`, `PAGILA_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
 
-## Transport (stdio vs. HTTP, siehe `mcp.json`)
+## Transport (stdio vs. HTTP vs. OAuth, siehe `mcp.json`)
 
-- **`stdio-db2ai-*`:** Credentials aus `envFile` (`.env.local`) — `DB2AI_AUTH_TOKEN` (Pagila/Sakila protected), `ACCESS_DEMO_TOKEN` (access-demo protected/checked).
-- **`http-db2ai-pagila` / `http-db2ai-sakila`:** protected Tools brauchen `x-api-token` in Cursor MCP-UI (nicht in committed `mcp.json`); public Tools ohne Token.
-- **`http-db2ai-access-demo`:** Demo-JWT in `headers.x-api-token` in `mcp.json` (bob); stdio nutzt `ACCESS_DEMO_TOKEN` in `.env.local`.
+- **`sakila-stdio`:** `DB2AI_AUTH_TOKEN` in `.env` fuer protected Sakila-Tools (falls konfiguriert).
+- **`pagila-http-stateless`:** protected Pagila-Tools brauchen `headers.x-api-token` (committed Demo: `demo`); optional `DB2AI_AUTH_TOKEN` fuer stdio-Varianten.
+- **`orders-demo-oauth`:** Cursor OAuth; optional `ORDERS_DEMO_TOKEN` in `.env` fuer manuelle Checks — kein separates Login-Tool.
 
 ## Auth-Fehler: Fehler melden, nicht umgehen
 
@@ -34,12 +34,12 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 - **Nicht** versuchen, Identitaet per Tool-Aufruf zu wechseln, wenn Env auf eine andere Person zeigt.
 - Wenn der Nutzer **explizit** eine andere Demo-Identitaet will (z. B. anderes JWT in `.env.example`): nur erklaeren, welche Variable er selbst in `.env` setzen soll — **nicht** die Datei fuer ihn aendern.
 
-## Beispiel (access-demo)
+## Beispiel (orders-demo)
 
-**Anfrage:** „db2ai zeig bobs bestellungen an“ — `ACCESS_DEMO_TOKEN` gehoert zu `alice`.
+**Anfrage:** „db2ai zeig bobs bestellungen an“ — `ORDERS_DEMO_TOKEN` gehoert zu `alice`.
 
 - ✅ Einmal `listCustomerOrders` mit `customerId: bob` aufrufen.
-- ✅ Bei Mismatch-Fehler melden: JWT ist `alice`, angefragt wurde `bob`; Nutzer soll `ACCESS_DEMO_TOKEN` in `.env.local` setzen (stdio) oder `headers.x-api-token` fuer `http-db2ai-access-demo` anpassen.
-- ❌ `.env.local` lesen oder aendern.
+- ✅ Bei Mismatch-Fehler melden: JWT ist `alice`, angefragt wurde `bob`; Nutzer soll `ORDERS_DEMO_TOKEN` in `.env` anpassen oder per OAuth als `bob` anmelden.
+- ❌ `.env` lesen oder aendern.
 - ❌ Erneut `listCustomerOrders` nach eigenmaechtigem Credential-Tausch.
-- ❌ Pagila/Sakila- oder andere db2ai-MCPs als Ersatz nutzen, um die Anfrage doch noch zu erfuellen.
+- ❌ Pagila/Sakila-MCPs als Ersatz nutzen, um die Anfrage doch noch zu erfuellen.

@@ -1,10 +1,10 @@
-// Sync with mock-api/oauth-idp (api2ai) — default secret matches Vitest Alice token.
+// Sync with shopping-api/oauth-idp (api2ai) — ports/secrets differ per product.
 import { createHmac, randomBytes } from 'node:crypto';
 
-const DEFAULT_SECRET = 'db2ai-access-demo';
+const DEFAULT_SECRET = 'db2ai-orders-demo';
 
 export function jwtSecret() {
-    return process.env.ACCESS_DEMO_JWT_SECRET?.trim() || DEFAULT_SECRET;
+    return process.env.ORDERS_DEMO_JWT_SECRET?.trim() || DEFAULT_SECRET;
 }
 
 function base64urlEncode(buf) {
@@ -53,13 +53,4 @@ export function verifyJwt(token, secret = jwtSecret()) {
     return { ok: true, payload };
 }
 
-export function mintCustomerToken(customerId, role = 'user', ttlSeconds = 3600) {
-    const now = Math.floor(Date.now() / 1000);
-    return signJwt({
-        customerId: String(customerId),
-        role: String(role),
-        iat: now,
-        exp: now + ttlSeconds,
-        jti: randomBytes(8).toString('hex')
-    });
-}
+export { getJwksDocument, mintCustomerToken, signJwtRs256 } from './signing.mjs';

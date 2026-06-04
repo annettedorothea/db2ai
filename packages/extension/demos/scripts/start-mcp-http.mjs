@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Start one stateless HTTP MCP host (foreground).
- * Usage: node scripts/start-mcp-http.mjs <pagila|sakila|access-demo>
+ * Usage: node scripts/start-mcp-http.mjs <pagila>
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -29,13 +29,9 @@ function main() {
     if (demo.prerequisite) {
         console.error(`[mcp-http:${name}] prerequisite: ${demo.prerequisite}`);
     }
-    if (name === 'access-demo') {
-        console.warn(
-            '[mcp-http:access-demo] JWT for protected tools: configure x-api-token in Cursor MCP UI (not in committed mcp.json).'
-        );
-    } else {
-        console.warn(
-            `[mcp-http:${name}] Protected tools: use stdio-db2ai-${name} (envFile DB2AI_AUTH_TOKEN) or set credential header in Cursor MCP UI.`
+    if (name === 'pagila') {
+        console.error(
+            `[mcp-http:${name}] protected tools: set headers.${authHeader} in mcp.json (demo: "demo") or DB2AI_AUTH_TOKEN in .env for stdio.`
         );
     }
 

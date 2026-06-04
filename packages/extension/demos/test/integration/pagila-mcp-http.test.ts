@@ -1,10 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as fs from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import { compileGeneratedForSmoke, withMcpStatelessHttpSession } from '../generated/index.js';
-import { ensureAccessDemoDocker } from '../support/access-demo-docker.js';
 import { demosRoot, demosTmpRoot } from '../support/paths.js';
+import { ensurePagilaDocker } from '../support/pagila-docker.js';
 import { runDemoGenerate } from '../support/run-demo-generate.js';
 
 async function findFreePort(): Promise<number> {
@@ -24,15 +23,12 @@ async function findFreePort(): Promise<number> {
     });
 }
 
-const ALICE_ACCESS_DEMO_TOKEN =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXN0b21lcklkIjoiYWxpY2UiLCJyb2xlIjoidXNlciJ9.W8kJLviah23DKhSJ-gd6LF7phONqmyOqe57WD8sHwFo';
-
-describe('access-demo generated stateless-http-mcp-server (MCP HTTP)', () => {
+describe('Pagila generated stateless-http-mcp-server (MCP HTTP)', () => {
     let connectionString = '';
     let runRoot = '';
 
     beforeAll(async () => {
-        ({ connectionString } = await ensureAccessDemoDocker(demosRoot));
+        ({ connectionString } = await ensurePagilaDocker(demosRoot));
     }, 180_000);
 
     afterAll(async () => {
@@ -41,22 +37,12 @@ describe('access-demo generated stateless-http-mcp-server (MCP HTTP)', () => {
         }
     });
 
-    it('calls listCustomerOrders with JWT from MCP client header', async () => {
+    it('calls listActors with x-api-token from MCP client header', async () => {
         const port = await findFreePort();
-        runRoot = await fs.mkdtemp(path.join(demosTmpRoot, 'access-demo-http-'));
-        const demosAuthDir = path.join(demosRoot, 'src', 'auth');
-        const fixtureAuthDir = path.join(runRoot, 'src', 'auth');
-        if (existsSync(demosAuthDir)) {
-            await fs.mkdir(fixtureAuthDir, { recursive: true });
-            for (const entry of await fs.readdir(demosAuthDir)) {
-                if (entry.endsWith('.ts')) {
-                    await fs.copyFile(path.join(demosAuthDir, entry), path.join(fixtureAuthDir, entry));
-                }
-            }
-        }
-        const generateSourcePath = path.join(runRoot, 'access-demo.db2ai');
-        await fs.copyFile(path.join(demosRoot, 'access-demo.db2ai'), generateSourcePath);
-        const generatedTsPath = path.join(runRoot, 'generated/tools/access-demo-tools.ts');
+        runRoot = await fs.mkdtemp(path.join(demosTmpRoot, 'pagila-http-'));
+        const generateSourcePath = path.join(runRoot, 'pagila.db2ai');
+        await fs.copyFile(path.join(demosRoot, 'pagila.db2ai'), generateSourcePath);
+        const generatedTsPath = path.join(runRoot, 'generated/tools/pagila-tools.ts');
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
         compileGeneratedForSmoke(runRoot);
@@ -65,22 +51,22 @@ describe('access-demo generated stateless-http-mcp-server (MCP HTTP)', () => {
         await withMcpStatelessHttpSession(
             {
                 statelessHttpMcpServerPath: path.join(runRoot, 'generated/cli/stateless-http-mcp-server.js'),
-                generatedModulePath: path.join(runRoot, 'generated/tools/access-demo-tools.js'),
+                generatedModulePath: path.join(runRoot, 'generated/tools/pagila-tools.js'),
                 hostArgs: ['--port', String(port), '--path', '/mcp'],
                 mcpUrl,
                 cwd: runRoot,
                 env: {
-                    ACCESS_DEMO_DATABASE_URL: connectionString,
+                    PAGILA_DATABASE_URL: connectionString,
                     MCP_AUTH_HEADER: 'x-api-token'
                 },
-                authHeader: { name: 'x-api-token', value: ALICE_ACCESS_DEMO_TOKEN }
+                authHeader: { name: 'x-api-token', value: 'demo' }
             },
             async (session) => {
                 const toolNames = await session.listToolNames();
-                expect(toolNames).toContain('listCustomerOrders');
+                expect(toolNames).toContain('listActors');
 
-                const orders = await session.callTool('listCustomerOrders', {});
-                expect(orders).toMatchObject({
+                const actors = await session.callTool('listActors', { limit: 5, offset: 0 });
+                expect(actors).toMatchObject({
                     rowCount: expect.any(Number),
                     rows: expect.any(Array)
                 });

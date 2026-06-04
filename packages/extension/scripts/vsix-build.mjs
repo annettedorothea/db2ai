@@ -22,11 +22,15 @@ function run(command, args, options = {}) {
 run('npm', ['run', 'langium:generate', '--prefix', workspaceRoot]);
 run('npm', ['run', 'build', '--prefix', workspaceRoot]);
 copyFileSync(path.join(workspaceRoot, 'LICENSE'), licenseDest);
-run(
-    'npx',
-    ['@vscode/vsce', 'package', '--allow-missing-repository', '--no-rewrite-relative-links'],
-    { cwd: extensionRoot }
-);
+// Demo OAuth IDP ships a fixed RSA key pair for local RS256/JWKS tests (not a production secret).
+run('npx', [
+    '@vscode/vsce',
+    'package',
+    '--allow-missing-repository',
+    '--no-rewrite-relative-links',
+    '--allow-package-secrets',
+    'privatekey'
+], { cwd: extensionRoot });
 try {
     unlinkSync(licenseDest);
 } catch {

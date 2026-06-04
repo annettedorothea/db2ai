@@ -1,1 +1,21 @@
-["package.json", "demos-generate.config.json", "scripts/generate.mjs", "scripts/generate-all.mjs", "scripts/init.mjs"]
+[
+    "package.json",
+    "demos-generate.config.json",
+    ".env.example",
+    ".cursor/mcp.json",
+    "docker-compose.yml",
+    "pagila.db2ai",
+    "sakila.db2ai",
+    "orders-demo.db2ai",
+    "orders-demo/init.sql",
+    "orders-demo/oauth-idp/server.mjs",
+    "orders-demo/oauth-idp/demo-rsa-private.pem",
+    "src/auth/listCustomerOrders.ts",
+    "scripts/generate.mjs",
+    "scripts/generate-all.mjs",
+    "scripts/init.mjs",
+    "scripts/kill-all-demos.mjs",
+    "scripts/kill-demo-databases.mjs",
+    "scripts/mcp-http-demos.mjs",
+    "scripts/mcp-oauth-demos.mjs"
+]

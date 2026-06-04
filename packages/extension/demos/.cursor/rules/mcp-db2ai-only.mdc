@@ -6,8 +6,8 @@ alwaysApply: true
 # MCP-Nutzung auf db2ai-Server beschraenken
 
 - Diese Regel greift nur, wenn die Nutzeranfrage mit `db2ai` beginnt.
-- In Cursor ist pro Demo nur **ein** Server aktiv: `stdio-db2ai-*` **oder** `http-db2ai-*` (siehe `.cursor/mcp.json`).
-- Dann stelle ausschliesslich MCP-Anfragen an Server, deren Name `stdio-db2ai-` oder `http-db2ai-` enthaelt (z. B. `stdio-db2ai-pagila`, `http-db2ai-access-demo`, `project-0-demos-db2ai-*`).
+- In Cursor ist pro Demo genau **ein** Eintrag in `.cursor/mcp.json` (z. B. `sakila-stdio`, `pagila-http-stateless`, `orders-demo-oauth`).
+- Dann stelle ausschliesslich MCP-Anfragen an diese konfigurierten Server.
 - Nutze in diesem Fall keine anderen MCP-Server, auch wenn sie verfuegbar sind.
 - Nutze in diesem Fall **keine** allgemeine Recherche ausserhalb der erlaubten `db2ai*`-MCPs:
   - **keine Websuche** (z. B. `WebSearch`),
@@ -49,7 +49,7 @@ alwaysApply: true
   - andere MCP-Server-IDs oder Server-Namen durchprobieren,
   - erneute Aufrufe mit anderen Parametern, nur um denselben Fehler zu umgehen.
 - **Erlaubt** vor dem (oder beim) einen MCP-Versuch: MCP-Tool-Descriptor lesen (Schema), um den Aufruf korrekt zu formulieren — das ist keine Ersatz-Datenquelle.
-- **Genau ein** MCP-Tool-Aufruf pro geplanter Abfrage; scheitert er, Antwort mit kurzer Fehlermeldung, Hinweis fuer den Nutzer (z. B. `stdio-db2ai-*` oder `http-db2ai-*` aktivieren, `npm run db:up:all`, HTTP-Host `demo:mcp-http:all`, protected: Token in `.env.local` oder `x-api-token` in MCP-UI/`mcp.json`) und **Audit** mit dem Fehler — **keine** Daten aus anderen Quellen liefern.
+- **Genau ein** MCP-Tool-Aufruf pro geplanter Abfrage; scheitert er, Antwort mit kurzer Fehlermeldung, Hinweis fuer den Nutzer (z. B. Server in `mcp.json` aktivieren, `npm run init`, Pagila: `x-api-token` / `DB2AI_AUTH_TOKEN`, orders-demo: OAuth) und **Audit** mit dem Fehler — **keine** Daten aus anderen Quellen liefern.
 
 ## Quellen aus MCP-Antworten lesen
 
@@ -72,7 +72,7 @@ alwaysApply: true
 
 **Darunter je Eintrag (Bullet-Liste):**
 
-- **MCP-Server:** `serverName` aus `mcp.json` (z. B. `stdio-db2ai-pagila`)
+- **MCP-Server:** `serverName` aus `mcp.json` (z. B. `pagila-http-stateless`)
 - **MCP-Tool:** technischer Toolname (z. B. `listFilms`) — genau einmal, nicht als Ueberschrift wiederholen
 - **Params:** exakt uebergebene Parameter/Argumente (`limit`, `offset`, …)
 - **Antwort:** relevante Rohantwort (oder Fehler)
@@ -87,4 +87,4 @@ Wenn kein MCP-Request moeglich/erfolgreich war, dokumentiere das explizit.
 
 **Benennung:** „MCP-Server“ und „MCP-Tool“ verwenden — nicht nur „Server“/„Tool“. Der MCP-Server ist der `serverName`-Eintrag in `.cursor/mcp.json`.
 
-**MCP-Server-Name im Audit:** Immer **`serverName`** (z. B. `http-db2ai-pagila`), **nicht** den Cursor-`serverIdentifier` (`project-0-demos-…`). Identifier nur auf Nachfrage in Klammern.
+**MCP-Server-Name im Audit:** Immer **`serverName`** (z. B. `orders-demo-oauth`), **nicht** den Cursor-`serverIdentifier` (`project-0-demos-…`). Identifier nur auf Nachfrage in Klammern.

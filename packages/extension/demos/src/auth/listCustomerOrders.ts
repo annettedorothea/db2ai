@@ -1,4 +1,4 @@
-import type { CheckedHostContext, InvokeOptions } from '../../generated/tools/access-demo-tools.js';
+import type { CheckedHostContext, InvokeOptions } from '../../generated/tools/orders-demo-tools.js';
 
 export function checkListCustomerOrdersParameters(options: InvokeOptions, host: CheckedHostContext): InvokeOptions {
     const jwt = host.jwt;

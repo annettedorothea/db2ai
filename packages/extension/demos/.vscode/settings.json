@@ -14,7 +14,7 @@
             "server": "localhost",
             "driver": "PostgreSQL",
             "name": "access demo",
-            "connectString": "postgresql://postgres:postgres@localhost:55433/access_demo"
+            "connectString": "postgresql://postgres:postgres@localhost:55433/orders_demo"
         }
     ]
 }

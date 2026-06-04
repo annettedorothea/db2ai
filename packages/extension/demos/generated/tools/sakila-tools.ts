@@ -223,7 +223,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-tools';
-export const mcpServerVersion = '0.0.5';
+export const mcpServerVersion = '0.0.6';
 
 import * as z from 'zod/v4';
 
@@ -315,7 +315,7 @@ export async function invokeTool(
     if (toolMeta.access !== 'public') {
         if (!host.credential || !String(host.credential).trim()) {
             throw new Error(
-                'Missing host credential. Set the variable named by --auth-env on stdio-mcp-server (re-read on every tool call).'
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; stateless HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
         }
     }

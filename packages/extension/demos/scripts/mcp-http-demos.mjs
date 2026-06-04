@@ -12,25 +12,11 @@ export const HTTP_DEMOS = {
         defaultPort: 3853,
         mcpUrl: 'http://127.0.0.1:3853/mcp',
         prerequisite: 'npm run db:pagila:up'
-    },
-    sakila: {
-        tools: 'sakila-tools.js',
-        connectionEnv: 'SAKILA_DATABASE_URL',
-        defaultConnection: 'mysql://sakila:p_ssW0rd@localhost:53306/sakila',
-        portEnv: 'SAKILA_HTTP_PORT',
-        defaultPort: 3854,
-        mcpUrl: 'http://127.0.0.1:3854/mcp',
-        prerequisite: 'npm run db:sakila:up'
-    },
-    'access-demo': {
-        tools: 'access-demo-tools.js',
-        connectionEnv: 'ACCESS_DEMO_DATABASE_URL',
-        portEnv: 'ACCESS_DEMO_HTTP_PORT',
-        defaultPort: 3852,
-        mcpUrl: 'http://127.0.0.1:3852/mcp',
-        prerequisite: 'npm run db:access-demo:up'
     }
 };
+
+/** Hosts started by `npm run init` (matches .cursor/mcp.json http-stateless entries). */
+export const HTTP_INIT_DEMO_NAMES = ['pagila'];
 
 export const HTTP_DEMO_NAMES = Object.keys(HTTP_DEMOS);
 
@@ -74,4 +60,8 @@ export function buildHostLaunch(name, demosRoot, env) {
 
 export function listHttpPorts(env = process.env) {
     return HTTP_DEMO_NAMES.map((name) => resolvePort(HTTP_DEMOS[name], env));
+}
+
+export function listInitHttpPorts(env = process.env) {
+    return HTTP_INIT_DEMO_NAMES.map((name) => resolvePort(HTTP_DEMOS[name], env));
 }

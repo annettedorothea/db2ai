@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Start one oauth-http MCP host (foreground).
- * Usage: node scripts/start-mcp-oauth.mjs <access-demo>
+ * Usage: node scripts/start-mcp-oauth.mjs <orders-demo>
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -22,7 +22,7 @@ function main() {
     const { demo, port, args, mcpUrl } = buildOAuthHostLaunch(name, demosRoot, process.env);
 
     console.error(`[mcp-oauth:${name}] listening http://127.0.0.1:${port}/mcp`);
-    console.error(`[mcp-oauth:${name}] Cursor mcp.json: oauth-db2ai-${name}`);
+    console.error(`[mcp-oauth:${name}] Cursor mcp.json: ${name}-oauth`);
     console.error(`[mcp-oauth:${name}] auth.CLIENT_ID: mcp-demo-local`);
     if (demo.prerequisite) {
         console.error(`[mcp-oauth:${name}] prerequisite: ${demo.prerequisite}`);
