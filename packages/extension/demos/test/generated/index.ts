@@ -8,4 +8,10 @@ export {
     type McpStdioConnectOptions,
     type McpStdioSession
 } from './mcp-stdio-smoke.js';
+export {
+    connectMcpStatelessHttp,
+    withMcpStatelessHttpSession,
+    type McpStatelessHttpConnectOptions,
+    type McpStatelessHttpSession
+} from './mcp-http-smoke.js';
 export { asRecord, credentialWithOptionalJwt, restoreEnv } from './env-helpers.js';

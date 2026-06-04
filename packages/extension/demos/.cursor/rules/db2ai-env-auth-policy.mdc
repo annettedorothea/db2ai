@@ -13,6 +13,12 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 - **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
 - Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `ACCESS_DEMO_TOKEN`, `DB2AI_AUTH_TOKEN`, `PAGILA_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
 
+## Transport (stdio vs. HTTP, siehe `mcp.json`)
+
+- **`stdio-db2ai-*`:** Credentials aus `envFile` (`.env.local`) — `DB2AI_AUTH_TOKEN` (Pagila/Sakila protected), `ACCESS_DEMO_TOKEN` (access-demo protected/checked).
+- **`http-db2ai-pagila` / `http-db2ai-sakila`:** protected Tools brauchen `x-api-token` in Cursor MCP-UI (nicht in committed `mcp.json`); public Tools ohne Token.
+- **`http-db2ai-access-demo`:** Demo-JWT in `headers.x-api-token` in `mcp.json` (bob); stdio nutzt `ACCESS_DEMO_TOKEN` in `.env.local`.
+
 ## Auth-Fehler: Fehler melden, nicht umgehen
 
 - MCP-Server mit `--auth-env` nutzen **ausschliesslich** das vom Host injizierte Credential/JWT — optionale Tool-Argumente oder Header sind **kein** Ersatz fuer fehlende Env-Credentials.
@@ -33,7 +39,7 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 **Anfrage:** „db2ai zeig bobs bestellungen an“ — `ACCESS_DEMO_TOKEN` gehoert zu `alice`.
 
 - ✅ Einmal `listCustomerOrders` mit `customerId: bob` aufrufen.
-- ✅ Bei Mismatch-Fehler melden: JWT ist `alice`, angefragt wurde `bob`; Nutzer soll `ACCESS_DEMO_TOKEN` in `.env` selbst auf Bobs Demo-JWT setzen.
+- ✅ Bei Mismatch-Fehler melden: JWT ist `alice`, angefragt wurde `bob`; Nutzer soll `ACCESS_DEMO_TOKEN` in `.env.local` setzen (stdio) oder `headers.x-api-token` fuer `http-db2ai-access-demo` anpassen.
 - ❌ `.env.local` lesen oder aendern.
 - ❌ Erneut `listCustomerOrders` nach eigenmaechtigem Credential-Tausch.
 - ❌ Pagila/Sakila- oder andere db2ai-MCPs als Ersatz nutzen, um die Anfrage doch noch zu erfuellen.

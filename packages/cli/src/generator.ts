@@ -12,12 +12,14 @@ import * as path from 'node:path';
 import * as url from 'node:url';
 import { renderBootstrap } from './generator/render-bootstrap.js';
 import { renderCheckStubs } from './generator/render-check-stubs.js';
+import { renderStatelessHttpMcpHost } from './generator/render-stateless-http-mcp-host.js';
 import { renderStdioMcpHost } from './generator/render-stdio-mcp-host.js';
 import { renderToolsModule } from './generator/render-tools-module.js';
 
 export type GeneratedOutputFiles = {
     tsPath: string;
     stdioMcpHostPath: string;
+    statelessHttpMcpHostPath: string;
 };
 
 declare const __dirname: string | undefined;
@@ -77,9 +79,10 @@ export async function generateOutput(model: Model, source: string, destination: 
 
     const cliDir = resolveGeneratedCliDir(tsPath);
     const stdioMcpHostPath = renderStdioMcpHost(cliDir, bootstrapConfig);
+    const statelessHttpMcpHostPath = renderStatelessHttpMcpHost(cliDir, bootstrapConfig);
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
     renderBootstrap(projectRoot, bootstrapConfig);
     writeGeneratedDemosTestSupport(projectRoot);
 
-    return { tsPath, stdioMcpHostPath };
+    return { tsPath, stdioMcpHostPath, statelessHttpMcpHostPath };
 }

@@ -24,7 +24,7 @@ Set `database env "YOUR_VAR"` (or `database mysql env "YOUR_VAR"`) in the DSL an
 2. Command Palette → **db2ai: Create demo workspace (MCP examples)** → choose an empty folder.
 3. In that folder run **`npm run init`** (requires Docker: creates `.env` from `.env.example` if missing, install, start DBs, generate, compile).
 4. Edit **`.env`** for database URLs and optional tokens (`DB2AI_AUTH_TOKEN`, `ACCESS_DEMO_TOKEN`).
-5. Open the demo folder as the workspace. In Cursor Settings → **Tools & MCP**, enable **`db2ai-pagila`**, **`db2ai-sakila`**, and/or **`db2ai-access-demo`**.
+5. Open the demo folder as the workspace. In Cursor Settings → **Tools & MCP**, enable one server per demo (`stdio-db2ai-*` or `http-db2ai-*`, names in `.cursor/mcp.json`).
 
 **Reload MCP** after changing `.db2ai`, running generate/build, or env vars that MCP reads at server startup (e.g. database URLs).
 

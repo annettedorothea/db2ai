@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * Generated MCP stdio host (static runtime — no @core2ai/core).
+ * Generated stateless MCP Streamable HTTP host (static runtime — no @core2ai/core).
  */
 import * as fs from 'node:fs';
+import * as http from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import * as z from 'zod/v4';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
@@ -261,15 +263,21 @@ async function registerMcpTools(
     }
 }
 
-type HostRuntimeConfig = {
+type StatelessHttpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
-    authEnvKey?: string;
     envDirs: string[];
+    listenHost: string;
+    port: number;
+    mcpPath: string;
 };
 
-function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
+const DEFAULT_MCP_AUTH_HEADER = 'x-api-token';
+
+function parseStatelessHttpHostArgv(argv: string[], envDirs: string[]): StatelessHttpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
-    let authEnv: string | undefined;
+    let listenHost = '127.0.0.1';
+    let port: number | undefined;
+    let mcpPath = '/mcp';
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--base-url-env') {
@@ -279,10 +287,31 @@ function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
             }
             continue;
         }
-        if (arg === '--auth-env') {
-            authEnv = argv[++i];
-            if (!authEnv) {
-                throw new Error('Missing value after --auth-env');
+        if (arg === '--host') {
+            listenHost = argv[++i];
+            if (!listenHost) {
+                throw new Error('Missing value after --host');
+            }
+            continue;
+        }
+        if (arg === '--port') {
+            const raw = argv[++i];
+            if (!raw) {
+                throw new Error('Missing value after --port');
+            }
+            port = Number.parseInt(raw, 10);
+            if (!Number.isFinite(port) || port <= 0) {
+                throw new Error('Invalid --port value: ' + raw);
+            }
+            continue;
+        }
+        if (arg === '--path') {
+            mcpPath = argv[++i];
+            if (!mcpPath) {
+                throw new Error('Missing value after --path');
+            }
+            if (!mcpPath.startsWith('/')) {
+                mcpPath = '/' + mcpPath;
             }
             continue;
         }
@@ -291,19 +320,32 @@ function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
         }
         throw new Error('Unexpected positional argument: ' + arg);
     }
-    return { baseUrlEnvKey: baseUrlEnv, authEnvKey: authEnv, envDirs };
-}
-
-function readCredentialFromEnv(authEnvKey: string | undefined): string | undefined {
-    const key = authEnvKey?.trim();
-    if (!key) {
-        return undefined;
+    if (port === undefined) {
+        throw new Error('Required: --port <number>');
     }
-    const value = process.env[key]?.trim();
-    return value && value.length > 0 ? value : undefined;
+    return { baseUrlEnvKey: baseUrlEnv, envDirs, listenHost, port, mcpPath };
 }
 
-function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): void {
+function readAuthHeaderNameFromEnv(): string {
+    const configured = process.env.MCP_AUTH_HEADER?.trim();
+    return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
+}
+
+function readCredentialFromHttpHeaders(
+    headers: Record<string, string | string[] | undefined>,
+    headerName: string
+): string | undefined {
+    const normalized = headerName.trim().toLowerCase();
+    const raw = headers[normalized];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    const trimmed = typeof value === 'string' ? value.trim() : '';
+    return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function validateStatelessHttpHostAtStartup(
+    httpHostConfig: StatelessHttpHostRuntimeConfig,
+    generated: GeneratedHostModule
+): void {
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -322,7 +364,7 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
             );
         }
     } else {
-        const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
+        const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
         if (!baseUrlKey) {
             throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
         }
@@ -333,13 +375,15 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
             );
         }
     }
-    if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
-        throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
-    }
 }
 
-function resolveHostContextForCall(hostConfig: HostRuntimeConfig, generated: GeneratedHostModule): ApiLikeHostContext {
-    const credential = readCredentialFromEnv(hostConfig.authEnvKey);
+function resolveHostContextForHttpCall(
+    httpHostConfig: StatelessHttpHostRuntimeConfig,
+    generated: GeneratedHostModule,
+    incomingHeaders: Record<string, string | string[] | undefined>
+): ApiLikeHostContext {
+    const headerName = readAuthHeaderNameFromEnv();
+    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
     const { credential: c, jwt } = credentialWithOptionalJwt(credential);
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -356,32 +400,88 @@ function resolveHostContextForCall(hostConfig: HostRuntimeConfig, generated: Gen
         }
         return { connectionString, databaseDialect: dialect, credential: c, jwt };
     }
-    const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
+    const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
-        throw new Error('Missing host base URL. Pass --base-url-env on stdio-mcp-server.js and set the variable.');
+        throw new Error(
+            'Missing host base URL. Pass --base-url-env on stateless-http-mcp-server.js and set the variable.'
+        );
     }
     return { baseUrl, credential: c, jwt };
 }
 
-async function runStdioMcpServer(
-    generated: ReturnType<typeof readGeneratedModule>,
-    hostConfig: HostRuntimeConfig
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    if (chunks.length === 0) {
+        return undefined;
+    }
+    const text = Buffer.concat(chunks).toString('utf-8');
+    if (text.trim().length === 0) {
+        return undefined;
+    }
+    return JSON.parse(text) as unknown;
+}
+
+function jsonRpcMethodNotAllowed(res: ServerResponse): void {
+    if (res.headersSent) {
+        return;
+    }
+    res.writeHead(405, { 'content-type': 'application/json' });
+    res.end(
+        JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code: -32000, message: 'Method not allowed.' },
+            id: null
+        })
+    );
+}
+
+async function handleStatelessMcpPost(
+    req: IncomingMessage,
+    res: ServerResponse,
+    generated: GeneratedHostModule,
+    httpHostConfig: StatelessHttpHostRuntimeConfig
 ): Promise<void> {
+    const incomingHeaders = req.headers as Record<string, string | string[] | undefined>;
     const { name, version } = requireMcpServerIdentity(generated);
     const server = new McpServer({ name, version });
     await registerMcpTools(server, generated, {
-        envDirs: hostConfig.envDirs,
-        resolveContext: () => resolveHostContextForCall(hostConfig, generated)
+        envDirs: httpHostConfig.envDirs,
+        resolveContext: () => resolveHostContextForHttpCall(httpHostConfig, generated, incomingHeaders)
     });
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    try {
+        await server.connect(transport);
+        const parsedBody = await readJsonBody(req);
+        res.on('close', () => {
+            void transport.close();
+            void server.close();
+        });
+        await transport.handleRequest(req, res, parsedBody);
+    } catch (err) {
+        console.error('[mcp] stateless HTTP request failed:', err);
+        if (!res.headersSent) {
+            res.writeHead(500, { 'content-type': 'application/json' });
+            res.end(
+                JSON.stringify({
+                    jsonrpc: '2.0',
+                    error: { code: -32603, message: 'Internal server error' },
+                    id: null
+                })
+            );
+        }
+    }
 }
 
-async function runStdioMcpStandaloneFromArgv(argv: string[]): Promise<void> {
+async function runStatelessHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     const modulePath = argv[0];
     if (!modulePath) {
-        throw new Error('Usage: node stdio-mcp-server.js <path-to-*-tools.js> [host options...]');
+        throw new Error(
+            'Usage: node stateless-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
+        );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
     loadLocalEnvFiles(envDirs);
@@ -390,15 +490,46 @@ async function runStdioMcpStandaloneFromArgv(argv: string[]): Promise<void> {
         throw new Error(`Generated module "${modulePath}" did not export an object.`);
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const hostConfig = parseHostArgv(argv.slice(1), envDirs);
-    if (!generated.connectionEnv && !hostConfig.baseUrlEnvKey) {
+    const httpHostConfig = parseStatelessHttpHostArgv(argv.slice(1), envDirs);
+    if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
         throw new Error(
             'Required: --base-url-env <ENV_VAR_NAME> (api2ai tools). db2ai uses connectionEnv from the tool module.'
         );
     }
-    validateHostAtStartup(hostConfig, generated);
-    console.error('[mcp] host context refreshed each tool call');
-    await runStdioMcpServer(generated, hostConfig);
+    validateStatelessHttpHostAtStartup(httpHostConfig, generated);
+    const authHeaderName = readAuthHeaderNameFromEnv();
+    console.error(
+        '[mcp] stateless HTTP on http://' +
+            httpHostConfig.listenHost +
+            ':' +
+            httpHostConfig.port +
+            httpHostConfig.mcpPath +
+            ' (credential header: ' +
+            authHeaderName +
+            ')'
+    );
+
+    const httpServer = http.createServer(async (req, res) => {
+        const url = new URL(req.url ?? '/', 'http://' + (req.headers.host ?? 'localhost'));
+        if (url.pathname !== httpHostConfig.mcpPath) {
+            res.writeHead(404).end('Not found');
+            return;
+        }
+        if (req.method === 'POST') {
+            await handleStatelessMcpPost(req, res, generated, httpHostConfig);
+            return;
+        }
+        if (req.method === 'GET' || req.method === 'DELETE') {
+            jsonRpcMethodNotAllowed(res);
+            return;
+        }
+        res.writeHead(405).end('Method not allowed');
+    });
+
+    await new Promise<void>((resolve, reject) => {
+        httpServer.once('error', reject);
+        httpServer.listen(httpHostConfig.port, httpHostConfig.listenHost, () => resolve());
+    });
 }
 
-await runStdioMcpStandaloneFromArgv(process.argv.slice(2));
+await runStatelessHttpMcpStandaloneFromArgv(process.argv.slice(2));
