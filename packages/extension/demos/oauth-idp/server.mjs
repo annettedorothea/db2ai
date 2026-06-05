@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Mini OAuth 2.1 authorization server for MCP demos (mock-api).
- * Sync logic with api2ai shopping-api/oauth-idp/server.mjs — ports/secrets differ.
+ * Mini OAuth 2.1 authorization server for MCP demos (orders oidc).
+ * Sync logic with api2ai oauth-idp/server.mjs — ports/secrets differ.
  */
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
 import { getJwksDocument, mintCustomerToken } from './jwt.mjs';
 
-const PORT = Number(process.env.ORDERS_DEMO_OAUTH_IDP_PORT) || 3862;
+const PORT = Number(process.env.ORDERS_DEMO_OAUTH_IDP_PORT) || 4863;
 const CLIENT_ID = 'mcp-demo-local';
 const CURSOR_REDIRECT = 'cursor://anysphere.cursor-mcp/oauth/callback';
 const DEMO_USERS = [
@@ -92,9 +92,9 @@ function sendAuthorizeHelpPage(res, title) {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(
         `<!doctype html><html><body><h1>${title}</h1>` +
-            '<p>Open login via <strong>Cursor MCP OAuth</strong> (&quot;Needs login&quot; on <code>orders-demo-oauth</code>), not by bookmarking <code>/authorize</code>.</p>' +
+            '<p>Open login via <strong>Cursor MCP OAuth</strong> (&quot;Needs login&quot; on <code>orders</code>), not by bookmarking <code>/authorize</code>.</p>' +
             '<p>Cursor sends <code>response_type=code</code>, <code>client_id=mcp-demo-local</code>, PKCE <code>code_challenge</code>, and redirect <code>cursor://anysphere.cursor-mcp/oauth/callback</code>.</p>' +
-            '<p>Processes: <code>npm run demo:oauth-idp</code>, <code>npm run demo:mcp-oauth:orders-demo</code>, orders-demo Docker.</p>' +
+            '<p>Processes: <code>npm run demo:oauth-idp</code> (:4863 RS256), <code>npm run demo:mcp-oauth:orders</code>, orders-demo Docker.</p>' +
             '</body></html>'
     );
 }
@@ -247,7 +247,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-    console.error(`[orders-demo-oauth-idp] http://127.0.0.1:${PORT}`);
-    console.error(`[orders-demo-oauth-idp] Cursor redirect: ${CURSOR_REDIRECT}`);
-    console.error(`[orders-demo-oauth-idp] client_id: ${CLIENT_ID}`);
+    console.error(`[oauth-idp] http://127.0.0.1:${PORT}`);
+    console.error(`[oauth-idp] Cursor redirect: ${CURSOR_REDIRECT}`);
+    console.error(`[oauth-idp] client_id: ${CLIENT_ID}`);
 });

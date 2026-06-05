@@ -1,20 +1,24 @@
 /**
- * OAuth + stateful HTTP MCP demo hosts (db2ai).
+ * OAuth HTTP MCP demo hosts (db2ai) — keys match .cursor/mcp.json server names.
  */
 import path from 'node:path';
 
 export const OAUTH_HTTP_DEMOS = {
-    'orders-demo': {
+    orders: {
         tools: 'orders-demo-tools.js',
         oauthIdpUrlEnv: 'ORDERS_DEMO_OAUTH_IDP_URL',
-        defaultOAuthIdpUrl: 'http://127.0.0.1:3862',
-        jwtSecretEnv: 'ORDERS_DEMO_JWT_SECRET',
+        defaultOAuthIdpUrl: 'http://127.0.0.1:4863',
         portEnv: 'ORDERS_DEMO_OAUTH_HTTP_PORT',
-        defaultPort: 3871,
-        mcpUrl: 'http://127.0.0.1:3871/mcp',
-        prerequisite: 'orders-demo Postgres (db:orders-demo:up) + oauth-idp'
+        defaultPort: 4871,
+        tokenValidation: 'oidc',
+        oauthScope: 'orders-demo',
+        mcpServerName: 'orders',
+        prerequisite: 'Docker orders-demo + oauth-idp :4863 (RS256)'
     }
 };
+
+/** OAuth MCP hosts started by `npm run init`. */
+export const OAUTH_HTTP_INIT_DEMO_NAMES = ['orders'];
 
 export const OAUTH_HTTP_DEMO_NAMES = Object.keys(OAUTH_HTTP_DEMOS);
 
@@ -46,14 +50,15 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
     const port = resolvePort(demo, env);
     const hostJs = path.join(demosRoot, 'generated/cli/oauth-http-mcp-server.js');
     const toolsJs = path.join(demosRoot, 'generated/tools', demo.tools);
-    const tokenValidation = (env.OAUTH_TOKEN_VALIDATION ?? 'hs256').trim();
+    const tokenValidation = demo.tokenValidation;
+    const oauthScope = demo.oauthScope ?? name;
     const args = [
         hostJs,
         toolsJs,
         '--oauth-idp-url',
         env[demo.oauthIdpUrlEnv],
         '--oauth-scope',
-        name,
+        oauthScope,
         '--oauth-token-validation',
         tokenValidation,
         '--port',
@@ -68,10 +73,9 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
         if (audience) {
             args.push('--oauth-audience', audience);
         }
-    } else if (tokenValidation === 'hs256') {
-        args.push('--jwt-secret-env', demo.jwtSecretEnv);
     }
-    return { demo, port, args, mcpUrl: demo.mcpUrl, tokenValidation };
+    const mcpUrl = `http://127.0.0.1:${port}/mcp`;
+    return { demo, port, args, mcpUrl, tokenValidation };
 }
 
 export function listOAuthHttpPorts(env = process.env) {

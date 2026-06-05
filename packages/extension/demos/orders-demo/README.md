@@ -8,11 +8,15 @@ npm run db:orders-demo:up
 
 Connection: `ORDERS_DEMO_DATABASE_URL` in `.env` (see `.env.example`).
 
-## OAuth MCP (`orders-demo-oauth`)
+## OAuth MCP
 
-1. Database: `npm run db:orders-demo:up`
-2. IDP: `npm run demo:oauth-idp` (port **3862**)
-3. Host: `npm run demo:mcp-oauth:orders-demo` (port **3871**)
-4. Cursor: enable **`orders-demo-oauth`**, reload MCP → OAuth on connect
+1. `npm run init` (or DB + IdP + hosts manually)
+2. Cursor: enable **`orders`**, reload MCP → OAuth sign-in
 
-JWT secret: `ORDERS_DEMO_JWT_SECRET=db2ai-orders-demo` (matches demo tokens in `.env.example`).
+Ports (48xx): IdP RS256 **4863** · MCP oidc **4871**. Shared IdP: [`../oauth-idp/`](../oauth-idp/).
+
+JWT (tests/dev): `ORDERS_DEMO_JWT_SECRET` · `node orders-demo/get-token.mjs alice`
+
+---
+
+#Col3:23

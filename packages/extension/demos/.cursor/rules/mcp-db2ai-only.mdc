@@ -6,7 +6,7 @@ alwaysApply: true
 # MCP-Nutzung auf db2ai-Server beschraenken
 
 - Diese Regel greift nur, wenn die Nutzeranfrage mit `db2ai` beginnt.
-- In Cursor ist pro Demo genau **ein** Eintrag in `.cursor/mcp.json` (z. B. `sakila-stdio`, `pagila-http-stateless`, `orders-demo-oauth`).
+- In Cursor ist pro Demo genau **ein** Eintrag in `.cursor/mcp.json` (z. B. `sakila`, `pagila`, `orders`).
 - Dann stelle ausschliesslich MCP-Anfragen an diese konfigurierten Server.
 - Nutze in diesem Fall keine anderen MCP-Server, auch wenn sie verfuegbar sind.
 - Nutze in diesem Fall **keine** allgemeine Recherche ausserhalb der erlaubten `db2ai*`-MCPs:
@@ -72,7 +72,7 @@ alwaysApply: true
 
 **Darunter je Eintrag (Bullet-Liste):**
 
-- **MCP-Server:** `serverName` aus `mcp.json` (z. B. `pagila-http-stateless`)
+- **MCP-Server:** `serverName` aus `mcp.json` (z. B. `pagila`, `orders`)
 - **MCP-Tool:** technischer Toolname (z. B. `listFilms`) — genau einmal, nicht als Ueberschrift wiederholen
 - **Params:** exakt uebergebene Parameter/Argumente (`limit`, `offset`, …)
 - **Antwort:** relevante Rohantwort (oder Fehler)
@@ -87,4 +87,4 @@ Wenn kein MCP-Request moeglich/erfolgreich war, dokumentiere das explizit.
 
 **Benennung:** „MCP-Server“ und „MCP-Tool“ verwenden — nicht nur „Server“/„Tool“. Der MCP-Server ist der `serverName`-Eintrag in `.cursor/mcp.json`.
 
-**MCP-Server-Name im Audit:** Immer **`serverName`** (z. B. `orders-demo-oauth`), **nicht** den Cursor-`serverIdentifier` (`project-0-demos-…`). Identifier nur auf Nachfrage in Klammern.
+**MCP-Server-Name im Audit:** Immer **`serverName`** (z. B. `orders`, `sakila`), **nicht** den Cursor-`serverIdentifier` (`project-0-demos-…`). Identifier nur auf Nachfrage in Klammern.

@@ -11,13 +11,13 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 - **Nicht lesen, schreiben oder aendern:** `.env`, `.env.local`, `.env.*` und vergleichbare Secret-/Config-Dateien.
 - **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
-- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `ORDERS_DEMO_TOKEN`, `DB2AI_AUTH_TOKEN`, `PAGILA_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
+- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `DB2AI_AUTH_TOKEN`, `PAGILA_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
 
 ## Transport (stdio vs. HTTP vs. OAuth, siehe `mcp.json`)
 
-- **`sakila-stdio`:** `DB2AI_AUTH_TOKEN` + `MCP_AUTH_EXPECTED` (gleicher Wert) in `.env`; Host `--credential-validation static`.
-- **`pagila-http-stateless`:** protected Pagila-Tools brauchen `headers.x-api-token: demo`; Host validiert gegen `MCP_AUTH_EXPECTED` (`static`).
-- **`orders-demo-oauth`:** Cursor OAuth; Host `--oauth-token-validation hs256` (Default); optional `ORDERS_DEMO_TOKEN` in `.env` fuer manuelle Checks — kein separates Login-Tool.
+- **`sakila`:** `DB2AI_AUTH_TOKEN` + `MCP_AUTH_EXPECTED` (gleicher Wert) in `.env`; Host `--credential-validation static`.
+- **`pagila`:** protected Pagila-Tools brauchen `headers.x-api-token: demo`; Host validiert gegen `MCP_AUTH_EXPECTED` (`static`).
+- **`orders`:** Cursor OAuth Sign-in; Host `--oauth-token-validation oidc` — kein Token in Env schreiben.
 
 Host-Modi (`hs256` | `static` | `opaque` | `oidc`): siehe Demos-README. db2ai-Produktion: `static`/`hs256` — nicht `opaque` ohne zweiten Pruefer.
 
@@ -38,10 +38,10 @@ Host-Modi (`hs256` | `static` | `opaque` | `oidc`): siehe Demos-README. db2ai-Pr
 
 ## Beispiel (orders-demo)
 
-**Anfrage:** „db2ai zeig bobs bestellungen an“ — `ORDERS_DEMO_TOKEN` gehoert zu `alice`.
+**Anfrage:** „db2ai zeig bobs bestellungen an“ — OAuth-Token gehoert zu `alice`.
 
 - ✅ Einmal `listCustomerOrders` mit `customerId: bob` aufrufen.
-- ✅ Bei Mismatch-Fehler melden: JWT ist `alice`, angefragt wurde `bob`; Nutzer soll `ORDERS_DEMO_TOKEN` in `.env` anpassen oder per OAuth als `bob` anmelden.
+- ✅ Bei Mismatch-Fehler melden: Token ist `alice`, angefragt wurde `bob`; Nutzer soll per OAuth als `bob` anmelden (Cursor Sign-in auf `orders`).
 - ❌ `.env` lesen oder aendern.
 - ❌ Erneut `listCustomerOrders` nach eigenmaechtigem Credential-Tausch.
 - ❌ Pagila/Sakila-MCPs als Ersatz nutzen, um die Anfrage doch noch zu erfuellen.

@@ -1,6 +1,6 @@
 {
     "mcpServers": {
-        "sakila-stdio": {
+        "sakila": {
             "command": "node",
             "envFile": ".env",
             "args": [
@@ -17,14 +17,14 @@
                 "SAKILA_DATABASE_URL": "mysql://sakila:p_ssW0rd@localhost:53306/sakila"
             }
         },
-        "pagila-http-stateless": {
-            "url": "http://127.0.0.1:3853/mcp",
+        "pagila": {
+            "url": "http://127.0.0.1:4853/mcp",
             "headers": {
                 "x-api-token": "demo"
             }
         },
-        "orders-demo-oauth": {
-            "url": "http://127.0.0.1:3871/mcp",
+        "orders": {
+            "url": "http://127.0.0.1:4871/mcp",
             "auth": {
                 "CLIENT_ID": "mcp-demo-local"
             }

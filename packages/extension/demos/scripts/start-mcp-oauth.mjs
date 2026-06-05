@@ -22,7 +22,7 @@ function main() {
     const { demo, port, args, mcpUrl, tokenValidation } = buildOAuthHostLaunch(name, demosRoot, process.env);
 
     console.error(`[mcp-oauth:${name}] listening http://127.0.0.1:${port}/mcp`);
-    console.error(`[mcp-oauth:${name}] Cursor mcp.json: ${name}-oauth`);
+    console.error(`[mcp-oauth:${name}] Cursor mcp.json: ${demo.mcpServerName ?? `${name}-oauth`}`);
     console.error(`[mcp-oauth:${name}] auth.CLIENT_ID: mcp-demo-local`);
     console.error(`[mcp-oauth:${name}] oauth-token-validation: ${tokenValidation}`);
     if (demo.prerequisite) {

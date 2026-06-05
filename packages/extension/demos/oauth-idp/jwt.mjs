@@ -1,4 +1,4 @@
-// Sync with shopping-api/oauth-idp (api2ai) — ports/secrets differ per product.
+// Sync with api2ai oauth-idp/jwt.mjs — ports/secrets differ per product.
 import { createHmac, randomBytes } from 'node:crypto';
 
 const DEFAULT_SECRET = 'db2ai-orders-demo';

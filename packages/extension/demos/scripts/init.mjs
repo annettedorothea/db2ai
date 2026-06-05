@@ -8,7 +8,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { loadDemoEnvLocal } from './load-env-local.mjs';
 import { buildHostLaunch, HTTP_INIT_DEMO_NAMES } from './mcp-http-demos.mjs';
-import { buildOAuthHostLaunch, OAUTH_HTTP_DEMO_NAMES } from './mcp-oauth-demos.mjs';
+import { buildOAuthHostLaunch, OAUTH_HTTP_INIT_DEMO_NAMES } from './mcp-oauth-demos.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -78,22 +78,22 @@ runNpm(['run', 'db:up:all']);
 runNpm(['run', 'generate:all']);
 runNpm(['run', 'build:generated']);
 
-const idpPort = Number(process.env.ORDERS_DEMO_OAUTH_IDP_PORT) || 3862;
+const idpPort = Number(process.env.ORDERS_DEMO_OAUTH_IDP_PORT) || 4863;
 startDetached(
     'oauth-idp',
-    path.join(demosRoot, 'orders-demo', 'oauth-idp', 'server.mjs'),
-    { ORDERS_DEMO_OAUTH_IDP_PORT: String(idpPort) },
+    path.join(demosRoot, 'oauth-idp', 'server.mjs'),
+    { ORDERS_DEMO_OAUTH_IDP_PORT: String(idpPort), OAUTH_IDP_SIGN_ALG: 'RS256' },
     idpPort
 );
 
 for (const name of HTTP_INIT_DEMO_NAMES) {
-    const { port, args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
+    const { args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
     startNodeArgsDetached(`mcp-http:${name} (${mcpUrl})`, args);
 }
 
-for (const name of OAUTH_HTTP_DEMO_NAMES) {
-    const { port, args, mcpUrl } = buildOAuthHostLaunch(name, demosRoot, process.env);
+for (const name of OAUTH_HTTP_INIT_DEMO_NAMES) {
+    const { args, mcpUrl } = buildOAuthHostLaunch(name, demosRoot, process.env);
     startNodeArgsDetached(`mcp-oauth:${name} (${mcpUrl})`, args);
 }
 
-console.log('[init] Done. Enable MCP servers in .cursor/mcp.json, then reload MCP.');
+console.log('[init] Done. Cursor Settings → Tools & MCPs: enable servers, then reload MCP.');
