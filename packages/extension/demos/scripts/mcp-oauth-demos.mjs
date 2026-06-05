@@ -68,10 +68,10 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
         if (audience) {
             args.push('--oauth-audience', audience);
         }
-    } else {
+    } else if (tokenValidation === 'hs256') {
         args.push('--jwt-secret-env', demo.jwtSecretEnv);
     }
-    return { demo, port, args, mcpUrl: demo.mcpUrl };
+    return { demo, port, args, mcpUrl: demo.mcpUrl, tokenValidation };
 }
 
 export function listOAuthHttpPorts(env = process.env) {

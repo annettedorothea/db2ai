@@ -157,6 +157,89 @@ function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialec
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }
 
+type HostCredentialValidationMode = 'hs256' | 'static' | 'opaque' | 'oidc';
+
+type CredentialValidationFields = {
+    credentialValidation?: HostCredentialValidationMode;
+    jwtSecretEnvKey?: string;
+    authExpectedEnvKey?: string;
+};
+
+function parseHostCredentialValidationMode(raw: string | undefined): HostCredentialValidationMode {
+    if (raw === 'hs256' || raw === 'static' || raw === 'opaque' || raw === 'oidc') {
+        return raw;
+    }
+    throw new Error('Invalid credential validation mode (expected hs256|static|opaque|oidc): ' + String(raw));
+}
+
+function readJwtSecretFromEnv(jwtSecretEnvKey: string): string {
+    const value = process.env[jwtSecretEnvKey]?.trim();
+    if (!value) {
+        throw new Error('Environment variable "' + jwtSecretEnvKey + '" is missing or empty.');
+    }
+    return value;
+}
+
+function verifyAccessTokenJwt(
+    token: string,
+    secret: string
+): { ok: true; payload: Record<string, unknown> } | { ok: false } {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+        return { ok: false };
+    }
+    const [headerSeg, payloadSeg, sigSeg] = parts;
+    const signingInput = headerSeg + '.' + payloadSeg;
+    const expected = crypto.createHmac('sha256', secret).update(signingInput).digest();
+    let actual: Buffer;
+    try {
+        let b64 = sigSeg.replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4 !== 0) {
+            b64 += '=';
+        }
+        actual = Buffer.from(b64, 'base64');
+    } catch {
+        return { ok: false };
+    }
+    if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
+        return { ok: false };
+    }
+    try {
+        let b64 = payloadSeg.replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4 !== 0) {
+            b64 += '=';
+        }
+        const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as Record<string, unknown>;
+        const now = Math.floor(Date.now() / 1000);
+        if (typeof payload.exp === 'number' && payload.exp < now) {
+            return { ok: false };
+        }
+        return { ok: true, payload };
+    } catch {
+        return { ok: false };
+    }
+}
+
+function generatedHasCheckedTool(generated: GeneratedHostModule): boolean {
+    return generated.generatedTools.some((t) => t.access === 'checked');
+}
+
+function warnCredentialValidationModeAtStartup(
+    generated: GeneratedHostModule,
+    mode: HostCredentialValidationMode
+): void {
+    if (mode === 'opaque' && generated.connectionEnv) {
+        console.error(
+            '[mcp] warn: opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
+        );
+    }
+    if (mode === 'opaque' && generatedHasCheckedTool(generated)) {
+        console.error(
+            '[mcp] warn: opaque mode with checked tools — JWT claims in src/auth are not cryptographically verified.'
+        );
+    }
+}
+
 function formatToolError(err: unknown): string {
     if (err instanceof Error) {
         return err.message;
@@ -299,9 +382,30 @@ function writeJsonRpcInternalError(res: ServerResponse): void {
     writeJsonRpcError(res, 500, -32_603, 'Internal server error');
 }
 
-type OAuthTokenValidationMode = 'hs256' | 'oidc';
+function validateOAuthCredentialValidationAtStartup(
+    generated: GeneratedHostModule,
+    httpHostConfig: OAuthHttpHostRuntimeConfig
+): void {
+    if (!generated.requiresAuth) {
+        return;
+    }
+    const mode = httpHostConfig.tokenValidation;
+    if (mode === 'static') {
+        throw new Error(
+            'credential validation mode "static" is not supported on OAuth HTTP — use opaque, hs256, or oidc.'
+        );
+    }
+    if (mode === 'hs256') {
+        readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
+    } else if (mode === 'oidc') {
+        if (!httpHostConfig.oauthIssuer?.trim()) {
+            throw new Error('Required for oidc: --oauth-issuer <url>');
+        }
+    }
+    warnCredentialValidationModeAtStartup(generated, mode);
+}
 
-type OAuthHttpHostRuntimeConfig = {
+type OAuthHttpHostRuntimeConfig = CredentialValidationFields & {
     baseUrlEnvKey?: string;
     envDirs: string[];
     listenHost: string;
@@ -309,7 +413,7 @@ type OAuthHttpHostRuntimeConfig = {
     mcpPath: string;
     oauthIdpUrl: string;
     oauthScope: string;
-    tokenValidation: OAuthTokenValidationMode;
+    tokenValidation: HostCredentialValidationMode;
     jwtSecretEnvKey?: string;
     oauthIssuer: string;
     oauthAudience?: string;
@@ -333,7 +437,7 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
     let mcpPath = '/mcp';
     let oauthIdpUrl: string | undefined;
     let jwtSecretEnvKey: string | undefined;
-    let tokenValidation: OAuthTokenValidationMode = 'hs256';
+    let tokenValidation: HostCredentialValidationMode = 'hs256';
     let oauthIssuer: string | undefined;
     let oauthAudience: string | undefined;
     let jwtClaimCustomerId = 'customerId';
@@ -363,11 +467,7 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
             continue;
         }
         if (arg === '--oauth-token-validation') {
-            const raw = argv[++i];
-            if (raw !== 'hs256' && raw !== 'oidc') {
-                throw new Error('Invalid --oauth-token-validation (expected hs256 or oidc): ' + raw);
-            }
-            tokenValidation = raw;
+            tokenValidation = parseHostCredentialValidationMode(argv[++i]);
             continue;
         }
         if (arg === '--jwt-secret-env') {
@@ -458,20 +558,13 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
         oauthIdpUrl: idpUrl,
         oauthScope: oauthScope.trim(),
         tokenValidation,
+        credentialValidation: tokenValidation,
         jwtSecretEnvKey: jwtSecretEnvKey?.trim(),
         oauthIssuer: issuer,
         oauthAudience: oauthAudience?.trim(),
         jwtClaimCustomerId: jwtClaimCustomerId.trim(),
         jwtClaimRole: jwtClaimRole.trim()
     };
-}
-
-function readJwtSecretFromEnv(jwtSecretEnvKey: string): string {
-    const value = process.env[jwtSecretEnvKey]?.trim();
-    if (!value) {
-        throw new Error('Environment variable "' + jwtSecretEnvKey + '" is missing or empty.');
-    }
-    return value;
 }
 
 function readBearerFromHeaders(headers: Record<string, string | string[] | undefined>): string | undefined {
@@ -482,46 +575,6 @@ function readBearerFromHeaders(headers: Record<string, string | string[] | undef
     }
     const match = /^Bearer\s+(.+)$/i.exec(value.trim());
     return match?.[1]?.trim() || undefined;
-}
-
-function verifyAccessTokenJwt(
-    token: string,
-    secret: string
-): { ok: true; payload: Record<string, unknown> } | { ok: false } {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-        return { ok: false };
-    }
-    const [headerSeg, payloadSeg, sigSeg] = parts;
-    const signingInput = headerSeg + '.' + payloadSeg;
-    const expected = crypto.createHmac('sha256', secret).update(signingInput).digest();
-    let actual: Buffer;
-    try {
-        let b64 = sigSeg.replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4 !== 0) {
-            b64 += '=';
-        }
-        actual = Buffer.from(b64, 'base64');
-    } catch {
-        return { ok: false };
-    }
-    if (actual.length !== expected.length || !actual.equals(expected)) {
-        return { ok: false };
-    }
-    try {
-        let b64 = payloadSeg.replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4 !== 0) {
-            b64 += '=';
-        }
-        const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as Record<string, unknown>;
-        const now = Math.floor(Date.now() / 1000);
-        if (typeof payload.exp === 'number' && payload.exp < now) {
-            return { ok: false };
-        }
-        return { ok: true, payload };
-    } catch {
-        return { ok: false };
-    }
 }
 
 async function ensureOidcJwks(issuer: string): Promise<ReturnType<typeof createRemoteJWKSet>> {
@@ -565,7 +618,10 @@ function normalizeHostJwtClaims(
 async function verifyOAuthBearerToken(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     token: string
-): Promise<{ ok: true; payload: Record<string, unknown> } | { ok: false }> {
+): Promise<{ ok: true; payload?: Record<string, unknown> } | { ok: false }> {
+    if (httpHostConfig.tokenValidation === 'opaque') {
+        return token.trim().length > 0 ? { ok: true } : { ok: false };
+    }
     if (httpHostConfig.tokenValidation === 'hs256') {
         const secret = readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
         return verifyAccessTokenJwt(token, secret);
@@ -610,9 +666,8 @@ async function validateOAuthHttpHostAtStartup(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule
 ): Promise<void> {
-    if (httpHostConfig.tokenValidation === 'hs256') {
-        readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
-    } else {
+    validateOAuthCredentialValidationAtStartup(generated, httpHostConfig);
+    if (httpHostConfig.tokenValidation === 'oidc') {
         await ensureOidcJwks(httpHostConfig.oauthIssuer);
     }
     if (generated.connectionEnv) {
@@ -673,6 +728,8 @@ async function resolveHostContextForOAuthSession(
                     });
                 }
             }
+        } else if (httpHostConfig.tokenValidation !== 'opaque') {
+            throw new Error('Invalid OAuth Bearer token.');
         }
     }
     if (!credential && sessionId) {
@@ -681,6 +738,8 @@ async function resolveHostContextForOAuthSession(
             const cached = await verifyOAuthBearerToken(httpHostConfig, credential);
             if (cached.ok) {
                 verifiedPayload = cached.payload;
+            } else if (httpHostConfig.tokenValidation !== 'opaque') {
+                throw new Error('Invalid OAuth Bearer token (session cache).');
             } else {
                 credential = undefined;
             }
@@ -823,7 +882,12 @@ async function handleOAuthMcpRequest(
 
     if (mcpRequiresBearerOnInitialize(generated)) {
         const bearer = readBearerFromHeaders(headers);
-        const verified = bearer ? await verifyOAuthBearerToken(httpHostConfig, bearer) : { ok: false as const };
+        const verified =
+            httpHostConfig.tokenValidation === 'opaque'
+                ? { ok: Boolean(bearer?.trim()) }
+                : bearer
+                  ? await verifyOAuthBearerToken(httpHostConfig, bearer)
+                  : { ok: false as const };
         if (!verified.ok) {
             if (!sessionIdHeader && isInitializeRequestBody(parsedBody)) {
                 sendOAuthUnauthorized(res, httpHostConfig);
@@ -876,7 +940,7 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--host HOST] [--path /mcp]'
+            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-token-validation hs256|oidc|opaque] [--jwt-secret-env ENV] [--oauth-issuer URL] [--oauth-audience AUD] [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];

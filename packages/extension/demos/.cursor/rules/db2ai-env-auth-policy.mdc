@@ -15,9 +15,11 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 ## Transport (stdio vs. HTTP vs. OAuth, siehe `mcp.json`)
 
-- **`sakila-stdio`:** `DB2AI_AUTH_TOKEN` in `.env` fuer protected Sakila-Tools (falls konfiguriert).
-- **`pagila-http-stateless`:** protected Pagila-Tools brauchen `headers.x-api-token` (committed Demo: `demo`); optional `DB2AI_AUTH_TOKEN` fuer stdio-Varianten.
-- **`orders-demo-oauth`:** Cursor OAuth; optional `ORDERS_DEMO_TOKEN` in `.env` fuer manuelle Checks — kein separates Login-Tool.
+- **`sakila-stdio`:** `DB2AI_AUTH_TOKEN` + `MCP_AUTH_EXPECTED` (gleicher Wert) in `.env`; Host `--credential-validation static`.
+- **`pagila-http-stateless`:** protected Pagila-Tools brauchen `headers.x-api-token: demo`; Host validiert gegen `MCP_AUTH_EXPECTED` (`static`).
+- **`orders-demo-oauth`:** Cursor OAuth; Host `--oauth-token-validation hs256` (Default); optional `ORDERS_DEMO_TOKEN` in `.env` fuer manuelle Checks — kein separates Login-Tool.
+
+Host-Modi (`hs256` | `static` | `opaque` | `oidc`): siehe Demos-README. db2ai-Produktion: `static`/`hs256` — nicht `opaque` ohne zweiten Pruefer.
 
 ## Auth-Fehler: Fehler melden, nicht umgehen
 

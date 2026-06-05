@@ -12,7 +12,14 @@ import {
 
 /** Matches Pagila MCP config in packages/extension/demos/.cursor/mcp.json */
 const authEnv = 'DB2AI_AUTH_TOKEN';
-const hostArgs = ['--auth-env', authEnv];
+const hostArgs = [
+    '--auth-env',
+    authEnv,
+    '--credential-validation',
+    'static',
+    '--auth-expected-env',
+    'MCP_AUTH_EXPECTED'
+];
 
 describe('Pagila generated stdio-mcp-server (MCP stdio)', () => {
     let connectionString = '';
@@ -46,7 +53,8 @@ describe('Pagila generated stdio-mcp-server (MCP stdio)', () => {
             cwd: fixtureRoot,
             env: {
                 [pagilaDatabaseEnv]: connectionString,
-                [authEnv]: ''
+                [authEnv]: '',
+                MCP_AUTH_EXPECTED: 'demo'
             }
         };
     }

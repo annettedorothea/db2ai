@@ -20,12 +20,15 @@ function main() {
     }
 
     loadDemoEnvLocal();
-    const { demo, port, args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
+    const { demo, port, args, mcpUrl, credentialValidation } = buildHostLaunch(name, demosRoot, process.env);
     const authHeader = process.env.MCP_AUTH_HEADER?.trim() || 'x-api-token';
 
     console.error(`[mcp-http:${name}] listening http://127.0.0.1:${port}/mcp`);
     console.error(`[mcp-http:${name}] Cursor mcp.json url: ${mcpUrl}`);
     console.error(`[mcp-http:${name}] credential header name (server): ${authHeader}`);
+    if (credentialValidation) {
+        console.error(`[mcp-http:${name}] credential-validation: ${credentialValidation}`);
+    }
     if (demo.prerequisite) {
         console.error(`[mcp-http:${name}] prerequisite: ${demo.prerequisite}`);
     }

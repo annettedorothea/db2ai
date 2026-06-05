@@ -11,7 +11,9 @@ export const HTTP_DEMOS = {
         portEnv: 'PAGILA_HTTP_PORT',
         defaultPort: 3853,
         mcpUrl: 'http://127.0.0.1:3853/mcp',
-        prerequisite: 'npm run db:pagila:up'
+        prerequisite: 'npm run db:pagila:up',
+        credentialValidation: 'static',
+        authExpectedEnv: 'MCP_AUTH_EXPECTED'
     }
 };
 
@@ -55,7 +57,13 @@ export function buildHostLaunch(name, demosRoot, env) {
     const hostJs = path.join(demosRoot, 'generated/cli/stateless-http-mcp-server.js');
     const toolsJs = path.join(demosRoot, 'generated/tools', demo.tools);
     const args = [hostJs, toolsJs, '--port', String(port), '--path', '/mcp'];
-    return { demo, port, args, mcpUrl: demo.mcpUrl };
+    if (demo.credentialValidation) {
+        args.push('--credential-validation', demo.credentialValidation);
+        if (demo.authExpectedEnv) {
+            args.push('--auth-expected-env', demo.authExpectedEnv);
+        }
+    }
+    return { demo, port, args, mcpUrl: demo.mcpUrl, credentialValidation: demo.credentialValidation };
 }
 
 export function listHttpPorts(env = process.env) {
