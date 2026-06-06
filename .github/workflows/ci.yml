@@ -1,0 +1,43 @@
+name: ci
+
+on:
+    push:
+        branches: ['**']
+
+jobs:
+    check-and-test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/checkout@v4
+              with:
+                  repository: annettedorothea/core2ai
+                  path: _core2ai
+                  ref: main
+
+            - run: mv _core2ai ../core2ai
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+                  cache-dependency-path: package-lock.json
+
+            - name: Build core2ai
+              run: npm ci && npm run build
+              working-directory: ../core2ai
+              env:
+                  HUSKY: '0'
+
+            - name: Install consumer dependencies
+              run: npm ci
+              env:
+                  HUSKY: '0'
+
+            - run: npm run install:demos
+            - run: npm run generate:all
+            - run: npm run build:generated --prefix packages/extension/demos
+            - run: npm run check
+            - run: npm run test
