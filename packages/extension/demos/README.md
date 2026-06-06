@@ -16,11 +16,11 @@ Workspace: `.db2ai` · MCP config: [`.cursor/mcp.json`](./.cursor/mcp.json)
 
 One MCP server per row — names match `.cursor/mcp.json`.
 
-| MCP server | DSL         | Transport | Auth   | Port | Credential / Prerequisites                                |
-| ---------- | ----------- | --------- | ------ | ---- | --------------------------------------------------------- |
-| `sakila`   | sakila      | stdio     | static | —    | Docker Sakila; demo token in `.env` (from `.env.example`) |
-| `pagila`   | pagila      | HTTP      | static | 4853 | `init` starts host; API key in `mcp.json` `x-api-token`   |
-| `orders`   | orders-demo | OAuth     | oidc   | 4871 | `init` starts IdP + host; Cursor Sign-in (RS256 :4863)    |
+| MCP server | DSL             | Transport | Auth   | Port | Credential / Prerequisites                                |
+| ---------- | --------------- | --------- | ------ | ---- | --------------------------------------------------------- |
+| `sakila`   | sakila          | stdio     | static | —    | Docker Sakila; demo token in `.env` (from `.env.example`) |
+| `pagila`   | pagila          | HTTP      | static | 4853 | `init` starts host; API key in `mcp.json` `x-api-token`   |
+| `orders`   | orders-database | OAuth     | oidc   | 4871 | `init` starts IdP + host; Cursor Sign-in (RS256 :4863)    |
 
 ---
 

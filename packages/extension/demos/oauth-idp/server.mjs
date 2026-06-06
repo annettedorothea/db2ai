@@ -7,7 +7,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
 import { getJwksDocument, mintCustomerToken } from './jwt.mjs';
 
-const PORT = Number(process.env.ORDERS_DEMO_OAUTH_IDP_PORT) || 4863;
+const PORT = Number(process.env.ORDERS_DATABASE_OAUTH_IDP_PORT) || 4863;
 const CLIENT_ID = 'mcp-demo-local';
 const CURSOR_REDIRECT = 'cursor://anysphere.cursor-mcp/oauth/callback';
 const DEMO_USERS = [
@@ -94,7 +94,7 @@ function sendAuthorizeHelpPage(res, title) {
         `<!doctype html><html><body><h1>${title}</h1>` +
             '<p>Open login via <strong>Cursor MCP OAuth</strong> (&quot;Needs login&quot; on <code>orders</code>), not by bookmarking <code>/authorize</code>.</p>' +
             '<p>Cursor sends <code>response_type=code</code>, <code>client_id=mcp-demo-local</code>, PKCE <code>code_challenge</code>, and redirect <code>cursor://anysphere.cursor-mcp/oauth/callback</code>.</p>' +
-            '<p>Processes: <code>npm run demo:oauth-idp</code> (:4863 RS256), <code>npm run demo:mcp-oauth:orders</code>, orders-demo Docker.</p>' +
+            '<p>Processes: <code>npm run demo:oauth-idp</code> (:4863 RS256), <code>npm run demo:mcp-oauth:orders</code>, orders-database Docker.</p>' +
             '</body></html>'
     );
 }
@@ -108,7 +108,7 @@ function handleAuthorize(req, res, url) {
 
     if (responseType !== 'code') {
         if (!responseType && !clientId && !redirectUri && !codeChallenge) {
-            sendAuthorizeHelpPage(res, 'orders-demo OAuth IDP');
+            sendAuthorizeHelpPage(res, 'orders-database OAuth IDP');
             return;
         }
         sendJson(res, 400, { error: 'unsupported_response_type', detail: responseType || '(missing)' });
@@ -138,7 +138,7 @@ function handleAuthorize(req, res, url) {
         ).join('');
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         res.end(
-            `<!doctype html><html><body><h1>orders-demo OAuth IDP</h1><p>Login as:</p><ul>${links}</ul></body></html>`
+            `<!doctype html><html><body><h1>orders-database OAuth IDP</h1><p>Login as:</p><ul>${links}</ul></body></html>`
         );
         return;
     }

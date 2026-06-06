@@ -26,18 +26,18 @@ services:
             retries: 30
             start_period: 60s
         restart: unless-stopped
-    orders-demo:
+    orders-database:
         image: postgres:16-alpine
-        container_name: db2ai-orders-demo
+        container_name: db2ai-orders-database
         environment:
             POSTGRES_PASSWORD: postgres
-            POSTGRES_DB: orders_demo
+            POSTGRES_DB: orders_database
         ports:
-            - '${ORDERS_DEMO_HOST_PORT:-55433}:5432'
+            - '${ORDERS_DATABASE_HOST_PORT:-55433}:5432'
         volumes:
-            - ./orders-demo/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+            - ./orders-database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U postgres -d orders_demo']
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d orders_database']
             interval: 5s
             timeout: 5s
             retries: 30

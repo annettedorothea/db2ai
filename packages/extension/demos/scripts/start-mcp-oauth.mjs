@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Start one oauth-http MCP host (foreground).
- * Usage: node scripts/start-mcp-oauth.mjs <orders-demo>
+ * Usage: node scripts/start-mcp-oauth.mjs <orders>
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';

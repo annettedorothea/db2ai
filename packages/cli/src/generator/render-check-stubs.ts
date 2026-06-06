@@ -22,7 +22,7 @@ function listCheckedToolNames(model: Model): string[] {
     return names;
 }
 
-/** Writes write-once `src/auth/<toolName>.ts` stubs; returns stub paths for imports. */
+/** Writes write-once `src/auth/<mcpModule>/<toolName>.ts` stubs; returns stub paths for imports. */
 export async function renderCheckStubs(
     source: string,
     model: Model,

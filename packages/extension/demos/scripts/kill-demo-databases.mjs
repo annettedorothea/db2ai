@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 
 /** Must match container_name in docker-compose.yml. */
-const DEMO_DB_CONTAINER_NAMES = ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-demo'];
+const DEMO_DB_CONTAINER_NAMES = ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-database'];
 
 function containerExists(name) {
     const result = spawnSync('docker', ['inspect', '-f', '{{.Id}}', name], { encoding: 'utf8' });

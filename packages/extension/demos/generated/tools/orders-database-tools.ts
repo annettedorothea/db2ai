@@ -1,9 +1,9 @@
 /**
- * Generated from: orders-demo.db2ai
+ * Generated from: orders-database.db2ai
  */
-import { checkListCustomerOrdersParameters } from '../../src/auth/listCustomerOrders.js';
+import { checkListCustomerOrdersParameters } from '../../src/auth/orders-database-tools/listCustomerOrders.js';
 
-export const connectionEnv = 'ORDERS_DEMO_DATABASE_URL';
+export const connectionEnv = 'ORDERS_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
 
@@ -49,7 +49,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listProducts',
         title: 'Product catalog rows',
         description:
-            'list products in the orders-demo catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
+            'list products in the orders-database catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
         access: 'public',
         sqlText: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
         params: [
@@ -69,7 +69,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listProductsWithReviews',
         title: 'Products with reviews (requires credential).\n        Join products and reviews; cap 200 rows in SQL.',
         description:
-            'List products that have at least one review, with review details.\n        Protected: requires host credential (MCP header or ORDERS_DEMO_TOKEN in .env).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
+            'List products that have at least one review, with review details.\n        Protected: requires host credential (MCP header or ORDERS_DATABASE_TOKEN in .env).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows (example: 50)\n\nExample call: limit=50',
         access: 'protected',
         sqlText:
             '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ',
@@ -109,7 +109,7 @@ export const generatedTools: GeneratedTool[] = [
     }
 ];
 
-export const mcpServerName = 'orders-demo-tools';
+export const mcpServerName = 'orders-database-tools';
 export const mcpServerVersion = '0.0.6';
 
 const parameterCheckers: Record<

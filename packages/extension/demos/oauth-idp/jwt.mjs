@@ -1,10 +1,10 @@
 // Sync with api2ai oauth-idp/jwt.mjs — ports/secrets differ per product.
 import { createHmac, randomBytes } from 'node:crypto';
 
-const DEFAULT_SECRET = 'db2ai-orders-demo';
+const DEFAULT_SECRET = 'db2ai-orders-database';
 
 export function jwtSecret() {
-    return process.env.ORDERS_DEMO_JWT_SECRET?.trim() || DEFAULT_SECRET;
+    return process.env.ORDERS_DATABASE_JWT_SECRET?.trim() || DEFAULT_SECRET;
 }
 
 function base64urlEncode(buf) {

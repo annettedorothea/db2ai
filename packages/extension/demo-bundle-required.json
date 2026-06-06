@@ -8,9 +8,9 @@
     "oauth-idp/kill-server.mjs",
     "oauth-idp/server.mjs",
     "oauth-idp/signing.mjs",
-    "orders-demo.db2ai",
-    "orders-demo/get-token.mjs",
-    "orders-demo/init.sql",
+    "orders-database.db2ai",
+    "orders-database/get-token.mjs",
+    "orders-database/init.sql",
     "package.json",
     "pagila.db2ai",
     "README.md",
@@ -29,7 +29,7 @@
     "scripts/start-mcp-http-all.mjs",
     "scripts/start-mcp-http.mjs",
     "scripts/start-mcp-oauth.mjs",
-    "src/auth/listCustomerOrders.ts",
+    "src/auth/orders-database-tools/listCustomerOrders.ts",
     "tsconfig.generated.json",
     "tsconfig.json"
 ]

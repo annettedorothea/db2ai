@@ -109,7 +109,7 @@ describe('Parsing tests', () => {
 
     test('parses auth keyword and checked access', async () => {
         document = await parse(`
-            database env "ORDERS_DEMO_DATABASE_URL"
+            database env "ORDERS_DATABASE_URL"
 
             auth
 

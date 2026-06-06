@@ -1,11 +1,11 @@
-database env "ORDERS_DEMO_DATABASE_URL"
+database env "ORDERS_DATABASE_URL"
 
 auth
 
 SQL {
     toolName: listProducts
     access: public
-    intent: "list products in the orders-demo catalog"
+    intent: "list products in the orders-database catalog"
     query: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1"
     summary: "Product catalog rows"
     params: {
@@ -18,7 +18,7 @@ SQL {
     access: protected
     intent: '''
         List products that have at least one review, with review details.
-        Protected: requires host credential (MCP header or ORDERS_DEMO_TOKEN in .env).
+        Protected: requires host credential (MCP header or ORDERS_DATABASE_TOKEN in .env).
         One row per review; same product may appear multiple times.
     '''
     query: '''

@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { compileGeneratedForSmoke } from '../generated/index.js';
-import { ensureOrdersDemoDocker } from '../support/orders-demo-docker.js';
+import { ensureOrdersDatabaseDocker } from '../support/orders-database-docker.js';
 import { fetchOAuthTokenFromIdp, startOAuthIdpServer, waitForOAuthIdp } from '../support/oauth-idp-fixture.js';
 import { demosRoot, demosTmpRoot } from '../support/paths.js';
 import { runDemoGenerate } from '../support/run-demo-generate.js';
@@ -54,7 +54,7 @@ async function waitForMcpHttp(mcpUrl: string, child: ChildProcess | undefined): 
     );
 }
 
-describe('orders-demo oauth-http-mcp-server (oidc JWKS validation)', () => {
+describe('orders-database oauth-http-mcp-server (oidc JWKS validation)', () => {
     let idpProcess: ChildProcess | undefined;
     let oauthHostProcess: ChildProcess | undefined;
     let connectionString = '';
@@ -64,7 +64,7 @@ describe('orders-demo oauth-http-mcp-server (oidc JWKS validation)', () => {
     let accessToken = '';
 
     beforeAll(async () => {
-        ({ connectionString } = await ensureOrdersDemoDocker(demosRoot));
+        ({ connectionString } = await ensureOrdersDatabaseDocker(demosRoot));
 
         const idpPort = await findFreePort();
         const mcpPort = await findFreePort();
@@ -72,16 +72,16 @@ describe('orders-demo oauth-http-mcp-server (oidc JWKS validation)', () => {
         mcpUrl = `http://127.0.0.1:${mcpPort}/mcp`;
 
         idpProcess = startOAuthIdpServer('oauth-idp/server.mjs', idpPort, {
-            ORDERS_DEMO_OAUTH_IDP_PORT: String(idpPort),
+            ORDERS_DATABASE_OAUTH_IDP_PORT: String(idpPort),
             OAUTH_IDP_SIGN_ALG: 'RS256'
         });
         await waitForOAuthIdp(idpBaseUrl, idpProcess);
         accessToken = await fetchOAuthTokenFromIdp(idpBaseUrl, 'alice');
 
-        runRoot = await fs.mkdtemp(path.join(demosTmpRoot, 'orders-demo-oauth-mcp-oidc-'));
-        const generateSourcePath = path.join(runRoot, 'orders-demo.db2ai');
-        await fs.copyFile(path.join(demosRoot, 'orders-demo.db2ai'), generateSourcePath);
-        const generatedTsPath = path.join(runRoot, 'generated/tools/orders-demo-tools.ts');
+        runRoot = await fs.mkdtemp(path.join(demosTmpRoot, 'orders-database-oauth-mcp-oidc-'));
+        const generateSourcePath = path.join(runRoot, 'orders-database.db2ai');
+        await fs.copyFile(path.join(demosRoot, 'orders-database.db2ai'), generateSourcePath);
+        const generatedTsPath = path.join(runRoot, 'generated/tools/orders-database-tools.ts');
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
         compileGeneratedForSmoke(runRoot);
@@ -94,11 +94,11 @@ describe('orders-demo oauth-http-mcp-server (oidc JWKS validation)', () => {
             process.execPath,
             [
                 oauthHostPath,
-                path.join(runRoot, 'generated/tools/orders-demo-tools.js'),
+                path.join(runRoot, 'generated/tools/orders-database-tools.js'),
                 '--oauth-idp-url',
                 idpBaseUrl,
                 '--oauth-scope',
-                'orders-demo',
+                'orders-database',
                 '--oauth-token-validation',
                 'oidc',
                 '--oauth-issuer',
@@ -112,7 +112,7 @@ describe('orders-demo oauth-http-mcp-server (oidc JWKS validation)', () => {
                 cwd: runRoot,
                 env: {
                     ...process.env,
-                    ORDERS_DEMO_DATABASE_URL: connectionString
+                    ORDERS_DATABASE_URL: connectionString
                 },
                 stdio: ['ignore', 'pipe', 'pipe']
             }

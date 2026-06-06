@@ -5,15 +5,16 @@ import path from 'node:path';
 
 export const OAUTH_HTTP_DEMOS = {
     orders: {
-        tools: 'orders-demo-tools.js',
-        oauthIdpUrlEnv: 'ORDERS_DEMO_OAUTH_IDP_URL',
+        tools: 'orders-database-tools.js',
+        connectionEnv: 'ORDERS_DATABASE_URL',
+        oauthIdpUrlEnv: 'ORDERS_DATABASE_OAUTH_IDP_URL',
         defaultOAuthIdpUrl: 'http://127.0.0.1:4863',
-        portEnv: 'ORDERS_DEMO_OAUTH_HTTP_PORT',
+        portEnv: 'ORDERS_DATABASE_OAUTH_HTTP_PORT',
         defaultPort: 4871,
         tokenValidation: 'oidc',
-        oauthScope: 'orders-demo',
+        oauthScope: 'orders-database',
         mcpServerName: 'orders',
-        prerequisite: 'Docker orders-demo + oauth-idp :4863 (RS256)'
+        prerequisite: 'Docker orders-database + oauth-idp :4863 (RS256)'
     }
 };
 

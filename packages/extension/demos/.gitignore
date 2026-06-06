@@ -1,8 +1,10 @@
 # Emitted next to auth stubs by mistake or local tsc — keep only *.ts in src/auth/
-src/auth/*.js
-src/auth/*.js.map
-src/auth/*.mjs
+src/auth/**/*.js
+src/auth/**/*.js.map
+src/auth/**/*.mjs
 
 # tsc emit from build:generated — commit generated/**/*.ts only
 generated/**/*.js
 generated/**/*.js.map
+
+tmp/

@@ -13,8 +13,8 @@
             "previewLimit": 50,
             "server": "localhost",
             "driver": "PostgreSQL",
-            "name": "access demo",
-            "connectString": "postgresql://postgres:postgres@localhost:55433/orders_demo"
+            "name": "orders-database",
+            "connectString": "postgresql://postgres:postgres@localhost:55433/orders_database"
         }
     ]
 }
