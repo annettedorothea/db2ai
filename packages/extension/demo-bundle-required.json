@@ -4,6 +4,7 @@
     "demos-generate.config.json",
     "docker-compose.yml",
     "oauth-idp/demo-rsa-private.pem",
+    "oauth-idp/idp-pages.mjs",
     "oauth-idp/jwt.mjs",
     "oauth-idp/kill-server.mjs",
     "oauth-idp/server.mjs",
