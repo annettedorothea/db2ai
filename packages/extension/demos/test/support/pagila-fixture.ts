@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { compileGeneratedForSmoke } from '../generated/index.js';
+import { copyLoggingAdapterStub } from './copy-logging-adapter-stub.js';
 import { ensurePagilaDocker } from './pagila-docker.js';
 import { demosRoot, demosTmpRoot } from './paths.js';
 import { runDemoGenerate } from './run-demo-generate.js';
@@ -23,6 +24,7 @@ export async function preparePagilaGeneratedFixture(fixtureRoot: string): Promis
 
     await fs.mkdir(fixtureRoot, { recursive: true });
     runDemoGenerate(pagilaSourcePath, generatedTsPath);
+    await copyLoggingAdapterStub(fixtureRoot);
     compileGeneratedForSmoke(fixtureRoot);
 
     return { fixtureRoot, generatedJsPath, stdioMcpServerPath };

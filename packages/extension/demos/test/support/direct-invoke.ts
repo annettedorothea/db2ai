@@ -10,6 +10,7 @@ import * as fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { copyLoggingAdapterStub } from './copy-logging-adapter-stub.js';
 import { runDemoGenerate } from './run-demo-generate.js';
 
 export { asRecord, restoreEnv };
@@ -96,6 +97,7 @@ export async function withGeneratedDirectInvokeFixture(
         }
 
         runDemoGenerate(generateSourcePath, generatedTsPath);
+        await copyLoggingAdapterStub(runRoot);
         compileGeneratedForSmoke(runRoot);
 
         const imported = (await import(`${pathToFileURL(generatedJsPath).href}?t=${Date.now()}`)) as Record<

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { compileGeneratedForSmoke, withMcpStatelessHttpSession } from '../generated/index.js';
+import { copyLoggingAdapterStub } from '../support/copy-logging-adapter-stub.js';
 import { demosRoot, demosTmpRoot } from '../support/paths.js';
 import { ensurePagilaDocker } from '../support/pagila-docker.js';
 import { runDemoGenerate } from '../support/run-demo-generate.js';
@@ -92,6 +93,7 @@ describe('Pagila generated stateless-http-mcp-server (MCP HTTP)', () => {
         const generatedTsPath = path.join(rejectRoot, 'generated/tools/pagila-tools.ts');
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
+        await copyLoggingAdapterStub(rejectRoot);
         compileGeneratedForSmoke(rejectRoot);
 
         const mcpUrl = `http://127.0.0.1:${port}/mcp`;

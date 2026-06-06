@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { compileGeneratedForSmoke } from '../generated/index.js';
+import { copyLoggingAdapterStub } from '../support/copy-logging-adapter-stub.js';
 import { ensureOrdersDatabaseDocker } from '../support/orders-database-docker.js';
 import { fetchOAuthTokenFromIdp, startOAuthIdpServer, waitForOAuthIdp } from '../support/oauth-idp-fixture.js';
 import { demosRoot, demosTmpRoot } from '../support/paths.js';
@@ -84,6 +85,7 @@ describe('orders-database oauth-http-mcp-server (oidc JWKS validation)', () => {
         const generatedTsPath = path.join(runRoot, 'generated/tools/orders-database-tools.ts');
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
+        await copyLoggingAdapterStub(runRoot);
         compileGeneratedForSmoke(runRoot);
 
         const oauthHostPath = path.join(runRoot, 'generated/cli/oauth-http-mcp-server.js');
