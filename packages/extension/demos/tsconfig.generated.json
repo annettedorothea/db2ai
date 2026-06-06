@@ -7,6 +7,6 @@
         "outDir": ".",
         "types": ["node"]
     },
-    "include": ["generated/**/*.ts", "src/auth/**/*.ts"],
+    "include": ["generated/**/*.ts", "src/auth/**/*.ts", "src/utils/**/*.ts"],
     "exclude": ["node_modules", "tmp"]
 }

@@ -5,6 +5,6 @@
         "rootDir": ".",
         "types": ["node"]
     },
-    "include": ["generated/**/*.ts", "src/auth/**/*.ts", "test/**/*.ts", "vitest.config.ts"],
+    "include": ["generated/**/*.ts", "src/auth/**/*.ts", "src/utils/**/*.ts", "test/**/*.ts", "vitest.config.ts"],
     "exclude": ["node_modules", "tmp"]
 }

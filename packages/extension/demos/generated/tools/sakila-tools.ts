@@ -1,6 +1,8 @@
 /**
  * Generated from: sakila.db2ai
  */
+import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+
 export const connectionEnv = 'SAKILA_DATABASE_URL';
 
 export const databaseDialect = 'mysql';
@@ -298,6 +300,10 @@ function normalizeMysqlParamValue(value: unknown): string | number | null {
     return text;
 }
 
+function compactSqlForLog(sql: string): string {
+    return sql.replace(/\s+/g, ' ').trim();
+}
+
 export async function invokeTool(
     toolName: string,
     options: InvokeOptions = {},
@@ -307,6 +313,7 @@ export async function invokeTool(
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
+    loggingAdapter.debug('invokeTool', { toolName });
 
     if (hostContext === undefined) {
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
@@ -324,10 +331,17 @@ export async function invokeTool(
     try {
         switch (toolName) {
             case 'listFilms': {
-                const [rows] = await client.query('SELECT * FROM film LIMIT ? OFFSET ?', [
+                const sqlText = 'SELECT * FROM film LIMIT ? OFFSET ?';
+                const sqlValues = [
                     normalizeMysqlParamValue(options['limit']),
                     normalizeMysqlParamValue(options['offset'])
-                ]);
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listFilms',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const [rows] = await client.query(sqlText, sqlValues);
                 const resultRows = normalizeMysqlRows(rows);
                 return {
                     rows: resultRows,
@@ -335,10 +349,17 @@ export async function invokeTool(
                 };
             }
             case 'listActors': {
-                const [rows] = await client.query('SELECT * FROM actor LIMIT ? OFFSET ?', [
+                const sqlText = 'SELECT * FROM actor LIMIT ? OFFSET ?';
+                const sqlValues = [
                     normalizeMysqlParamValue(options['limit']),
                     normalizeMysqlParamValue(options['offset'])
-                ]);
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listActors',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const [rows] = await client.query(sqlText, sqlValues);
                 const resultRows = normalizeMysqlRows(rows);
                 return {
                     rows: resultRows,
@@ -346,10 +367,17 @@ export async function invokeTool(
                 };
             }
             case 'listCategories': {
-                const [rows] = await client.query('SELECT * FROM category LIMIT ? OFFSET ?', [
+                const sqlText = 'SELECT * FROM category LIMIT ? OFFSET ?';
+                const sqlValues = [
                     normalizeMysqlParamValue(options['limit']),
                     normalizeMysqlParamValue(options['offset'])
-                ]);
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listCategories',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const [rows] = await client.query(sqlText, sqlValues);
                 const resultRows = normalizeMysqlRows(rows);
                 return {
                     rows: resultRows,
@@ -357,10 +385,18 @@ export async function invokeTool(
                 };
             }
             case 'filmsByRating': {
-                const [rows] = await client.query(
-                    '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ',
-                    [normalizeMysqlParamValue(options['rating']), normalizeMysqlParamValue(options['maxRows'])]
-                );
+                const sqlText =
+                    '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ';
+                const sqlValues = [
+                    normalizeMysqlParamValue(options['rating']),
+                    normalizeMysqlParamValue(options['maxRows'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'filmsByRating',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const [rows] = await client.query(sqlText, sqlValues);
                 const resultRows = normalizeMysqlRows(rows);
                 return {
                     rows: resultRows,
@@ -368,10 +404,18 @@ export async function invokeTool(
                 };
             }
             case 'filmsWithActorLastName': {
-                const [rows] = await client.query(
-                    "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ",
-                    [normalizeMysqlParamValue(options['lastNamePrefix']), normalizeMysqlParamValue(options['maxRows'])]
-                );
+                const sqlText =
+                    "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ";
+                const sqlValues = [
+                    normalizeMysqlParamValue(options['lastNamePrefix']),
+                    normalizeMysqlParamValue(options['maxRows'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'filmsWithActorLastName',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const [rows] = await client.query(sqlText, sqlValues);
                 const resultRows = normalizeMysqlRows(rows);
                 return {
                     rows: resultRows,
@@ -379,14 +423,19 @@ export async function invokeTool(
                 };
             }
             case 'searchFilms': {
-                const [rows] = await client.query(
-                    "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ",
-                    [
-                        normalizeMysqlParamValue(options['searchText']),
-                        normalizeMysqlParamValue(options['searchText']),
-                        normalizeMysqlParamValue(options['maxRows'])
-                    ]
-                );
+                const sqlText =
+                    "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ";
+                const sqlValues = [
+                    normalizeMysqlParamValue(options['searchText']),
+                    normalizeMysqlParamValue(options['searchText']),
+                    normalizeMysqlParamValue(options['maxRows'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'searchFilms',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const [rows] = await client.query(sqlText, sqlValues);
                 const resultRows = normalizeMysqlRows(rows);
                 return {
                     rows: resultRows,

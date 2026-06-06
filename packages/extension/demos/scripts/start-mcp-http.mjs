@@ -20,23 +20,13 @@ function main() {
     }
 
     loadDemoEnvLocal();
+    process.env.LOG_SERVICE_PREFIX = process.env.LOG_SERVICE_PREFIX ?? `mcp-http:${name}`;
     const { demo, port, args, mcpUrl, credentialValidation } = buildHostLaunch(name, demosRoot, process.env);
     const authHeader = process.env.MCP_AUTH_HEADER?.trim() || 'x-api-token';
 
-    console.error(`[mcp-http:${name}] listening http://127.0.0.1:${port}/mcp`);
-    console.error(`[mcp-http:${name}] Cursor mcp.json url: ${mcpUrl}`);
-    console.error(`[mcp-http:${name}] credential header name (server): ${authHeader}`);
-    if (credentialValidation) {
-        console.error(`[mcp-http:${name}] credential-validation: ${credentialValidation}`);
-    }
-    if (demo.prerequisite) {
-        console.error(`[mcp-http:${name}] prerequisite: ${demo.prerequisite}`);
-    }
-    if (name === 'pagila') {
-        console.error(
-            `[mcp-http:${name}] protected tools: set headers.${authHeader} in mcp.json (demo: "demo") or DB2AI_AUTH_TOKEN in .env for stdio.`
-        );
-    }
+    console.log(
+        `[mcp-http:${name}] listening http://127.0.0.1:${port}/mcp (${mcpUrl}, ${authHeader}, ${credentialValidation}${demo.prerequisite ? `, ${demo.prerequisite}` : ''})`
+    );
 
     const result = spawnSync(process.execPath, args, {
         cwd: demosRoot,

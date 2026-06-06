@@ -19,15 +19,12 @@ function main() {
     }
 
     loadDemoEnvLocal();
+    process.env.LOG_SERVICE_PREFIX = process.env.LOG_SERVICE_PREFIX ?? `mcp-oauth:${name}`;
     const { demo, port, args, mcpUrl, tokenValidation } = buildOAuthHostLaunch(name, demosRoot, process.env);
 
-    console.error(`[mcp-oauth:${name}] listening http://127.0.0.1:${port}/mcp`);
-    console.error(`[mcp-oauth:${name}] Cursor mcp.json: ${demo.mcpServerName ?? `${name}-oauth`}`);
-    console.error(`[mcp-oauth:${name}] auth.CLIENT_ID: mcp-demo-local`);
-    console.error(`[mcp-oauth:${name}] oauth-token-validation: ${tokenValidation}`);
-    if (demo.prerequisite) {
-        console.error(`[mcp-oauth:${name}] prerequisite: ${demo.prerequisite}`);
-    }
+    console.log(
+        `[mcp-oauth:${name}] listening http://127.0.0.1:${port}/mcp (${mcpUrl}, ${tokenValidation}${demo.prerequisite ? `, ${demo.prerequisite}` : ''})`
+    );
 
     const result = spawnSync(process.execPath, args, {
         cwd: demosRoot,

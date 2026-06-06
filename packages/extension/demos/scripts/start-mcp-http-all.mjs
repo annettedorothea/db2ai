@@ -18,7 +18,7 @@ function startDetached(name, args, port, mcpUrl) {
         env: process.env
     });
     child.unref();
-    console.log(`[mcp-http:all] ${name} → http://127.0.0.1:${port}/mcp (${mcpUrl}) pid ${child.pid ?? '?'}`);
+    console.log(`[mcp-http:all] ${name} started http://127.0.0.1:${port}/mcp (${mcpUrl}, pid ${child.pid ?? '?'})`);
 }
 
 function main() {
@@ -29,7 +29,7 @@ function main() {
         startDetached(name, args, port, mcpUrl);
     }
 
-    console.log('[mcp-http:all] Started', HTTP_INIT_DEMO_NAMES.length, 'hosts. Stop: npm run demo:mcp-http:kill');
+    console.log(`[mcp-http:all] started ${HTTP_INIT_DEMO_NAMES.length} hosts — stop: npm run demo:mcp-http:kill`);
     console.warn('[mcp-http:all] Requires Pagila up (npm run db:pagila:up or init).');
 }
 

@@ -1,6 +1,8 @@
 /**
  * Generated from: pagila.db2ai
  */
+import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+
 export const connectionEnv = 'PAGILA_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
@@ -393,6 +395,10 @@ function resolveConnectionString(hostContext: DbHostContext): string {
     );
 }
 
+function compactSqlForLog(sql: string): string {
+    return sql.replace(/\s+/g, ' ').trim();
+}
+
 function normalizePostgresNumericParamValue(value: unknown): number | null {
     if (value === undefined || value === null) {
         return null;
@@ -410,6 +416,7 @@ export async function invokeTool(
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
+    loggingAdapter.debug('invokeTool', { toolName });
 
     if (hostContext === undefined) {
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
@@ -428,123 +435,161 @@ export async function invokeTool(
     try {
         switch (toolName) {
             case 'listFilms': {
-                const result = await client.query({
-                    text: 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2',
-                    values: [
-                        normalizePostgresNumericParamValue(options['limit']),
-                        normalizePostgresNumericParamValue(options['offset'])
-                    ]
+                const sqlText = 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlValues = [
+                    normalizePostgresNumericParamValue(options['limit']),
+                    normalizePostgresNumericParamValue(options['offset'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listFilms',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listActors': {
-                const result = await client.query({
-                    text: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
-                    values: [
-                        normalizePostgresNumericParamValue(options['limit']),
-                        normalizePostgresNumericParamValue(options['offset'])
-                    ]
+                const sqlText = 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlValues = [
+                    normalizePostgresNumericParamValue(options['limit']),
+                    normalizePostgresNumericParamValue(options['offset'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listActors',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listCustomers': {
-                const result = await client.query({
-                    text: 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2',
-                    values: [
-                        normalizePostgresNumericParamValue(options['limit']),
-                        normalizePostgresNumericParamValue(options['offset'])
-                    ]
+                const sqlText = 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlValues = [
+                    normalizePostgresNumericParamValue(options['limit']),
+                    normalizePostgresNumericParamValue(options['offset'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listCustomers',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listCategories': {
-                const result = await client.query({
-                    text: 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2',
-                    values: [
-                        normalizePostgresNumericParamValue(options['limit']),
-                        normalizePostgresNumericParamValue(options['offset'])
-                    ]
+                const sqlText = 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlValues = [
+                    normalizePostgresNumericParamValue(options['limit']),
+                    normalizePostgresNumericParamValue(options['offset'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listCategories',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listCountries': {
-                const result = await client.query({
-                    text: 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2',
-                    values: [
-                        normalizePostgresNumericParamValue(options['limit']),
-                        normalizePostgresNumericParamValue(options['offset'])
-                    ]
+                const sqlText = 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlValues = [
+                    normalizePostgresNumericParamValue(options['limit']),
+                    normalizePostgresNumericParamValue(options['offset'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listCountries',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listInventory': {
-                const result = await client.query({
-                    text: '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 500)\n        OFFSET\n            $2\n    ',
-                    values: [
-                        normalizePostgresNumericParamValue(options['limit']),
-                        normalizePostgresNumericParamValue(options['offset'])
-                    ]
+                const sqlText =
+                    '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 500)\n        OFFSET\n            $2\n    ';
+                const sqlValues = [
+                    normalizePostgresNumericParamValue(options['limit']),
+                    normalizePostgresNumericParamValue(options['offset'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listInventory',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'filmsByMpaaRating': {
-                const result = await client.query({
-                    text: '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ',
-                    values: [
-                        options['rating'] !== undefined && options['rating'] !== null
-                            ? String(options['rating'])
-                            : null,
-                        normalizePostgresNumericParamValue(options['maxRows'])
-                    ]
+                const sqlText =
+                    '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ';
+                const sqlValues = [
+                    options['rating'] !== undefined && options['rating'] !== null ? String(options['rating']) : null,
+                    normalizePostgresNumericParamValue(options['maxRows'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'filmsByMpaaRating',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'filmsWithActorLastName': {
-                const result = await client.query({
-                    text: "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ",
-                    values: [
-                        options['lastNamePrefix'] !== undefined && options['lastNamePrefix'] !== null
-                            ? String(options['lastNamePrefix'])
-                            : null,
-                        normalizePostgresNumericParamValue(options['maxRows'])
-                    ]
+                const sqlText =
+                    "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ";
+                const sqlValues = [
+                    options['lastNamePrefix'] !== undefined && options['lastNamePrefix'] !== null
+                        ? String(options['lastNamePrefix'])
+                        : null,
+                    normalizePostgresNumericParamValue(options['maxRows'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'filmsWithActorLastName',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'searchFilms': {
-                const result = await client.query({
-                    text: "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ",
-                    values: [
-                        options['searchText'] !== undefined && options['searchText'] !== null
-                            ? String(options['searchText'])
-                            : null,
-                        normalizePostgresNumericParamValue(options['maxRows'])
-                    ]
+                const sqlText =
+                    "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ";
+                const sqlValues = [
+                    options['searchText'] !== undefined && options['searchText'] !== null
+                        ? String(options['searchText'])
+                        : null,
+                    normalizePostgresNumericParamValue(options['maxRows'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'searchFilms',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length

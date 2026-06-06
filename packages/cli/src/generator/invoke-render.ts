@@ -70,7 +70,14 @@ function renderSqlInvokeCase(
     const valueExprs = collectSqlBindValueExpressions(tool.sqlText, dialect, tool.params, optionsVar).join(', ');
     if (dialect === 'mysql') {
         return `        case ${JSON.stringify(tool.toolName)}: {
-            const [rows] = await client.query(${JSON.stringify(rewriteLogicalPlaceholdersForMysql(tool.sqlText))}, [${valueExprs}]);
+            const sqlText = ${JSON.stringify(rewriteLogicalPlaceholdersForMysql(tool.sqlText))};
+            const sqlValues = [${valueExprs}];
+            loggingAdapter.debug('executeSql', {
+                toolName: ${JSON.stringify(tool.toolName)},
+                sql: compactSqlForLog(sqlText),
+                values: sqlValues
+            });
+            const [rows] = await client.query(sqlText, sqlValues);
             const resultRows = normalizeMysqlRows(rows);
             return {
                 rows: resultRows,
@@ -79,7 +86,14 @@ function renderSqlInvokeCase(
         }`;
     }
     return `        case ${JSON.stringify(tool.toolName)}: {
-            const result = await client.query({ text: ${JSON.stringify(tool.sqlText)}, values: [${valueExprs}] });
+            const sqlText = ${JSON.stringify(tool.sqlText)};
+            const sqlValues = [${valueExprs}];
+            loggingAdapter.debug('executeSql', {
+                toolName: ${JSON.stringify(tool.toolName)},
+                sql: compactSqlForLog(sqlText),
+                values: sqlValues
+            });
+            const result = await client.query({ text: sqlText, values: sqlValues });
             return {
                 rows: result.rows,
                 rowCount: result.rowCount ?? result.rows.length
@@ -156,6 +170,7 @@ function renderInvokeToolPreamble(hasAuth: boolean, hasChecked: boolean, typescr
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
+    loggingAdapter.debug('invokeTool', { toolName });
 ${renderHostBinding(typescript)}${accessChecks}${renderPostgresClientSetup(typescript)}
     try {
         switch (toolName) {`;
@@ -168,12 +183,25 @@ function renderInvokeToolPreambleMysql(hasAuth: boolean, hasChecked: boolean, ty
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
+    loggingAdapter.debug('invokeTool', { toolName });
 ${renderHostBinding(typescript)}${accessChecks}
     const connectionString = resolveConnectionString(host);
     const client = await mysql.createConnection(connectionString);
     try {
         switch (toolName) {`;
 }
+
+const COMPACT_SQL_FOR_LOG_TS = `
+function compactSqlForLog(sql: string): string {
+    return sql.replace(/\\s+/g, ' ').trim();
+}
+`.trim();
+
+const COMPACT_SQL_FOR_LOG_JS = `
+function compactSqlForLog(sql) {
+    return sql.replace(/\\s+/g, ' ').trim();
+}
+`.trim();
 
 const POSTGRES_NUMERIC_HELPER_TS = `
 function normalizePostgresNumericParamValue(value: unknown): number | null {
@@ -279,12 +307,13 @@ function renderPostgresInvokeBlockTs(
 ): string {
     const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, true);
     const helpers = [
+        COMPACT_SQL_FOR_LOG_TS,
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_TS : '',
         flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_TS : ''
     ]
         .filter((block) => block.length > 0)
         .join('\n\n');
-    const helperSection = helpers.length > 0 ? `\n\n${helpers}` : '';
+    const helperSection = `\n\n${helpers}`;
     return `
 import { Client } from 'pg';
 
@@ -322,12 +351,13 @@ function renderPostgresInvokeBlockJs(
 ): string {
     const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, false);
     const helpers = [
+        COMPACT_SQL_FOR_LOG_JS,
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_JS : '',
         flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_JS : ''
     ]
         .filter((block) => block.length > 0)
         .join('\n\n');
-    const helperSection = helpers.length > 0 ? `\n\n${helpers}` : '';
+    const helperSection = `\n\n${helpers}`;
     return `
 import pg from 'pg';
 
@@ -362,7 +392,10 @@ function renderMysqlInvokeBlockTs(
     hasChecked: boolean
 ): string {
     const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, true);
-    const helperSection = flags.mysqlBoolean ? `\n\n${MYSQL_BOOLEAN_HELPER_TS}` : '';
+    const mysqlHelpers = [COMPACT_SQL_FOR_LOG_TS, flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_TS : '']
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = `\n\n${mysqlHelpers}`;
     return `
 import mysql from 'mysql2/promise';
 
@@ -415,7 +448,10 @@ function renderMysqlInvokeBlockJs(
     hasChecked: boolean
 ): string {
     const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, false);
-    const helperSection = flags.mysqlBoolean ? `\n\n${MYSQL_BOOLEAN_HELPER_JS}` : '';
+    const mysqlHelpers = [COMPACT_SQL_FOR_LOG_JS, flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_JS : '']
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = `\n\n${mysqlHelpers}`;
     return `
 import mysql from 'mysql2/promise';
 

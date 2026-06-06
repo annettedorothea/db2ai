@@ -6,6 +6,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
 import { getJwksDocument, mintCustomerToken } from './jwt.mjs';
+import { loggingAdapter } from '../src/utils/logging-adapter.js';
 
 const PORT = Number(process.env.ORDERS_DATABASE_OAUTH_IDP_PORT) || 4863;
 const CLIENT_ID = 'mcp-demo-local';
@@ -108,27 +109,33 @@ function handleAuthorize(req, res, url) {
 
     if (responseType !== 'code') {
         if (!responseType && !clientId && !redirectUri && !codeChallenge) {
+            loggingAdapter.debug('authorize help page');
             sendAuthorizeHelpPage(res, 'orders-database OAuth IDP');
             return;
         }
+        loggingAdapter.warn('authorize rejected', { error: 'unsupported_response_type', detail: responseType || '(missing)' });
         sendJson(res, 400, { error: 'unsupported_response_type', detail: responseType || '(missing)' });
         return;
     }
     if (clientId !== CLIENT_ID) {
+        loggingAdapter.warn('authorize rejected', { error: 'invalid_client', clientId });
         sendJson(res, 400, { error: 'invalid_client' });
         return;
     }
     if (redirectUri !== CURSOR_REDIRECT) {
+        loggingAdapter.warn('authorize rejected', { error: 'invalid_redirect_uri', redirectUri });
         sendJson(res, 400, { error: 'invalid_redirect_uri', detail: redirectUri });
         return;
     }
     if (!codeChallenge) {
+        loggingAdapter.warn('authorize rejected', { error: 'invalid_request', detail: 'code_challenge required' });
         sendJson(res, 400, { error: 'invalid_request', detail: 'code_challenge required' });
         return;
     }
 
     const pick = url.searchParams.get('customerId');
     if (!pick) {
+        loggingAdapter.debug('authorize login picker', { clientId, state: state || undefined });
         const links = DEMO_USERS.map(
             (u) =>
                 `<li><a href="${url.pathname}?${new URLSearchParams({
@@ -145,6 +152,7 @@ function handleAuthorize(req, res, url) {
 
     const user = DEMO_USERS.find((u) => u.customerId === pick);
     if (!user) {
+        loggingAdapter.warn('authorize rejected', { error: 'unknown_user', customerId: pick });
         sendJson(res, 404, { error: 'unknown_user' });
         return;
     }
@@ -163,6 +171,7 @@ function handleAuthorize(req, res, url) {
     if (state) {
         redirect.searchParams.set('state', state);
     }
+    loggingAdapter.info('authorize code issued', { customerId: user.customerId, role: user.role });
     res.writeHead(302, { Location: redirect.toString() });
     res.end();
 }
@@ -172,6 +181,7 @@ async function handleToken(req, res) {
     const form = parseFormUrlEncoded(raw);
     const grantType = form.get('grant_type');
     if (grantType !== 'authorization_code') {
+        loggingAdapter.warn('token rejected', { error: 'unsupported_grant_type', grantType });
         sendJson(res, 400, { error: 'unsupported_grant_type' });
         return;
     }
@@ -181,26 +191,31 @@ async function handleToken(req, res) {
     const codeVerifier = form.get('code_verifier') ?? '';
 
     if (clientId !== CLIENT_ID) {
+        loggingAdapter.warn('token rejected', { error: 'invalid_client', clientId });
         sendJson(res, 400, { error: 'invalid_client' });
         return;
     }
     const pending = pendingCodes.get(code);
     if (!pending || pending.expiresAt < Date.now()) {
         pendingCodes.delete(code);
+        loggingAdapter.warn('token rejected', { error: 'invalid_grant', detail: 'code missing or expired' });
         sendJson(res, 400, { error: 'invalid_grant' });
         return;
     }
     if (redirectUri !== pending.redirectUri) {
+        loggingAdapter.warn('token rejected', { error: 'invalid_grant', detail: 'redirect_uri mismatch' });
         sendJson(res, 400, { error: 'invalid_grant', detail: 'redirect_uri mismatch' });
         return;
     }
     if (!verifyPkce(codeVerifier, pending.codeChallenge)) {
+        loggingAdapter.warn('token rejected', { error: 'invalid_grant', detail: 'pkce verification failed' });
         sendJson(res, 400, { error: 'invalid_grant', detail: 'pkce verification failed' });
         return;
     }
     pendingCodes.delete(code);
 
     const accessToken = mintCustomerToken(pending.customerId, pending.role, 3600, issuerUrl(req));
+    loggingAdapter.info('access token issued', { customerId: pending.customerId, role: pending.role, expiresIn: 3600 });
     sendJson(res, 200, {
         access_token: accessToken,
         token_type: 'Bearer',
@@ -210,6 +225,7 @@ async function handleToken(req, res) {
 
 const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', issuerUrl(req));
+    loggingAdapter.debug(`${req.method ?? 'GET'} ${url.pathname}`);
 
     if (
         (url.pathname === '/.well-known/oauth-authorization-server' ||
@@ -247,7 +263,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-    console.error(`[oauth-idp] http://127.0.0.1:${PORT}`);
-    console.error(`[oauth-idp] Cursor redirect: ${CURSOR_REDIRECT}`);
-    console.error(`[oauth-idp] client_id: ${CLIENT_ID}`);
+    loggingAdapter.info('listening', { url: `http://127.0.0.1:${PORT}`, clientId: CLIENT_ID });
 });

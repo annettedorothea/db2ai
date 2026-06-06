@@ -83,7 +83,12 @@ function requiresAuthLiteral(model: Model): string {
 }
 
 function renderGeneratedImports(parameterCheckerImports: string): string {
-    return parameterCheckerImports.length > 0 ? `${parameterCheckerImports}\n\n` : '';
+    const loggingImport = "import { loggingAdapter } from '../../src/utils/logging-adapter.js';";
+    const parts = [loggingImport];
+    if (parameterCheckerImports.length > 0) {
+        parts.push(parameterCheckerImports);
+    }
+    return `${parts.join('\n')}\n\n`;
 }
 
 function serializeJsonForModule(value: unknown): string {

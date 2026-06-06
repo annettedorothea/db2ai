@@ -1,6 +1,7 @@
 /**
  * Generated from: orders-database.db2ai
  */
+import { loggingAdapter } from '../../src/utils/logging-adapter.js';
 import { checkListCustomerOrdersParameters } from '../../src/auth/orders-database-tools/listCustomerOrders.js';
 
 export const connectionEnv = 'ORDERS_DATABASE_URL';
@@ -148,6 +149,10 @@ function resolveConnectionString(hostContext: DbHostContext): string {
     );
 }
 
+function compactSqlForLog(sql: string): string {
+    return sql.replace(/\s+/g, ' ').trim();
+}
+
 function normalizePostgresNumericParamValue(value: unknown): number | null {
     if (value === undefined || value === null) {
         return null;
@@ -165,6 +170,7 @@ export async function invokeTool(
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
+    loggingAdapter.debug('invokeTool', { toolName });
 
     if (hostContext === undefined) {
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
@@ -196,34 +202,48 @@ export async function invokeTool(
     try {
         switch (toolName) {
             case 'listProducts': {
-                const result = await client.query({
-                    text: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
-                    values: [normalizePostgresNumericParamValue(optionsResolved['limit'])]
+                const sqlText = 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1';
+                const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listProducts',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listProductsWithReviews': {
-                const result = await client.query({
-                    text: '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ',
-                    values: [normalizePostgresNumericParamValue(optionsResolved['limit'])]
+                const sqlText =
+                    '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ';
+                const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listProductsWithReviews',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length
                 };
             }
             case 'listCustomerOrders': {
-                const result = await client.query({
-                    text: 'SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id',
-                    values: [
-                        optionsResolved['customerId'] !== undefined && optionsResolved['customerId'] !== null
-                            ? String(optionsResolved['customerId'])
-                            : null
-                    ]
+                const sqlText =
+                    'SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id';
+                const sqlValues = [
+                    optionsResolved['customerId'] !== undefined && optionsResolved['customerId'] !== null
+                        ? String(optionsResolved['customerId'])
+                        : null
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listCustomerOrders',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
                 });
+                const result = await client.query({ text: sqlText, values: sqlValues });
                 return {
                     rows: result.rows,
                     rowCount: result.rowCount ?? result.rows.length

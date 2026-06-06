@@ -8,7 +8,9 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
+import { loggingAdapter } from '../../src/utils/logging-adapter.js';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -234,13 +236,13 @@ function warnCredentialValidationModeAtStartup(
     mode: HostCredentialValidationMode
 ): void {
     if (mode === 'opaque' && generated.connectionEnv) {
-        console.error(
-            '[mcp] warn: opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
+        loggingAdapter.warn(
+            '[mcp] opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
         );
     }
     if (mode === 'opaque' && generatedHasCheckedTool(generated)) {
-        console.error(
-            '[mcp] warn: opaque mode with checked tools — JWT claims in src/auth are not cryptographically verified.'
+        loggingAdapter.warn(
+            '[mcp] opaque mode with checked tools — JWT claims in src/auth are not cryptographically verified.'
         );
     }
 }
@@ -440,6 +442,24 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
     return schema as z.ZodTypeAny;
 }
 
+/** Log when the MCP client requests tools/list (wraps SDK handler set by registerTool). */
+function attachListToolsDebugLogging(mcpServer: McpServer, generated: GeneratedHostModule): void {
+    type ListToolsHandler = (request: unknown, extra: unknown) => Promise<ListToolsResult>;
+    const handlers = (mcpServer.server as unknown as { _requestHandlers: Map<string, ListToolsHandler> })
+        ._requestHandlers;
+    const previous = handlers.get('tools/list');
+    if (!previous) {
+        return;
+    }
+    mcpServer.server.setRequestHandler(ListToolsRequestSchema, async (request, extra) => {
+        loggingAdapter.debug('listTools', {
+            toolCount: generated.generatedTools.length,
+            toolNames: generated.generatedTools.map((t) => t.toolName)
+        });
+        return previous(request, extra);
+    });
+}
+
 async function registerMcpTools(
     server: McpServer,
     generated: GeneratedHostModule,
@@ -485,6 +505,7 @@ async function registerMcpTools(
             }
         );
     }
+    attachListToolsDebugLogging(server, generated);
 }
 
 type HostRuntimeConfig = CredentialValidationFields & {
@@ -651,7 +672,7 @@ async function runStdioMcpStandaloneFromArgv(argv: string[]): Promise<void> {
         );
     }
     validateHostAtStartup(hostConfig, generated);
-    console.error('[mcp] host context refreshed each tool call');
+    loggingAdapter.info('[mcp] host context refreshed each tool call');
     await runStdioMcpServer(generated, hostConfig);
 }
 

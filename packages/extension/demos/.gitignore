@@ -3,6 +3,10 @@ src/auth/**/*.js
 src/auth/**/*.js.map
 src/auth/**/*.mjs
 
+# tsc emit from build:generated — keep only logging-adapter.ts in src/utils/
+src/utils/**/*.js
+src/utils/**/*.js.map
+
 # tsc emit from build:generated — commit generated/**/*.ts only
 generated/**/*.js
 generated/**/*.js.map
