@@ -41,11 +41,7 @@ async function waitForHttpMcp(url: string, deadlineMs: number): Promise<void> {
     let lastError: unknown;
     while (Date.now() < deadline) {
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: '{}'
-            });
+            const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
             if (response.status < 500) {
                 return;
             }
@@ -70,7 +66,7 @@ async function stopHttpServerProcess(child: ChildProcess | undefined): Promise<v
     }
     await new Promise<void>((resolve) => {
         const timeout = setTimeout(resolve, 2_000);
-        child.once('close', () => {
+        child.once("close", () => {
             clearTimeout(timeout);
             resolve();
         });
@@ -121,7 +117,11 @@ export async function connectMcpStatelessHttp(
             return tools.tools.map((tool) => tool.name);
         },
         async callTool(toolName, toolArgs) {
-            const result = await client.callTool({ name: toolName, arguments: toolArgs ?? {} }, undefined, { timeout });
+            const result = await client.callTool(
+                { name: toolName, arguments: toolArgs ?? {} },
+                undefined,
+                { timeout }
+            );
             if ('isError' in result && result.isError === true) {
                 throw new Error(`MCP tool "${toolName}" returned an error result.`);
             }
