@@ -180,26 +180,56 @@ export async function ensureDockerDatabase(
         };
     }
 
-    await requireCommand('npm', ['--prefix', demosRoot, 'run', config.composeUpScript], {
+    const composeResult = await runCommand('npm', ['--prefix', demosRoot, 'run', config.composeUpScript], {
         env: {
             ...process.env,
             [config.hostPortEnv]: startupHostPort
         }
     });
-
-    const started = await inspectDockerContainer(config.containerName, config.containerPort);
-    if (!started.running || started.health !== 'healthy') {
-        throw new Error(`${config.description} container is not healthy after startup (health: ${started.health}).`);
+    if (composeResult.exitCode !== 0) {
+        const output = `${composeResult.stdout}\n${composeResult.stderr}`;
+        const raced = /already in use|Conflict/i.test(output);
+        const afterRace = await inspectDockerContainer(config.containerName, config.containerPort);
+        if (!raced || !afterRace.exists) {
+            throw new Error(
+                [
+                    `Command failed (${composeResult.exitCode}): npm --prefix ${demosRoot} run ${config.composeUpScript}`,
+                    composeResult.stdout.trim(),
+                    composeResult.stderr.trim()
+                ]
+                    .filter((line) => line.length > 0)
+                    .join('\n')
+            );
+        }
+        if (!afterRace.running) {
+            await requireCommand('docker', ['start', config.containerName]);
+        }
     }
-    if (started.hostPort !== startupHostPort) {
+
+    const ready = await waitForHealthyDockerContainer(
+        config.containerName,
+        config.containerPort,
+        config.description,
+        config.waitTimeoutMs
+    );
+    if (!ready.hostPort) {
         throw new Error(
-            `${config.description} container started on host port ${
-                started.hostPort ?? 'unknown'
-            }, expected ${startupHostPort}.`
+            `${config.description} container is healthy, but its published host port could not be detected.`
+        );
+    }
+    if (configuredPort !== undefined && ready.hostPort !== configuredPort) {
+        throw new Error(
+            `${config.description} container is already running on host port ${ready.hostPort}, but ${config.hostPortEnv}=${configuredPort}.`
+        );
+    }
+    const hostPort = ready.hostPort ?? startupHostPort;
+    if (configuredPort === undefined && ready.hostPort !== startupHostPort) {
+        throw new Error(
+            `${config.description} container started on host port ${ready.hostPort ?? 'unknown'}, expected ${startupHostPort}.`
         );
     }
 
     return {
-        connectionString: configuredDatabaseUrl(config.databaseUrlEnv) ?? config.buildConnectionString(startupHostPort)
+        connectionString: configuredDatabaseUrl(config.databaseUrlEnv) ?? config.buildConnectionString(hostPort)
     };
 }

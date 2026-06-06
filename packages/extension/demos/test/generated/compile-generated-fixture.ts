@@ -78,7 +78,7 @@ function compileGeneratedInDir(projectRoot: string, workspace: CompileWorkspaceR
     }
 }
 
-/** Emit `.js` next to generated `.ts` (and optional `src/auth` / `src/utils` stubs) for Vitest fixtures. */
+/** Emit `.js` next to generated `.ts` (and optional `src/auth` stubs) for Vitest fixtures. */
 export function compileGeneratedForSmoke(runRoot: string): void {
     const workspace = findCompileWorkspaceRoot(runRoot);
     compileGeneratedInDir(runRoot, workspace, ['generated/**/*.ts']);
@@ -88,19 +88,9 @@ export function compileGeneratedForSmoke(runRoot: string): void {
         compileGeneratedInDir(runRoot, workspace, ['src/auth/**/*.ts']);
     }
 
-    const localUtils = path.join(runRoot, 'src', 'utils');
-    if (fs.existsSync(localUtils)) {
-        compileGeneratedInDir(runRoot, workspace, ['src/utils/**/*.ts']);
-    }
-
     const parentRoot = path.dirname(runRoot);
     const parentAuth = path.join(parentRoot, 'src', 'auth');
     if (parentRoot !== runRoot && fs.existsSync(parentAuth)) {
         compileGeneratedInDir(parentRoot, workspace, ['src/auth/**/*.ts']);
-    }
-
-    const parentUtils = path.join(parentRoot, 'src', 'utils');
-    if (parentRoot !== runRoot && fs.existsSync(parentUtils)) {
-        compileGeneratedInDir(parentRoot, workspace, ['src/utils/**/*.ts']);
     }
 }

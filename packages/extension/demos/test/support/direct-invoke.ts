@@ -7,9 +7,9 @@ import {
     type GeneratedToolModule
 } from '../generated/index.js';
 import * as fs from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { copyAuthStubsFromDemos } from './copy-auth-stubs-from-demos.js';
 import { copyLoggingAdapterStub } from './copy-logging-adapter-stub.js';
 import { runDemoGenerate } from './run-demo-generate.js';
 
@@ -82,16 +82,7 @@ export async function withGeneratedDirectInvokeFixture(
         let generateSourcePath = options.sourcePath;
 
         if (options.isolateFixtureProjectRoot) {
-            const demosAuthDir = path.join(options.demosRoot, 'src', 'auth');
-            const fixtureAuthDir = path.join(runRoot, 'src', 'auth');
-            if (existsSync(demosAuthDir)) {
-                await fs.mkdir(fixtureAuthDir, { recursive: true });
-                for (const entry of await fs.readdir(demosAuthDir)) {
-                    if (entry.endsWith('.ts')) {
-                        await fs.copyFile(path.join(demosAuthDir, entry), path.join(fixtureAuthDir, entry));
-                    }
-                }
-            }
+            await copyAuthStubsFromDemos(runRoot);
             generateSourcePath = path.join(runRoot, path.basename(options.sourcePath));
             await fs.copyFile(options.sourcePath, generateSourcePath);
         }
