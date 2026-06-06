@@ -13,6 +13,7 @@
         "build": "tsc -b tsconfig.build.json && npm run build --workspaces",
         "build:clean": "npm run clean && npm run build",
         "vsix:version": "node scripts/bump-version.mjs",
+        "sync:core2ai-pin": "node scripts/sync-core2ai-pin.mjs && npm install",
         "vsix:prepare": "npm run vsix:prepare --workspace packages/extension",
         "vsix:build": "npm run vsix:build --workspace packages/extension",
         "vsix:release": "npm run vsix:release --workspace packages/extension",
