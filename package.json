@@ -42,5 +42,8 @@
         "packages/language",
         "packages/cli",
         "packages/extension"
-    ]
+    ],
+    "optionalDependencies": {
+        "@rollup/rollup-linux-x64-gnu": "^4.60.4"
+    }
 }

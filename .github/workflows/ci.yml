@@ -43,4 +43,6 @@ jobs:
             - run: npm run generate:all
             - run: npm run build:generated --prefix packages/extension/demos
             - run: npm run check
-            - run: npm run test
+            - run: npm run test --workspace packages/language
+            - run: npm run test --workspace packages/cli
+            - run: npm run test --prefix packages/extension/demos
