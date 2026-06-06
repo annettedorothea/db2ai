@@ -36,10 +36,10 @@ jobs:
               env:
                   HUSKY: '0'
 
+            - run: npm run install:demos
+
             - name: Build workspace (embed CLI for generate:all)
               run: npm run langium:generate && npm run build
-
-            - run: npm run install:demos
             - run: npm run generate:all
             - run: npm run build:generated --prefix packages/extension/demos
             - run: npm run check
