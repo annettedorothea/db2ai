@@ -9,9 +9,9 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
 
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
               with:
                   repository: annettedorothea/core2ai
                   path: _core2ai
@@ -19,7 +19,7 @@ jobs:
 
             - run: mv _core2ai ../core2ai
 
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v5
               with:
                   node-version: 22
                   cache: npm
@@ -35,6 +35,9 @@ jobs:
               run: npm ci
               env:
                   HUSKY: '0'
+
+            - name: Build workspace (embed CLI for generate:all)
+              run: npm run langium:generate && npm run build
 
             - run: npm run install:demos
             - run: npm run generate:all
