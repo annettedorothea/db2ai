@@ -233,7 +233,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'orders-database-tools';
-export const mcpServerVersion = '0.0.6';
+export const mcpServerVersion = '0.1.0';
 
 const parameterCheckers: Record<
     string,
