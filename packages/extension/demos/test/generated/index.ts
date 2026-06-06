@@ -2,6 +2,16 @@
 
 export { readGeneratedToolModule, type GeneratedToolDescriptor, type GeneratedToolModule } from './generated-module.js';
 export { compileGeneratedForSmoke } from './compile-generated-fixture.js';
-export { connectMcpStdio, withMcpStdioSession, type McpStdioConnectOptions, type McpStdioSession } from './mcp-stdio-smoke.js';
-export { connectMcpStatelessHttp, withMcpStatelessHttpSession, type McpStatelessHttpConnectOptions, type McpStatelessHttpSession } from './mcp-http-smoke.js';
+export {
+    connectMcpStdio,
+    withMcpStdioSession,
+    type McpStdioConnectOptions,
+    type McpStdioSession
+} from './mcp-stdio-smoke.js';
+export {
+    connectMcpStatelessHttp,
+    withMcpStatelessHttpSession,
+    type McpStatelessHttpConnectOptions,
+    type McpStatelessHttpSession
+} from './mcp-http-smoke.js';
 export { asRecord, credentialWithOptionalJwt, restoreEnv } from './env-helpers.js';

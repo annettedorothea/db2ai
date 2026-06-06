@@ -19,15 +19,15 @@ export function restoreEnv(name: string, previousValue: string | undefined): voi
 }
 
 function decodeJwtPayloadUnsafe(token: string): Record<string, unknown> {
-    const parts = String(token).trim().split(".");
+    const parts = String(token).trim().split('.');
     if (parts.length !== 3) {
-        throw new Error("credential is not a JWT (expected three dot-separated segments).");
+        throw new Error('credential is not a JWT (expected three dot-separated segments).');
     }
-    let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     while (b64.length % 4 !== 0) {
-        b64 += "=";
+        b64 += '=';
     }
-    return JSON.parse(Buffer.from(b64, "base64").toString("utf8")) as Record<string, unknown>;
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as Record<string, unknown>;
 }
 
 /** Mirror MCP host: attach jwt when credential looks like a JWT. */
@@ -39,7 +39,7 @@ export function credentialWithOptionalJwt(credential: string | undefined): {
         return {};
     }
     const trimmed = credential.trim();
-    const segments = trimmed.split(".");
+    const segments = trimmed.split('.');
     if (segments.length !== 3) {
         return { credential: trimmed };
     }

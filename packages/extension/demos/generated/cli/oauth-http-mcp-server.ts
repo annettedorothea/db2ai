@@ -31,10 +31,7 @@ type CredentialTransformFn = (input: CredentialTransformInput) => Promise<Creden
 /** Set at startup when --credential-transform-module is passed; otherwise inbound credential pass-through. */
 let credentialTransformFn: CredentialTransformFn | undefined;
 
-function resolveCredentialTransformModulePath(
-    raw: string,
-    envDirs: string[]
-): string {
+function resolveCredentialTransformModulePath(raw: string, envDirs: string[]): string {
     const trimmed = raw.trim();
     if (path.isAbsolute(trimmed)) {
         return path.resolve(trimmed);
@@ -64,9 +61,7 @@ function missingCredentialTransformModuleError(resolvedPath: string, raw: string
     );
 }
 
-async function loadCredentialTransformModule(
-    httpHostConfig: OAuthHttpHostRuntimeConfig
-): Promise<void> {
+async function loadCredentialTransformModule(httpHostConfig: OAuthHttpHostRuntimeConfig): Promise<void> {
     const raw = httpHostConfig.credentialTransformModule?.trim();
     if (!raw) {
         credentialTransformFn = undefined;
@@ -104,11 +99,7 @@ type ApiLikeHostContext = {
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
-    invokeTool: (
-        toolName: string,
-        args?: Record<string, unknown>,
-        hostContext?: unknown
-    ) => Promise<unknown>;
+    invokeTool: (toolName: string, args?: Record<string, unknown>, hostContext?: unknown) => Promise<unknown>;
     inputZodByTool?: Record<string, unknown>;
     mcpServerName?: string;
     mcpServerVersion?: string;
@@ -195,8 +186,6 @@ function loadLocalEnvFiles(startDirs: string[], options?: { refresh?: boolean })
     return loadedFiles;
 }
 
-
-
 function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
     return value === 'postgres' || value === 'mysql' ? value : undefined;
 }
@@ -279,7 +268,6 @@ function warnCredentialValidationModeAtStartup(
     generated: GeneratedHostModule,
     mode: HostCredentialValidationMode
 ): void {
-    
     if (mode === 'opaque' && generated.connectionEnv) {
         loggingAdapter.warn(
             '[mcp] opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
@@ -357,7 +345,8 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 /** Log when the MCP client requests tools/list (wraps SDK handler set by registerTool). */
 function attachListToolsDebugLogging(mcpServer: McpServer, generated: GeneratedHostModule): void {
     type ListToolsHandler = (request: unknown, extra: unknown) => Promise<ListToolsResult>;
-    const handlers = (mcpServer.server as unknown as { _requestHandlers: Map<string, ListToolsHandler> })._requestHandlers;
+    const handlers = (mcpServer.server as unknown as { _requestHandlers: Map<string, ListToolsHandler> })
+        ._requestHandlers;
     const previous = handlers.get('tools/list');
     if (!previous) {
         return;
@@ -461,7 +450,9 @@ function validateOAuthCredentialValidationAtStartup(
     }
     const mode = httpHostConfig.tokenValidation;
     if (mode === 'static') {
-        throw new Error('credential validation mode "static" is not supported on OAuth HTTP — use opaque, hs256, or oidc.');
+        throw new Error(
+            'credential validation mode "static" is not supported on OAuth HTTP — use opaque, hs256, or oidc.'
+        );
     }
     if (mode === 'hs256') {
         readJwtSecretFromEnv(httpHostConfig.jwtSecretEnvKey!);
@@ -683,8 +674,7 @@ function normalizeHostJwtClaims(
 ): Record<string, unknown> {
     const customerRaw = payload[httpHostConfig.jwtClaimCustomerId];
     const roleRaw = payload[httpHostConfig.jwtClaimRole];
-    const customerId =
-        customerRaw !== undefined && customerRaw !== null ? String(customerRaw).trim() : '';
+    const customerId = customerRaw !== undefined && customerRaw !== null ? String(customerRaw).trim() : '';
     const role = roleRaw !== undefined && roleRaw !== null ? String(roleRaw).trim() : '';
     const normalized: Record<string, unknown> = { ...payload };
     if (customerId.length > 0) {
@@ -754,16 +744,16 @@ async function validateOAuthHttpHostAtStartup(
             );
         }
     } else {
-    const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
-    if (!baseUrlKey) {
-        throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
-    }
-    const baseUrl = process.env[baseUrlKey]?.trim();
-    if (!baseUrl) {
-        throw new Error(
-            'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
-        );
-    }
+        const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
+        if (!baseUrlKey) {
+            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
+        }
+        const baseUrl = process.env[baseUrlKey]?.trim();
+        if (!baseUrl) {
+            throw new Error(
+                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
+            );
+        }
     }
 }
 
@@ -864,9 +854,7 @@ async function resolveHostContextWithCredentialTransform(
         throw new Error('Invalid OAuth Bearer token.');
     }
 
-    const idpClaims = verified.payload
-        ? normalizeHostJwtClaims(verified.payload, httpHostConfig)
-        : undefined;
+    const idpClaims = verified.payload ? normalizeHostJwtClaims(verified.payload, httpHostConfig) : undefined;
     if (!credentialTransformFn) {
         throw new Error('Credential transform module is not loaded.');
     }
@@ -905,12 +893,7 @@ async function resolveHostContextForOAuthSession(
 ): Promise<ApiLikeHostContext> {
     const bearer = readBearerFromHeaders(headers);
     const hostContext = credentialTransformFn
-        ? await resolveHostContextWithCredentialTransform(
-              httpHostConfig,
-              bearer,
-              sessionStore,
-              sessionId
-          )
+        ? await resolveHostContextWithCredentialTransform(httpHostConfig, bearer, sessionStore, sessionId)
         : await resolveHostContextOAuthPassThrough(httpHostConfig, bearer, sessionStore, sessionId);
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -1121,14 +1104,12 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
         );
     }
     await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
-    const resourceUrl =
-        'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
+    const resourceUrl = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     loggingAdapter.info('[mcp] oauth HTTP listening', {
         resourceUrl,
         authorizationServer: httpHostConfig.oauthIdpUrl,
         tokenValidation: httpHostConfig.tokenValidation,
-        oauthIssuer:
-            httpHostConfig.tokenValidation === 'oidc' ? httpHostConfig.oauthIssuer : undefined,
+        oauthIssuer: httpHostConfig.tokenValidation === 'oidc' ? httpHostConfig.oauthIssuer : undefined,
         oauthOnInitialize: mcpRequiresBearerOnInitialize(generated)
             ? 'Bearer required (protected/checked tools — Cursor login when enabling MCP' +
               (generatedHasPublicTool(generated) ? '; public tools after login' : '') +
