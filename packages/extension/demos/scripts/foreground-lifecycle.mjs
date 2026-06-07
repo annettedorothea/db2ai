@@ -70,7 +70,7 @@ export function waitForForegroundServiceShutdown({ label, serviceChildren, demos
         shuttingDown = true;
         console.log(`[${label}] ${reason} — stopping foreground services…`);
         await stopServiceChildren(serviceChildren);
-        console.log(`[${label}] stopped (Docker containers keep running — npm run db:kill:* to stop).`);
+        console.log(`[${label}] stopped (npm run demo:kill-all to stop MCP hosts and Docker).`);
         process.exit(0);
     };
 

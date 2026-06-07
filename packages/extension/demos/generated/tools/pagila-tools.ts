@@ -310,11 +310,100 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'integer'
             }
         ]
+    },
+    {
+        kind: 'sql',
+        toolName: 'createActor',
+        title: 'Create actor with first and last name',
+        description:
+            'Insert a new actor into Pagila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName (:firstName): actor first name (example: MARY)\n- lastName (:lastName): actor last name (example: SMITH)\n\nExample call: firstName=MARY, lastName=SMITH',
+        access: 'public',
+        sqlText:
+            'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW()) RETURNING actor_id, first_name, last_name, last_update',
+        params: [
+            {
+                placeholder: ':firstName',
+                index: 1,
+                name: 'firstName',
+                propertyName: 'firstName',
+                description: 'actor first name',
+                example: 'MARY',
+                jsonSchemaType: 'string'
+            },
+            {
+                placeholder: ':lastName',
+                index: 2,
+                name: 'lastName',
+                propertyName: 'lastName',
+                description: 'actor last name',
+                example: 'SMITH',
+                jsonSchemaType: 'string'
+            }
+        ]
+    },
+    {
+        kind: 'sql',
+        toolName: 'updateActor',
+        title: 'Update actor by id',
+        description:
+            "Update an actor's first and last name.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName (:firstName): new first name (example: MARY)\n- lastName (:lastName): new last name (example: JONES)\n- actorId (:actorId): actor id to update (example: 1)\n\nExample call: firstName=MARY, lastName=JONES, actorId=1",
+        access: 'public',
+        sqlText:
+            'UPDATE actor SET first_name = $1, last_name = $2, last_update = NOW() WHERE actor_id = $3 RETURNING actor_id, first_name, last_name, last_update',
+        params: [
+            {
+                placeholder: ':firstName',
+                index: 1,
+                name: 'firstName',
+                propertyName: 'firstName',
+                description: 'new first name',
+                example: 'MARY',
+                jsonSchemaType: 'string'
+            },
+            {
+                placeholder: ':lastName',
+                index: 2,
+                name: 'lastName',
+                propertyName: 'lastName',
+                description: 'new last name',
+                example: 'JONES',
+                jsonSchemaType: 'string'
+            },
+            {
+                placeholder: ':actorId',
+                index: 3,
+                name: 'actorId',
+                propertyName: 'actorId',
+                description: 'actor id to update',
+                example: '1',
+                jsonSchemaType: 'integer'
+            }
+        ]
+    },
+    {
+        kind: 'sql',
+        toolName: 'deleteActor',
+        title: 'Delete actor by id',
+        description:
+            'Delete an actor by id.\n        Fails if the actor is referenced by film_actor (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- actorId (:actorId): actor id to delete (example: 999)\n\nExample call: actorId=999',
+        access: 'public',
+        sqlText: 'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update',
+        params: [
+            {
+                placeholder: ':actorId',
+                index: 1,
+                name: 'actorId',
+                propertyName: 'actorId',
+                description: 'actor id to delete',
+                example: '999',
+                jsonSchemaType: 'integer'
+            }
+        ]
     }
 ];
 
 export const mcpServerName = 'pagila-tools';
-export const mcpServerVersion = '0.1.0';
+export const mcpServerVersion = '0.2.0';
 
 import * as z from 'zod/v4';
 
@@ -380,7 +469,21 @@ export const inputZodByTool = {
             searchText: z.string().describe('search text (matched in title or description) (SQL :searchText)'),
             maxRows: z.number().describe('max rows to return (SQL :maxRows)')
         })
-        .strict()
+        .strict(),
+    createActor: z
+        .object({
+            firstName: z.string().describe('actor first name (SQL :firstName)'),
+            lastName: z.string().describe('actor last name (SQL :lastName)')
+        })
+        .strict(),
+    updateActor: z
+        .object({
+            firstName: z.string().describe('new first name (SQL :firstName)'),
+            lastName: z.string().describe('new last name (SQL :lastName)'),
+            actorId: z.number().describe('actor id to update (SQL :actorId)')
+        })
+        .strict(),
+    deleteActor: z.object({ actorId: z.number().describe('actor id to delete (SQL :actorId)') }).strict()
 };
 
 import { Client } from 'pg';
@@ -586,6 +689,66 @@ export async function invokeTool(
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchFilms',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const result = await client.query({ text: sqlText, values: sqlValues });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case 'createActor': {
+                const sqlText =
+                    'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW()) RETURNING actor_id, first_name, last_name, last_update';
+                const sqlValues = [
+                    options['firstName'] !== undefined && options['firstName'] !== null
+                        ? String(options['firstName'])
+                        : null,
+                    options['lastName'] !== undefined && options['lastName'] !== null
+                        ? String(options['lastName'])
+                        : null
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'createActor',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const result = await client.query({ text: sqlText, values: sqlValues });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case 'updateActor': {
+                const sqlText =
+                    'UPDATE actor SET first_name = $1, last_name = $2, last_update = NOW() WHERE actor_id = $3 RETURNING actor_id, first_name, last_name, last_update';
+                const sqlValues = [
+                    options['firstName'] !== undefined && options['firstName'] !== null
+                        ? String(options['firstName'])
+                        : null,
+                    options['lastName'] !== undefined && options['lastName'] !== null
+                        ? String(options['lastName'])
+                        : null,
+                    normalizePostgresNumericParamValue(options['actorId'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'updateActor',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const result = await client.query({ text: sqlText, values: sqlValues });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
+            case 'deleteActor': {
+                const sqlText =
+                    'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update';
+                const sqlValues = [normalizePostgresNumericParamValue(options['actorId'])];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'deleteActor',
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });

@@ -1,5 +1,7 @@
 # db2ai
 
+> **Pre-release** — early access; APIs, DSL, and generated output may change before v1.0.
+
 ## Turn your database into AI-ready tools.
 
 Generate MCP-compatible tools from SQL queries without writing custom MCP servers.

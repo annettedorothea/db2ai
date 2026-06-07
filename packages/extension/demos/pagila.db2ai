@@ -192,3 +192,60 @@ SQL {
             type: integer }
     }
 }
+
+SQL {
+    toolName: createActor
+    access: public
+    intent: '''
+        Insert a new actor into Pagila.
+        Sets last_update to the current time.
+    '''
+    query: "INSERT INTO actor (first_name, last_name, last_update) VALUES (:firstName, :lastName, NOW()) RETURNING actor_id, first_name, last_name, last_update"
+    summary: "Create actor with first and last name"
+    params: {
+        firstName: { description: "actor first name"
+            example: "MARY"
+            type: string }
+        lastName: { description: "actor last name"
+            example: "SMITH"
+            type: string }
+    }
+}
+
+SQL {
+    toolName: updateActor
+    access: public
+    intent: '''
+        Update an actor's first and last name.
+        Sets last_update to the current time.
+    '''
+    query: "UPDATE actor SET first_name = :firstName, last_name = :lastName, last_update = NOW() WHERE actor_id = :actorId RETURNING actor_id, first_name, last_name, last_update"
+    summary: "Update actor by id"
+    params: {
+        actorId: { description: "actor id to update"
+            example: "1"
+            type: integer }
+        firstName: { description: "new first name"
+            example: "MARY"
+            type: string }
+        lastName: { description: "new last name"
+            example: "JONES"
+            type: string }
+    }
+}
+
+SQL {
+    toolName: deleteActor
+    access: public
+    intent: '''
+        Delete an actor by id.
+        Fails if the actor is referenced by film_actor (foreign key).
+    '''
+    query: "DELETE FROM actor WHERE actor_id = :actorId RETURNING actor_id, first_name, last_name, last_update"
+    summary: "Delete actor by id"
+    params: {
+        actorId: { description: "actor id to delete"
+            example: "999"
+            type: integer }
+    }
+}

@@ -191,11 +191,11 @@ async function main() {
 
     if (foreground) {
         console.log('[start] Setup done — services running. Cursor Settings → Tools & MCPs: enable servers, then reload MCP.');
-        console.log('[start] Ctrl+C stops MCP/IDP processes started here (Docker keeps running).');
+        console.log('[start] Ctrl+C stops MCP/IDP processes started here (npm run demo:kill-all also stops Docker).');
         await waitForForegroundServiceShutdown({ label: 'start', serviceChildren, demosRoot });
         return;
     }
-    console.log('[start] Done. Demo services run in background (npm run demo:kill-all to stop).');
+    console.log('[start] Done. Demo services run in background (npm run demo:kill-all stops MCP, IDP, and Docker).');
     console.log('[start] Cursor Settings → Tools & MCPs: enable servers, then reload MCP.');
     console.log('[start] Live logs: npm run start:foreground');
 }

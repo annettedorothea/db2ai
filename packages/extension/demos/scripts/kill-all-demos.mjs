@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Stop MCP HTTP/OAuth hosts and OAuth IDP (safe to re-run). Does not stop Docker DBs.
+ * Stop MCP HTTP/OAuth hosts, OAuth IDP, and all demo Docker DBs (safe to re-run).
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -27,4 +27,6 @@ console.log('[kill-all] stopping MCP HTTP hosts…');
 runNpmScript('demo:mcp-http:kill');
 console.log('[kill-all] stopping OAuth IDP…');
 runNpmScript('demo:oauth-idp:kill');
+console.log('[kill-all] stopping demo Docker databases…');
+runNpmScript('db:kill:all');
 console.log('[kill-all] done.');

@@ -4,9 +4,9 @@
  * (e.g. leftover containers from another checkout or compose project label).
  *
  * Usage: node ./scripts/kill-demo-databases.mjs [main|mssql|oracle|all]
- *   main  — pagila, sakila, orders-postgres (npm run start / db:up:all)
- *   mssql — animals-sqlserver only (npm run start:mssql)
- *   oracle — plants-oracle only (npm run start:oracle)
+ *   main  — pagila, sakila, orders-postgres
+ *   mssql — animals-sqlserver only
+ *   oracle — plants-oracle only
  *   all   — every demo DB container (default for db:kill:all)
  */
 import { spawnSync } from 'node:child_process';
