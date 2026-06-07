@@ -221,6 +221,35 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'integer'
             }
         ]
+    },
+    {
+        kind: 'sql',
+        toolName: 'insertActor',
+        title: 'Insert actor with first and last name',
+        description:
+            'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName ($1): actor first name (example: MARY)\n- lastName ($2): actor last name (example: SMITH)\n\nExample call: firstName=MARY, lastName=SMITH',
+        access: 'public',
+        sqlText: 'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW())',
+        params: [
+            {
+                placeholder: '$1',
+                index: 1,
+                name: 'firstName',
+                propertyName: 'firstName',
+                description: 'actor first name',
+                example: 'MARY',
+                jsonSchemaType: 'string'
+            },
+            {
+                placeholder: '$2',
+                index: 2,
+                name: 'lastName',
+                propertyName: 'lastName',
+                description: 'actor last name',
+                example: 'SMITH',
+                jsonSchemaType: 'string'
+            }
+        ]
     }
 ];
 
@@ -268,6 +297,12 @@ export const inputZodByTool = {
                     'Search text matched in title or description.\n                Example: cat, dog, academy.\n             (SQL $1)'
                 ),
             maxRows: z.number().describe('max rows to return (SQL $2)')
+        })
+        .strict(),
+    insertActor: z
+        .object({
+            firstName: z.string().describe('actor first name (SQL $1)'),
+            lastName: z.string().describe('actor last name (SQL $2)')
         })
         .strict()
 };
@@ -432,6 +467,24 @@ export async function invokeTool(
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchFilms',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const [rows] = await client.query(sqlText, sqlValues);
+                const resultRows = normalizeMysqlRows(rows);
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case 'insertActor': {
+                const sqlText = 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())';
+                const sqlValues = [
+                    normalizeMysqlParamValue(options['firstName']),
+                    normalizeMysqlParamValue(options['lastName'])
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'insertActor',
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });

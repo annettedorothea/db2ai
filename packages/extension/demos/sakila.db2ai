@@ -161,3 +161,28 @@ SQL {
         }
     }
 }
+
+SQL {
+    toolName: insertActor
+    access: public
+    intent: '''
+        Insert a new actor into Sakila.
+        Sets last_update to the current time.
+    '''
+    query: "INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW())"
+    summary: "Insert actor with first and last name"
+    params: {
+        $1: {
+            name: firstName
+            description: "actor first name"
+            example: "MARY"
+            type: string
+        }
+        $2: {
+            name: lastName
+            description: "actor last name"
+            example: "SMITH"
+            type: string
+        }
+    }
+}

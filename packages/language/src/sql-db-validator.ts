@@ -9,6 +9,7 @@ import { databaseDialectFromModel, type ResolvedDatabaseDialect } from './dialec
 import { isSupportedConnectionUrlForDialect } from './dialect.js';
 import { isValidEnvVarName, resolveDatabaseUrlFromEnvForDocument } from './schema.js';
 import { coerceExampleValue } from './sql-param-spec.js';
+import { buildMysqlExplainSql, buildPostgresExplainSql } from './sql-db-probe.js';
 import {
     extractPlaceholderNumbers,
     mysqlBindValues,
@@ -17,10 +18,6 @@ import {
 } from './sql-params.js';
 
 const SQL_DB_DIAGNOSTIC_SOURCE = 'db2ai-sql';
-
-function rewriteLogicalPlaceholdersForMysql(sqlText: string): string {
-    return sqlText.replace(/\$[0-9]+/g, '?');
-}
 
 function queryRange(sqlQuery: SqlQuery): {
     start: { line: number; character: number };
@@ -60,22 +57,20 @@ function buildExampleValueByIndex(sqlQuery: SqlQuery): {
     return { valueByIndex, missingExample };
 }
 
-async function executePostgresProbe(connectionUrl: string, sqlText: string, values: unknown[]): Promise<void> {
+async function explainPostgresProbe(connectionUrl: string, sqlText: string, values: unknown[]): Promise<void> {
     const client = new pg.Client({ connectionString: connectionUrl });
     await client.connect();
     try {
-        await client.query({ text: sqlText, values });
+        await client.query({ text: buildPostgresExplainSql(sqlText), values });
     } finally {
         await client.end();
     }
 }
 
-async function executeMysqlProbe(connectionUrl: string, sqlText: string, values: unknown[]): Promise<void> {
+async function explainMysqlProbe(connectionUrl: string, sqlText: string, values: unknown[]): Promise<void> {
     const connection = await mysql.createConnection(connectionUrl);
     try {
-        const rewritten = rewriteLogicalPlaceholdersForMysql(sqlText);
-        // Use `query` like generated invoke code; `execute` rejects some valid binds.
-        await connection.query(rewritten, values as (string | number | boolean | null)[]);
+        await connection.query(buildMysqlExplainSql(sqlText), values as (string | number | boolean | null)[]);
     } finally {
         await connection.end();
     }
@@ -92,9 +87,9 @@ async function probeSqlQuery(
         dialect === 'mysql' ? mysqlBindValues(sqlText, valueByIndex) : postgresBindValues(sqlText, valueByIndex);
 
     if (dialect === 'mysql') {
-        await executeMysqlProbe(connectionUrl, sqlText, values);
+        await explainMysqlProbe(connectionUrl, sqlText, values);
     } else {
-        await executePostgresProbe(connectionUrl, sqlText, values);
+        await explainPostgresProbe(connectionUrl, sqlText, values);
     }
 }
 

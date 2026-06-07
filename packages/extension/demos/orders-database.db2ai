@@ -123,7 +123,7 @@ SQL {
         $2: {
             name: price
             description: "Unit price"
-            example: "12.99"
+            example: "10.99"
             type: number
         }
     }

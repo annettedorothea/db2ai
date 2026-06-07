@@ -88,7 +88,7 @@ Building MCP tools for databases usually requires:
 
 db2ai lets you focus on describing business capabilities instead of writing boilerplate.
 
-Queries are validated against a live PostgreSQL or MySQL database using `EXPLAIN` before tools are generated.
+Queries are validated against a live PostgreSQL or MySQL database using `EXPLAIN` (dry-run, no data changes) before tools are generated.
 
 ---
 

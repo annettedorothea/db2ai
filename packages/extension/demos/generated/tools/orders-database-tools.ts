@@ -148,7 +148,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createProduct',
         title: 'Create product (admin only)',
         description:
-            'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productName ($1): Product name (example: Widget Pro)\n- price ($2): Unit price (example: 12.99)\n\nExample call: productName=Widget Pro, price=12.99',
+            'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productName ($1): Product name (example: Widget Pro)\n- price ($2): Unit price (example: 10.99)\n\nExample call: productName=Widget Pro, price=10.99',
         access: 'checked',
         sqlText: 'INSERT INTO products (name, price) VALUES ($1, $2) RETURNING product_id, name, price',
         params: [
@@ -167,7 +167,7 @@ export const generatedTools: GeneratedTool[] = [
                 name: 'price',
                 propertyName: 'price',
                 description: 'Unit price',
-                example: '12.99',
+                example: '10.99',
                 jsonSchemaType: 'number'
             }
         ]

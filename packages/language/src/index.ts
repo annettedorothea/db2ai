@@ -5,6 +5,7 @@ export * from './db-2-ai-dsl-sql-validator.js';
 export * from './dialect.js';
 export * from './sql-params.js';
 export * from './sql-param-spec.js';
+export * from './sql-db-probe.js';
 export * from './sql-db-validator.js';
 export * from './schema.js';
 export { loadLocalEnvFiles, workspaceDirsForDocumentUri } from './env.js';
