@@ -30,14 +30,14 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
-        "@types/node": "~20.17.48",
-        "esbuild": "^0.25.12",
-        "eslint": "^10.4.0",
+        "@types/node": "~22.19.20",
+        "esbuild": "~0.28.0",
+        "eslint": "^10.4.1",
         "husky": "^9.1.7",
         "prettier": "^3.8.3",
         "shx": "~0.4.0",
-        "typescript": "~5.8.3",
-        "typescript-eslint": "^8.59.4"
+        "typescript": "~6.0.3",
+        "typescript-eslint": "^8.60.1"
     },
     "workspaces": [
         "packages/language",
@@ -45,6 +45,6 @@
         "packages/extension"
     ],
     "optionalDependencies": {
-        "@rollup/rollup-linux-x64-gnu": "^4.60.4"
+        "@rollup/rollup-linux-x64-gnu": "^4.61.1"
     }
 }

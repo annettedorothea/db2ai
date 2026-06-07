@@ -70,8 +70,8 @@
     },
     "devDependencies": {
         "@types/vscode": "~1.75.0",
-        "@vscode/vsce": "^3.7.1",
-        "esbuild": "~0.25.5"
+        "@vscode/vsce": "^3.9.2",
+        "esbuild": "~0.28.0"
     },
     "vsce": {
         "dependencies": false
