@@ -3,9 +3,9 @@
  */
 import { loggingAdapter } from '../../src/utils/logging-adapter.js';
 
-export const connectionEnv = "ANIMALS_SQLSERVER_DATABASE_URL";
+export const connectionEnv = 'ANIMALS_SQLSERVER_DATABASE_URL';
 
-export const databaseDialect = "sqlserver";
+export const databaseDialect = 'sqlserver';
 
 export const requiresAuth = false;
 
@@ -45,100 +45,117 @@ export type CheckedHostContext = {
 
 export const generatedTools: GeneratedTool[] = [
     {
-        "kind": "sql",
-        "toolName": "listAnimals",
-        "title": "Paginated animal catalog",
-        "description": "list animals with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows (example: 20)\n\nExample call: limit=20",
-        "access": "public",
-        "sqlText": "\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ",
-        "params": [
+        kind: 'sql',
+        toolName: 'listAnimals',
+        title: 'Paginated animal catalog',
+        description:
+            'list animals with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows (example: 20)\n\nExample call: limit=20',
+        access: 'public',
+        sqlText:
+            '\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ',
+        params: [
             {
-                "placeholder": ":limit",
-                "index": 1,
-                "name": "limit",
-                "propertyName": "limit",
-                "description": "max rows",
-                "example": "20",
-                "jsonSchemaType": "integer"
+                placeholder: ':limit',
+                index: 1,
+                name: 'limit',
+                propertyName: 'limit',
+                description: 'max rows',
+                example: '20',
+                jsonSchemaType: 'integer'
             }
         ]
     },
     {
-        "kind": "sql",
-        "toolName": "searchAnimals",
-        "title": "Name search in the animal catalog",
-        "description": "search animals by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- maxRows (:maxRows): max rows to return (example: 10)\n- searchText (:searchText): text matched in common or Latin name (example: fox)\n\nExample call: maxRows=10, searchText=fox",
-        "access": "public",
-        "sqlText": "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ",
-        "params": [
+        kind: 'sql',
+        toolName: 'searchAnimals',
+        title: 'Name search in the animal catalog',
+        description:
+            'search animals by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- maxRows (:maxRows): max rows to return (example: 10)\n- searchText (:searchText): text matched in common or Latin name (example: fox)\n\nExample call: maxRows=10, searchText=fox',
+        access: 'public',
+        sqlText:
+            "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ",
+        params: [
             {
-                "placeholder": ":maxRows",
-                "index": 1,
-                "name": "maxRows",
-                "propertyName": "maxRows",
-                "description": "max rows to return",
-                "example": "10",
-                "jsonSchemaType": "integer"
+                placeholder: ':maxRows',
+                index: 1,
+                name: 'maxRows',
+                propertyName: 'maxRows',
+                description: 'max rows to return',
+                example: '10',
+                jsonSchemaType: 'integer'
             },
             {
-                "placeholder": ":searchText",
-                "index": 2,
-                "name": "searchText",
-                "propertyName": "searchText",
-                "description": "text matched in common or Latin name",
-                "example": "fox",
-                "jsonSchemaType": "string"
+                placeholder: ':searchText',
+                index: 2,
+                name: 'searchText',
+                propertyName: 'searchText',
+                description: 'text matched in common or Latin name',
+                example: 'fox',
+                jsonSchemaType: 'string'
             }
         ]
     },
     {
-        "kind": "sql",
-        "toolName": "createAnimal",
-        "title": "Add one animal to the catalog",
-        "description": "insert a new animal row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName (:commonName): English common name (example: European hedgehog)\n- latinName (:latinName): Latin species name (example: Erinaceus europaeus)\n- aboutText (:aboutText): short English description (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.",
-        "access": "public",
-        "sqlText": "\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ",
-        "params": [
+        kind: 'sql',
+        toolName: 'createAnimal',
+        title: 'Add one animal to the catalog',
+        description:
+            'insert a new animal row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName (:commonName): English common name (example: European hedgehog)\n- latinName (:latinName): Latin species name (example: Erinaceus europaeus)\n- aboutText (:aboutText): short English description (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.',
+        access: 'public',
+        sqlText:
+            '\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ',
+        params: [
             {
-                "placeholder": ":commonName",
-                "index": 1,
-                "name": "commonName",
-                "propertyName": "commonName",
-                "description": "English common name",
-                "example": "European hedgehog",
-                "jsonSchemaType": "string"
+                placeholder: ':commonName',
+                index: 1,
+                name: 'commonName',
+                propertyName: 'commonName',
+                description: 'English common name',
+                example: 'European hedgehog',
+                jsonSchemaType: 'string'
             },
             {
-                "placeholder": ":latinName",
-                "index": 2,
-                "name": "latinName",
-                "propertyName": "latinName",
-                "description": "Latin species name",
-                "example": "Erinaceus europaeus",
-                "jsonSchemaType": "string"
+                placeholder: ':latinName',
+                index: 2,
+                name: 'latinName',
+                propertyName: 'latinName',
+                description: 'Latin species name',
+                example: 'Erinaceus europaeus',
+                jsonSchemaType: 'string'
             },
             {
-                "placeholder": ":aboutText",
-                "index": 3,
-                "name": "aboutText",
-                "propertyName": "aboutText",
-                "description": "short English description",
-                "example": "Small nocturnal insectivore with spines, common in gardens and hedgerows.",
-                "jsonSchemaType": "string"
+                placeholder: ':aboutText',
+                index: 3,
+                name: 'aboutText',
+                propertyName: 'aboutText',
+                description: 'short English description',
+                example: 'Small nocturnal insectivore with spines, common in gardens and hedgerows.',
+                jsonSchemaType: 'string'
             }
         ]
     }
 ];
 
-export const mcpServerName = "animals-sqlserver-tools";
-export const mcpServerVersion = "0.1.0";
+export const mcpServerName = 'animals-sqlserver-tools';
+export const mcpServerVersion = '0.1.0';
 
 import * as z from 'zod/v4';
 
 export const inputZodByTool = {
-    "listAnimals": z.object({ "limit": z.number().describe("max rows (SQL :limit)") }).strict(),
-    "searchAnimals": z.object({ "maxRows": z.number().describe("max rows to return (SQL :maxRows)"), "searchText": z.string().describe("text matched in common or Latin name (SQL :searchText)") }).strict(),
-    "createAnimal": z.object({ "commonName": z.string().describe("English common name (SQL :commonName)"), "latinName": z.string().describe("Latin species name (SQL :latinName)"), "aboutText": z.string().describe("short English description (SQL :aboutText)") }).strict()
+    listAnimals: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
+    searchAnimals: z
+        .object({
+            maxRows: z.number().describe('max rows to return (SQL :maxRows)'),
+            searchText: z.string().describe('text matched in common or Latin name (SQL :searchText)')
+        })
+        .strict(),
+    createAnimal: z
+        .object({
+            commonName: z.string().describe('English common name (SQL :commonName)'),
+            latinName: z.string().describe('Latin species name (SQL :latinName)'),
+            aboutText: z.string().describe('short English description (SQL :aboutText)')
+        })
+        .strict()
 };
 
 import sql from 'mssql';
@@ -200,75 +217,100 @@ export async function invokeTool(
     loggingAdapter.debug('invokeTool', { toolName });
 
     if (hostContext === undefined) {
-        throw new Error(
-            'invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).'
-        );
+        throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
     const connectionString = resolveConnectionString(host);
     const pool = await sql.connect(parseSqlserverConnectInput(connectionString));
     try {
         switch (toolName) {
-        case "listAnimals": {
-            const sqlText = "\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ";
-            const request = pool.request();
-            request.input("limit", sql.Int, normalizeSqlserverNumericParamValue(options["limit"]));
-            loggingAdapter.debug('executeSql', {
-                toolName: "listAnimals",
-                sql: compactSqlForLog(sqlText),
-                values: {
-                    "limit": options["limit"],
-                }
-            });
-            const result = await request.query(sqlText);
-            const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
-        case "searchAnimals": {
-            const sqlText = "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ";
-            const request = pool.request();
-            request.input("maxRows", sql.Int, normalizeSqlserverNumericParamValue(options["maxRows"]));
-            request.input("searchText", sql.NVarChar(sql.MAX), options["searchText"] !== undefined && options["searchText"] !== null ? String(options["searchText"]) : null);
-            loggingAdapter.debug('executeSql', {
-                toolName: "searchAnimals",
-                sql: compactSqlForLog(sqlText),
-                values: {
-                    "maxRows": options["maxRows"],
-                    "searchText": options["searchText"],
-                }
-            });
-            const result = await request.query(sqlText);
-            const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
-        case "createAnimal": {
-            const sqlText = "\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ";
-            const request = pool.request();
-            request.input("commonName", sql.NVarChar(sql.MAX), options["commonName"] !== undefined && options["commonName"] !== null ? String(options["commonName"]) : null);
-            request.input("latinName", sql.NVarChar(sql.MAX), options["latinName"] !== undefined && options["latinName"] !== null ? String(options["latinName"]) : null);
-            request.input("aboutText", sql.NVarChar(sql.MAX), options["aboutText"] !== undefined && options["aboutText"] !== null ? String(options["aboutText"]) : null);
-            loggingAdapter.debug('executeSql', {
-                toolName: "createAnimal",
-                sql: compactSqlForLog(sqlText),
-                values: {
-                    "commonName": options["commonName"],
-                    "latinName": options["latinName"],
-                    "aboutText": options["aboutText"],
-                }
-            });
-            const result = await request.query(sqlText);
-            const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
-            return {
-                rows: resultRows,
-                rowCount: resultRows.length
-            };
-        }
+            case 'listAnimals': {
+                const sqlText =
+                    '\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ';
+                const request = pool.request();
+                request.input('limit', sql.Int, normalizeSqlserverNumericParamValue(options['limit']));
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listAnimals',
+                    sql: compactSqlForLog(sqlText),
+                    values: {
+                        limit: options['limit']
+                    }
+                });
+                const result = await request.query(sqlText);
+                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case 'searchAnimals': {
+                const sqlText =
+                    "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ";
+                const request = pool.request();
+                request.input('maxRows', sql.Int, normalizeSqlserverNumericParamValue(options['maxRows']));
+                request.input(
+                    'searchText',
+                    sql.NVarChar(sql.MAX),
+                    options['searchText'] !== undefined && options['searchText'] !== null
+                        ? String(options['searchText'])
+                        : null
+                );
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'searchAnimals',
+                    sql: compactSqlForLog(sqlText),
+                    values: {
+                        maxRows: options['maxRows'],
+                        searchText: options['searchText']
+                    }
+                });
+                const result = await request.query(sqlText);
+                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case 'createAnimal': {
+                const sqlText =
+                    '\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ';
+                const request = pool.request();
+                request.input(
+                    'commonName',
+                    sql.NVarChar(sql.MAX),
+                    options['commonName'] !== undefined && options['commonName'] !== null
+                        ? String(options['commonName'])
+                        : null
+                );
+                request.input(
+                    'latinName',
+                    sql.NVarChar(sql.MAX),
+                    options['latinName'] !== undefined && options['latinName'] !== null
+                        ? String(options['latinName'])
+                        : null
+                );
+                request.input(
+                    'aboutText',
+                    sql.NVarChar(sql.MAX),
+                    options['aboutText'] !== undefined && options['aboutText'] !== null
+                        ? String(options['aboutText'])
+                        : null
+                );
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'createAnimal',
+                    sql: compactSqlForLog(sqlText),
+                    values: {
+                        commonName: options['commonName'],
+                        latinName: options['latinName'],
+                        aboutText: options['aboutText']
+                    }
+                });
+                const result = await request.query(sqlText);
+                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
