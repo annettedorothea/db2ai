@@ -6,11 +6,11 @@ SQL {
     toolName: listFilms
     access: public
     intent: "list films from Sakila with pagination"
-    query: "SELECT * FROM film LIMIT $1 OFFSET $2"
+    query: "SELECT * FROM film LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila film rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -21,11 +21,11 @@ SQL {
         List actors from Sakila with pagination.
         Protected: requires DB2AI_AUTH_TOKEN at MCP startup.
     '''
-    query: "SELECT * FROM actor LIMIT $1 OFFSET $2"
+    query: "SELECT * FROM actor LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila actor rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -33,11 +33,11 @@ SQL {
     toolName: listCategories
     access: public
     intent: "list film categories with pagination"
-    query: "SELECT * FROM category LIMIT $1 OFFSET $2"
+    query: "SELECT * FROM category LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila category rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -53,25 +53,19 @@ SQL {
         FROM
             film
         WHERE
-            rating = $1
+            rating = :rating
         ORDER BY
             title
         LIMIT
-            $2
+            :maxRows
     '''
     summary: "Films by rating (G, PG, PG-13, R, NC-17)"
     params: {
-        $1: {
-            name: rating
-            description: "rating (G, PG, PG-13, R, or NC-17)"
-            example: "PG"
-        }
-        $2: {
-            name: maxRows
-            description: "max rows to return"
+        rating: { description: "rating (G, PG, PG-13, R, or NC-17)"
+            example: "PG" }
+        maxRows: { description: "max rows to return"
             example: "20"
-            type: integer
-        }
+            type: integer }
     }
 }
 
@@ -95,27 +89,21 @@ SQL {
         INNER JOIN
             film f ON f.film_id = fa.film_id
         WHERE
-            a.last_name LIKE CONCAT($1, '%')
+            a.last_name LIKE CONCAT(:lastNamePrefix, '%')
         ORDER BY
             a.last_name,
             f.title
         LIMIT
-            $2
+            :maxRows
     '''
     summary: "Actor-film cast via film_actor join"
     params: {
-        $1: {
-            name: lastNamePrefix
-            description: "actor last name prefix (e.g. GAR, BER, HOP)"
+        lastNamePrefix: { description: "actor last name prefix (e.g. GAR, BER, HOP)"
             example: "GAR"
-            type: string
-        }
-        $2: {
-            name: maxRows
-            description: "max rows to return"
+            type: string }
+        maxRows: { description: "max rows to return"
             example: "25"
-            type: integer
-        }
+            type: integer }
     }
 }
 
@@ -136,29 +124,23 @@ SQL {
         FROM
             film
         WHERE
-            title LIKE CONCAT('%', $1, '%')
-            OR description LIKE CONCAT('%', $1, '%')
+            title LIKE CONCAT('%', :searchText, '%')
+            OR description LIKE CONCAT('%', :searchText, '%')
         ORDER BY
             title
         LIMIT
-            $2
+            :maxRows
     '''
     summary: "Film search across title and description"
     params: {
-        $1: {
-            name: searchText
-            description: '''
+        searchText: { description: '''
                 Search text matched in title or description.
                 Example: cat, dog, academy.
             '''
-            example: "cat"
-        }
-        $2: {
-            name: maxRows
-            description: "max rows to return"
+            example: "cat" }
+        maxRows: { description: "max rows to return"
             example: "15"
-            type: integer
-        }
+            type: integer }
     }
 }
 
@@ -169,20 +151,14 @@ SQL {
         Insert a new actor into Sakila.
         Sets last_update to the current time.
     '''
-    query: "INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW())"
+    query: "INSERT INTO actor (first_name, last_name, last_update) VALUES (:firstName, :lastName, NOW())"
     summary: "Insert actor with first and last name"
     params: {
-        $1: {
-            name: firstName
-            description: "actor first name"
+        firstName: { description: "actor first name"
             example: "MARY"
-            type: string
-        }
-        $2: {
-            name: lastName
-            description: "actor last name"
+            type: string }
+        lastName: { description: "actor last name"
             example: "SMITH"
-            type: string
-        }
+            type: string }
     }
 }

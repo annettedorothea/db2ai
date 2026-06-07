@@ -11,7 +11,7 @@ describe('generate validation gate', () => {
         const parse = parseHelper<Model>(services.Db2AiDsl);
         const document = await parse(
             `
-database env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_DATABASE_URL"
 
 SQL {
     toolName: listOrders
@@ -19,9 +19,9 @@ SQL {
         optionalParams: [missingParam]
     }
     intent: "list orders"
-    query: "SELECT 1 WHERE id = $1"
+    query: "SELECT 1 WHERE id = :customerId"
     params: {
-        $1: { name: customerId description: "id" example: "1" type: string }
+        customerId: { description: "id" example: "1" type: string }
     }
 }
 `,

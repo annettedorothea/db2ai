@@ -14,7 +14,7 @@ import { loggingAdapter } from '../../src/utils/logging-adapter.js';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
-type DatabaseDialect = 'postgres' | 'mysql';
+type DatabaseDialect = 'postgres' | 'mysql' | 'sqlserver';
 
 type ApiLikeHostContext = {
     baseUrl?: string;
@@ -26,7 +26,11 @@ type ApiLikeHostContext = {
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
-    invokeTool: (toolName: string, args?: Record<string, unknown>, hostContext?: unknown) => Promise<unknown>;
+    invokeTool: (
+        toolName: string,
+        args?: Record<string, unknown>,
+        hostContext?: unknown
+    ) => Promise<unknown>;
     inputZodByTool?: Record<string, unknown>;
     mcpServerName?: string;
     mcpServerVersion?: string;
@@ -145,12 +149,19 @@ function credentialWithOptionalJwt(credential: string | undefined): {
 }
 
 function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' ? value : undefined;
+    return value === 'postgres' || value === 'mysql' || value === 'sqlserver' ? value : undefined;
 }
 
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
     if (dialect === 'mysql') {
         return connectionString.startsWith('mysql://');
+    }
+    if (dialect === 'sqlserver') {
+        return (
+            connectionString.startsWith('sqlserver://') ||
+            connectionString.startsWith('mssql://') ||
+            /^Server=/i.test(connectionString)
+        );
     }
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }
@@ -235,6 +246,7 @@ function warnCredentialValidationModeAtStartup(
     generated: GeneratedHostModule,
     mode: HostCredentialValidationMode
 ): void {
+    
     if (mode === 'opaque' && generated.connectionEnv) {
         loggingAdapter.warn(
             '[mcp] opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
@@ -261,9 +273,7 @@ function validateStdioOrHttpCredentialValidationAtStartup(
     }
     const mode = fields.credentialValidation;
     if (mode === 'oidc') {
-        throw new Error(
-            'credential validation mode "oidc" is not supported on stdio or stateless HTTP — use OAuth HTTP host.'
-        );
+        throw new Error('credential validation mode "oidc" is not supported on stdio or stateless HTTP — use OAuth HTTP host.');
     }
     if (mode === 'static') {
         const expectedKey = fields.authExpectedEnvKey?.trim();
@@ -343,10 +353,7 @@ async function resolveVerifiedHostCredential(
     return credentialWithOptionalJwt(trimmed);
 }
 
-function parseCredentialValidationArgvFlags(
-    argv: string[],
-    index: number
-): {
+function parseCredentialValidationArgvFlags(argv: string[], index: number): {
     nextIndex: number;
     credentialValidation?: HostCredentialValidationMode;
     jwtSecretEnvKey?: string;
@@ -445,8 +452,7 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
 /** Log when the MCP client requests tools/list (wraps SDK handler set by registerTool). */
 function attachListToolsDebugLogging(mcpServer: McpServer, generated: GeneratedHostModule): void {
     type ListToolsHandler = (request: unknown, extra: unknown) => Promise<ListToolsResult>;
-    const handlers = (mcpServer.server as unknown as { _requestHandlers: Map<string, ListToolsHandler> })
-        ._requestHandlers;
+    const handlers = (mcpServer.server as unknown as { _requestHandlers: Map<string, ListToolsHandler> })._requestHandlers;
     const previous = handlers.get('tools/list');
     if (!previous) {
         return;
@@ -593,16 +599,16 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
             );
         }
     } else {
-        const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
-        if (!baseUrlKey) {
-            throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
-        }
-        const baseUrl = process.env[baseUrlKey]?.trim();
-        if (!baseUrl) {
-            throw new Error(
-                'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
-            );
-        }
+    const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
+    if (!baseUrlKey) {
+        throw new Error('Required: --base-url-env <ENV_VAR_NAME>');
+    }
+    const baseUrl = process.env[baseUrlKey]?.trim();
+    if (!baseUrl) {
+        throw new Error(
+            'Environment variable "' + baseUrlKey + '" is missing or empty (required by --base-url-env).'
+        );
+    }
     }
     if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
         throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');

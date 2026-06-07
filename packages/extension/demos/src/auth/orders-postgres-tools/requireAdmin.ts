@@ -1,4 +1,4 @@
-import type { CheckedHostContext } from '../../../generated/tools/orders-database-tools.js';
+import type { CheckedHostContext } from '../../../generated/tools/orders-postgres-tools.js';
 
 export function requireAdmin(host: CheckedHostContext): void {
     const jwt = host.jwt;

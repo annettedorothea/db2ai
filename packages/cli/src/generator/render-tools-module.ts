@@ -159,7 +159,7 @@ export type InvokeOptions = Record<string, unknown>;
 
 export type DbHostContext = {
     connectionString: string;
-    databaseDialect: 'postgres' | 'mysql';
+    databaseDialect: 'postgres' | 'mysql' | 'sqlserver';
     credential?: string;
     jwt?: Record<string, unknown>;
 };

@@ -15,6 +15,15 @@ function renderOptionValueExpression(
         }
         return `normalizeMysqlParamValue(${optionAccess})`;
     }
+    if (dialect === 'sqlserver') {
+        if (paramType === 'integer' || paramType === 'number') {
+            return `normalizeSqlserverNumericParamValue(${optionAccess})`;
+        }
+        if (paramType === 'boolean') {
+            return `normalizeSqlserverBooleanParamValue(${optionAccess})`;
+        }
+        return `${optionAccess} !== undefined && ${optionAccess} !== null ? String(${optionAccess}) : null`;
+    }
     if (paramType === 'integer' || paramType === 'number') {
         return `normalizePostgresNumericParamValue(${optionAccess})`;
     }
@@ -24,42 +33,53 @@ function renderOptionValueExpression(
     return `${optionAccess} !== undefined && ${optionAccess} !== null ? String(${optionAccess}) : null`;
 }
 
-function rewriteLogicalPlaceholdersForMysql(sqlText: string): string {
-    return sqlText.replace(/\$[0-9]+/g, '?');
-}
-
-function uniquePlaceholdersInSql(sqlText: string): string[] {
-    const seen = new Set<string>();
-    const ordered: string[] = [];
-    for (const match of sqlText.matchAll(/\$([0-9]+)/g)) {
-        const placeholder = `$${match[1]}`;
-        if (!seen.has(placeholder)) {
-            seen.add(placeholder);
-            ordered.push(placeholder);
-        }
-    }
-    return ordered.sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
-}
-
-/** Postgres: one bind value per $N. MySQL: one per ? (each $N occurrence becomes ?). */
+/** Postgres: one bind per param in order. MySQL: one per `?` (param names from logical SQL). */
 export function collectSqlBindValueExpressions(
-    sqlText: string,
+    tool: ResolvedSqlToolCodegen,
     dialect: ResolvedDatabaseDialect,
-    params: ResolvedSqlToolCodegen['params'],
     optionsVar: string
 ): string[] {
-    const paramsByPlaceholder = new Map(params.map((p) => [p.placeholder, p]));
-    const placeholders =
-        dialect === 'mysql'
-            ? Array.from(sqlText.matchAll(/\$[0-9]+/g), (match) => match[0])
-            : uniquePlaceholdersInSql(sqlText);
-    return placeholders.map((placeholder) => {
-        const param = paramsByPlaceholder.get(placeholder);
-        if (!param) {
-            throw new Error(`Codegen: SQL query references ${placeholder}, but no matching param was resolved.`);
-        }
-        return renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType, optionsVar);
-    });
+    const paramsByName = new Map(tool.params.map((p) => [p.propertyName, p]));
+    if (dialect === 'mysql') {
+        const bindNames = tool.mysqlBindNames ?? [];
+        return bindNames.map((name) => {
+            const param = paramsByName.get(name);
+            if (!param) {
+                throw new Error(`Codegen: SQL query references :${name}, but no matching param was resolved.`);
+            }
+            return renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType, optionsVar);
+        });
+    }
+    return tool.params.map((param) =>
+        renderOptionValueExpression(param.propertyName, dialect, param.jsonSchemaType, optionsVar)
+    );
+}
+
+function renderSqlserverParamType(paramType: SqlParamType): string {
+    switch (paramType) {
+        case 'integer':
+            return 'sql.Int';
+        case 'number':
+            return 'sql.Decimal(10, 2)';
+        case 'boolean':
+            return 'sql.Bit';
+        default:
+            return 'sql.NVarChar(sql.MAX)';
+    }
+}
+
+function renderSqlserverInputLines(tool: ResolvedSqlToolCodegen, optionsVar: string): string {
+    return tool.params
+        .map((param) => {
+            const valueExpr = renderOptionValueExpression(
+                param.propertyName,
+                'sqlserver',
+                param.jsonSchemaType,
+                optionsVar
+            );
+            return `            request.input(${JSON.stringify(param.name)}, ${renderSqlserverParamType(param.jsonSchemaType)}, ${valueExpr});`;
+        })
+        .join('\n');
 }
 
 function renderSqlInvokeCase(
@@ -67,10 +87,31 @@ function renderSqlInvokeCase(
     dialect: ResolvedDatabaseDialect,
     optionsVar: string
 ): string {
-    const valueExprs = collectSqlBindValueExpressions(tool.sqlText, dialect, tool.params, optionsVar).join(', ');
+    if (dialect === 'sqlserver') {
+        const inputLines = renderSqlserverInputLines(tool, optionsVar);
+        return `        case ${JSON.stringify(tool.toolName)}: {
+            const sqlText = ${JSON.stringify(tool.sqlText)};
+            const request = pool.request();
+${inputLines}
+            loggingAdapter.debug('executeSql', {
+                toolName: ${JSON.stringify(tool.toolName)},
+                sql: compactSqlForLog(sqlText),
+                values: {
+${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optionsVar}[${JSON.stringify(p.propertyName)}],`).join('\n')}
+                }
+            });
+            const result = await request.query(sqlText);
+            const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+            return {
+                rows: resultRows,
+                rowCount: resultRows.length
+            };
+        }`;
+    }
+    const valueExprs = collectSqlBindValueExpressions(tool, dialect, optionsVar).join(', ');
     if (dialect === 'mysql') {
         return `        case ${JSON.stringify(tool.toolName)}: {
-            const sqlText = ${JSON.stringify(rewriteLogicalPlaceholdersForMysql(tool.sqlText))};
+            const sqlText = ${JSON.stringify(tool.sqlText)};
             const sqlValues = [${valueExprs}];
             loggingAdapter.debug('executeSql', {
                 toolName: ${JSON.stringify(tool.toolName)},
@@ -105,22 +146,28 @@ type InvokeParamHelperFlags = {
     postgresNumeric: boolean;
     postgresBoolean: boolean;
     mysqlBoolean: boolean;
+    sqlserverNumeric: boolean;
+    sqlserverBoolean: boolean;
 };
 
 function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokeParamHelperFlags {
     const flags: InvokeParamHelperFlags = {
         postgresNumeric: false,
         postgresBoolean: false,
-        mysqlBoolean: false
+        mysqlBoolean: false,
+        sqlserverNumeric: false,
+        sqlserverBoolean: false
     };
     for (const tool of tools) {
         for (const param of tool.params) {
             if (param.jsonSchemaType === 'integer' || param.jsonSchemaType === 'number') {
                 flags.postgresNumeric = true;
+                flags.sqlserverNumeric = true;
             }
             if (param.jsonSchemaType === 'boolean') {
                 flags.postgresBoolean = true;
                 flags.mysqlBoolean = true;
+                flags.sqlserverBoolean = true;
             }
         }
     }
@@ -495,6 +542,211 @@ ${toolCases}
 `.trim();
 }
 
+const SQLSERVER_NUMERIC_HELPER_TS = `
+function normalizeSqlserverNumericParamValue(value: unknown): number | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+`.trim();
+
+const SQLSERVER_BOOLEAN_HELPER_TS = `
+function normalizeSqlserverBooleanParamValue(value: unknown): boolean | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+const SQLSERVER_NUMERIC_HELPER_JS = `
+function normalizeSqlserverNumericParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+`.trim();
+
+const SQLSERVER_BOOLEAN_HELPER_JS = `
+function normalizeSqlserverBooleanParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+function renderInvokeToolPreambleSqlserver(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
+    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+    return `
+    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
+    if (!toolMeta) {
+        throw new Error('Unknown tool: ' + toolName);
+    }
+    loggingAdapter.debug('invokeTool', { toolName });
+${renderHostBinding(typescript)}${accessChecks}
+    const connectionString = resolveConnectionString(host);
+    const pool = await sql.connect(parseSqlserverConnectInput(connectionString));
+    try {
+        switch (toolName) {`;
+}
+
+function renderSqlserverInvokeBlockTs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, hasChecked, true);
+    const helpers = [
+        COMPACT_SQL_FOR_LOG_TS,
+        flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_TS : '',
+        flags.sqlserverBoolean ? SQLSERVER_BOOLEAN_HELPER_TS : ''
+    ]
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = `\n\n${helpers}`;
+    return `
+import sql from 'mssql';
+
+function resolveConnectionString(hostContext: DbHostContext): string {
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
+    }
+    throw new Error(
+        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
+    );
+}
+
+function parseSqlserverConnectInput(connectionString: string): string | Record<string, unknown> {
+    const trimmed = connectionString.trim();
+    if (/^Server=/i.test(trimmed)) {
+        return trimmed;
+    }
+    const asHttp = trimmed.replace(/^mssql:\\/\\//i, 'http://').replace(/^sqlserver:\\/\\//i, 'http://');
+    const url = new URL(asHttp);
+    const database = url.pathname.replace(/^\\//, '');
+    const encryptParam = url.searchParams.get('encrypt');
+    const trustParam = url.searchParams.get('trustServerCertificate');
+    return {
+        server: url.hostname,
+        port: url.port.length > 0 ? Number.parseInt(url.port, 10) : 1433,
+        database: database.length > 0 ? database : undefined,
+        user: decodeURIComponent(url.username),
+        password: decodeURIComponent(url.password),
+        options: {
+            encrypt: encryptParam === 'false' ? false : true,
+            trustServerCertificate: trustParam === 'true' || trustParam === '1'
+        }
+    };
+}${helperSection}
+
+export async function invokeTool(
+    toolName: string,
+    options: InvokeOptions = {},
+    hostContext?: DbHostContext
+): Promise<unknown> {${preamble}
+${toolCases}
+            default:
+                throw new Error('Unknown tool: ' + toolName);
+        }
+    } finally {
+        await pool.close();
+    }
+}
+`.trim();
+}
+
+function renderSqlserverInvokeBlockJs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, hasChecked, false);
+    const helpers = [
+        COMPACT_SQL_FOR_LOG_JS,
+        flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_JS : '',
+        flags.sqlserverBoolean ? SQLSERVER_BOOLEAN_HELPER_JS : ''
+    ]
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = `\n\n${helpers}`;
+    return `
+import sql from 'mssql';
+
+function resolveConnectionString(hostContext) {
+    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
+        const cs = String(hostContext.connectionString).trim();
+        if (cs.length > 0) {
+            return cs;
+        }
+    }
+    throw new Error(
+        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
+    );
+}
+
+function parseSqlserverConnectInput(connectionString) {
+    const trimmed = String(connectionString).trim();
+    if (/^Server=/i.test(trimmed)) {
+        return trimmed;
+    }
+    const asHttp = trimmed.replace(/^mssql:\\/\\//i, 'http://').replace(/^sqlserver:\\/\\//i, 'http://');
+    const url = new URL(asHttp);
+    const database = url.pathname.replace(/^\\//, '');
+    const encryptParam = url.searchParams.get('encrypt');
+    const trustParam = url.searchParams.get('trustServerCertificate');
+    return {
+        server: url.hostname,
+        port: url.port.length > 0 ? Number.parseInt(url.port, 10) : 1433,
+        database: database.length > 0 ? database : undefined,
+        user: decodeURIComponent(url.username),
+        password: decodeURIComponent(url.password),
+        options: {
+            encrypt: encryptParam === 'false' ? false : true,
+            trustServerCertificate: trustParam === 'true' || trustParam === '1'
+        }
+    };
+}${helperSection}
+
+export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
+${toolCases}
+            default:
+                throw new Error('Unknown tool: ' + toolName);
+        }
+    } finally {
+        await pool.close();
+    }
+}
+`.trim();
+}
+
 export function renderInvokeBlockTs(
     tools: ResolvedDbToolCodegen[],
     dialect: ResolvedDatabaseDialect,
@@ -504,9 +756,13 @@ export function renderInvokeBlockTs(
     const optionsVar = hasChecked ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
-    return dialect === 'mysql'
-        ? renderMysqlInvokeBlockTs(toolCases, flags, hasAuth, hasChecked)
-        : renderPostgresInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+    if (dialect === 'mysql') {
+        return renderMysqlInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+    }
+    if (dialect === 'sqlserver') {
+        return renderSqlserverInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+    }
+    return renderPostgresInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
 }
 
 export function renderInvokeBlockJs(
@@ -518,7 +774,11 @@ export function renderInvokeBlockJs(
     const optionsVar = hasChecked ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
-    return dialect === 'mysql'
-        ? renderMysqlInvokeBlockJs(toolCases, flags, hasAuth, hasChecked)
-        : renderPostgresInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+    if (dialect === 'mysql') {
+        return renderMysqlInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+    }
+    if (dialect === 'sqlserver') {
+        return renderSqlserverInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+    }
+    return renderPostgresInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
 }

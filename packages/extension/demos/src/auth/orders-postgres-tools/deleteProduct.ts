@@ -1,4 +1,4 @@
-import type { CheckedHostContext, InvokeOptions } from '../../../generated/tools/orders-database-tools.js';
+import type { CheckedHostContext, InvokeOptions } from '../../../generated/tools/orders-postgres-tools.js';
 import { requireAdmin } from './requireAdmin.js';
 
 export function checkDeleteProductParameters(options: InvokeOptions, host: CheckedHostContext): InvokeOptions {

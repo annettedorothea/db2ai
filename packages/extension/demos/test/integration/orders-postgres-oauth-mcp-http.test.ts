@@ -6,7 +6,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { compileGeneratedForSmoke } from '../generated/index.js';
 import { copyLoggingAdapterStub } from '../support/copy-logging-adapter-stub.js';
-import { ensureOrdersDatabaseDocker } from '../support/orders-database-docker.js';
+import { ensureOrdersPostgresDocker } from '../support/orders-postgres-docker.js';
 import { fetchOAuthTokenFromIdp, startOAuthIdpServer, waitForOAuthIdp } from '../support/oauth-idp-fixture.js';
 import { demosRoot, demosTmpRoot } from '../support/paths.js';
 import { runDemoGenerate } from '../support/run-demo-generate.js';
@@ -55,7 +55,7 @@ async function waitForMcpHttp(mcpUrl: string, child: ChildProcess | undefined): 
     );
 }
 
-describe('orders-database oauth-http-mcp-server (oidc JWKS validation)', () => {
+describe('orders-postgres oauth-http-mcp-server (oidc JWKS validation)', () => {
     let idpProcess: ChildProcess | undefined;
     let oauthHostProcess: ChildProcess | undefined;
     let connectionString = '';
@@ -65,7 +65,7 @@ describe('orders-database oauth-http-mcp-server (oidc JWKS validation)', () => {
     let accessToken = '';
 
     beforeAll(async () => {
-        ({ connectionString } = await ensureOrdersDatabaseDocker(demosRoot));
+        ({ connectionString } = await ensureOrdersPostgresDocker(demosRoot));
 
         const idpPort = await findFreePort();
         const mcpPort = await findFreePort();
@@ -73,16 +73,16 @@ describe('orders-database oauth-http-mcp-server (oidc JWKS validation)', () => {
         mcpUrl = `http://127.0.0.1:${mcpPort}/mcp`;
 
         idpProcess = startOAuthIdpServer('oauth-idp/server.mjs', idpPort, {
-            ORDERS_DATABASE_OAUTH_IDP_PORT: String(idpPort),
+            ORDERS_POSTGRES_OAUTH_IDP_PORT: String(idpPort),
             OAUTH_IDP_SIGN_ALG: 'RS256'
         });
         await waitForOAuthIdp(idpBaseUrl, idpProcess);
         accessToken = await fetchOAuthTokenFromIdp(idpBaseUrl, 'alice');
 
-        runRoot = await fs.mkdtemp(path.join(demosTmpRoot, 'orders-database-oauth-mcp-oidc-'));
-        const generateSourcePath = path.join(runRoot, 'orders-database.db2ai');
-        await fs.copyFile(path.join(demosRoot, 'orders-database.db2ai'), generateSourcePath);
-        const generatedTsPath = path.join(runRoot, 'generated/tools/orders-database-tools.ts');
+        runRoot = await fs.mkdtemp(path.join(demosTmpRoot, 'orders-postgres-oauth-mcp-oidc-'));
+        const generateSourcePath = path.join(runRoot, 'orders-postgres.db2ai');
+        await fs.copyFile(path.join(demosRoot, 'orders-postgres.db2ai'), generateSourcePath);
+        const generatedTsPath = path.join(runRoot, 'generated/tools/orders-postgres-tools.ts');
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
         await copyLoggingAdapterStub(runRoot);
@@ -96,11 +96,11 @@ describe('orders-database oauth-http-mcp-server (oidc JWKS validation)', () => {
             process.execPath,
             [
                 oauthHostPath,
-                path.join(runRoot, 'generated/tools/orders-database-tools.js'),
+                path.join(runRoot, 'generated/tools/orders-postgres-tools.js'),
                 '--oauth-idp-url',
                 idpBaseUrl,
                 '--oauth-scope',
-                'orders-database',
+                'orders-postgres',
                 '--oauth-token-validation',
                 'oidc',
                 '--oauth-issuer',
@@ -114,7 +114,7 @@ describe('orders-database oauth-http-mcp-server (oidc JWKS validation)', () => {
                 cwd: runRoot,
                 env: {
                     ...process.env,
-                    ORDERS_DATABASE_URL: connectionString
+                    ORDERS_POSTGRES_DATABASE_URL: connectionString
                 },
                 stdio: ['ignore', 'pipe', 'pipe']
             }

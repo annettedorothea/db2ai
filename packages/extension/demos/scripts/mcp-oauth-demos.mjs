@@ -5,21 +5,21 @@ import path from 'node:path';
 
 export const OAUTH_HTTP_DEMOS = {
     orders: {
-        tools: 'orders-database-tools.js',
-        connectionEnv: 'ORDERS_DATABASE_URL',
-        oauthIdpUrlEnv: 'ORDERS_DATABASE_OAUTH_IDP_URL',
+        tools: 'orders-postgres-tools.js',
+        connectionEnv: 'ORDERS_POSTGRES_DATABASE_URL',
+        oauthIdpUrlEnv: 'ORDERS_POSTGRES_OAUTH_IDP_URL',
         defaultOAuthIdpUrl: 'http://127.0.0.1:4863',
-        portEnv: 'ORDERS_DATABASE_OAUTH_HTTP_PORT',
+        portEnv: 'ORDERS_POSTGRES_OAUTH_HTTP_PORT',
         defaultPort: 4871,
         tokenValidation: 'oidc',
-        oauthScope: 'orders-database',
+        oauthScope: 'orders-postgres',
         mcpServerName: 'orders',
-        prerequisite: 'Docker orders-database + oauth-idp :4863 (RS256)'
+        prerequisite: 'Docker orders-postgres + oauth-idp :4863 (RS256)'
     }
 };
 
-/** OAuth MCP hosts started by `npm run init`. */
-export const OAUTH_HTTP_INIT_DEMO_NAMES = ['orders'];
+/** OAuth MCP hosts started by `npm run start`. */
+export const OAUTH_HTTP_START_DEMO_NAMES = ['orders'];
 
 export const OAUTH_HTTP_DEMO_NAMES = Object.keys(OAUTH_HTTP_DEMOS);
 

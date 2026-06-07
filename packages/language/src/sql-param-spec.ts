@@ -1,11 +1,10 @@
 import type { SqlParamSpec, SqlParamSpecField, SqlParamType } from './generated/ast.js';
-import { isSqlParamNameField, isSqlParamSpecField } from './generated/ast.js';
+import { isSqlParamSpecField } from './generated/ast.js';
 
 /** Reserved MCP argument names from removed TableQuery pagination — none today. */
 export const RESERVED_SQL_PARAM_NAMES = new Set<string>();
 
 export type ParsedSqlParamSpec = {
-    name?: string;
     description?: string;
     example?: string;
     paramType: SqlParamType;
@@ -20,9 +19,6 @@ export function parseSqlParamSpec(spec: SqlParamSpec | undefined): ParsedSqlPara
         if (!isSqlParamSpecField(field)) {
             continue;
         }
-        if (isSqlParamNameField(field) && field.name.trim().length > 0) {
-            out.name = field.name.trim();
-        }
         if (field.description !== undefined) {
             out.description = String(field.description);
         }
@@ -36,10 +32,7 @@ export function parseSqlParamSpec(spec: SqlParamSpec | undefined): ParsedSqlPara
     return out;
 }
 
-export function fieldKind(field: SqlParamSpecField): 'name' | 'description' | 'example' | 'type' | undefined {
-    if (isSqlParamNameField(field)) {
-        return 'name';
-    }
+export function fieldKind(field: SqlParamSpecField): 'description' | 'example' | 'type' | undefined {
     if (field.description !== undefined) {
         return 'description';
     }

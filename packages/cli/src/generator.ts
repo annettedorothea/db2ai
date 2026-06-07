@@ -37,7 +37,7 @@ function bundleSafeGeneratorImplementationDir(): string {
 const __generatorDirname = bundleSafeGeneratorImplementationDir();
 
 function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialectFromModel>): ProjectBootstrapConfig {
-    const databaseDriverDep = databaseDialect === 'mysql' ? 'mysql2' : 'pg';
+    const databaseDriverDep = databaseDialect === 'mysql' ? 'mysql2' : databaseDialect === 'sqlserver' ? 'mssql' : 'pg';
     return {
         hostProduct: 'db2ai',
         generatorImplementationDir: __generatorDirname,
@@ -48,7 +48,8 @@ function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialec
             '@modelcontextprotocol/sdk': '^1.29.0',
             zod: '^4.4.3',
             pg: '^8.16.0',
-            mysql2: '^3.22.3'
+            mysql2: '^3.22.3',
+            mssql: '^11.0.1'
         },
         resolvePackageRoot(dir) {
             const oneUp = path.resolve(dir, '..');

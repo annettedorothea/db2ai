@@ -49,7 +49,7 @@ alwaysApply: true
   - andere MCP-Server-IDs oder Server-Namen durchprobieren,
   - erneute Aufrufe mit anderen Parametern, nur um denselben Fehler zu umgehen.
 - **Erlaubt** vor dem (oder beim) einen MCP-Versuch: MCP-Tool-Descriptor lesen (Schema), um den Aufruf korrekt zu formulieren — das ist keine Ersatz-Datenquelle.
-- **Genau ein** MCP-Tool-Aufruf pro geplanter Abfrage; scheitert er, Antwort mit kurzer Fehlermeldung, Hinweis fuer den Nutzer (z. B. Server in `mcp.json` aktivieren, `npm run init`, Pagila: `x-api-token` / `DB2AI_AUTH_TOKEN`, orders-database: OAuth) und **Audit** mit dem Fehler — **keine** Daten aus anderen Quellen liefern.
+- **Genau ein** MCP-Tool-Aufruf pro geplanter Abfrage; scheitert er, Antwort mit kurzer Fehlermeldung, Hinweis fuer den Nutzer (z. B. Server in `mcp.json` aktivieren, `npm run start`, Pagila: `x-api-token` / `DB2AI_AUTH_TOKEN`, orders-postgres: OAuth) und **Audit** mit dem Fehler — **keine** Daten aus anderen Quellen liefern.
 
 ## Quellen aus MCP-Antworten lesen
 

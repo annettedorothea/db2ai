@@ -172,7 +172,7 @@ function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): v
         }
         const openFolder = 'Open folder';
         const choice = await vscode.window.showInformationMessage(
-            `db2ai: Demo workspace created in ${targetDir}. Run npm run init (requires Docker), then enable MCP servers in Cursor.`,
+            `db2ai: Demo workspace created in ${targetDir}. Run npm run start (requires Docker), then enable MCP servers in Cursor.`,
             openFolder
         );
         if (choice === openFolder) {

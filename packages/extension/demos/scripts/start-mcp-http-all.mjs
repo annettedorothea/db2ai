@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Start db2ai stateless HTTP MCP hosts used by init / mcp.json (pagila).
+ * Start db2ai stateless HTTP MCP hosts used by start / mcp.json (pagila).
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadDemoEnvLocal } from './load-env-local.mjs';
-import { buildHostLaunch, HTTP_INIT_DEMO_NAMES } from './mcp-http-demos.mjs';
+import { buildHostLaunch, HTTP_START_DEMO_NAMES } from './mcp-http-demos.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -24,13 +24,13 @@ function startDetached(name, args, port, mcpUrl) {
 function main() {
     loadDemoEnvLocal();
 
-    for (const name of HTTP_INIT_DEMO_NAMES) {
+    for (const name of HTTP_START_DEMO_NAMES) {
         const { port, args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
         startDetached(name, args, port, mcpUrl);
     }
 
-    console.log(`[mcp-http:all] started ${HTTP_INIT_DEMO_NAMES.length} hosts — stop: npm run demo:mcp-http:kill`);
-    console.warn('[mcp-http:all] Requires Pagila up (npm run db:pagila:up or init).');
+    console.log(`[mcp-http:all] started ${HTTP_START_DEMO_NAMES.length} hosts — stop: npm run demo:mcp-http:kill`);
+    console.warn('[mcp-http:all] Requires Pagila up (npm run db:pagila:up or start).');
 }
 
 main();

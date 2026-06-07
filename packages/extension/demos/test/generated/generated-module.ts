@@ -19,12 +19,12 @@ export function readGeneratedToolModule(imported: Record<string, unknown>): Gene
     if (!Array.isArray(generatedTools)) {
         throw new Error('Generated module must export "generatedTools" array.');
     }
-    if (typeof invokeTool !== 'function') {
+    if (typeof invokeTool !== "function") {
         throw new Error('Generated module must export async "invokeTool" function.');
     }
     return {
         generatedTools: generatedTools as GeneratedToolDescriptor[],
-        invokeTool: invokeTool as GeneratedToolModule['invokeTool'],
+        invokeTool: invokeTool as GeneratedToolModule["invokeTool"],
         requiresAuth: imported.requiresAuth === true
     };
 }

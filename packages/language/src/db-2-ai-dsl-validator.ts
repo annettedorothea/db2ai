@@ -56,8 +56,11 @@ export class Db2AiDslValidator {
 
     private checkDatabaseEnv(model: Model, accept: ValidationAcceptor): void {
         const env = model.env;
-        if (env === undefined || env === null || String(env).trim().length === 0) {
-            accept('error', 'Model requires `database env "ENV_VAR_NAME"`.', {
+        if (env === undefined || env === null) {
+            return;
+        }
+        if (String(env).trim().length === 0) {
+            accept('error', 'database env must be a non-empty environment variable name when `env` is present.', {
                 node: model,
                 property: 'env'
             });

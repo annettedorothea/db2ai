@@ -18,7 +18,7 @@ import { usedSqlParamSpecFieldKinds } from './sql-param-spec.js';
 
 const SQL_BLOCK_KEYS = ['toolName', 'access', 'intent', 'query', 'summary', 'params'] as const;
 type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
-const SQL_PARAM_SPEC_KEYS = ['name', 'description', 'example', 'type'] as const;
+const SQL_PARAM_SPEC_KEYS = ['description', 'example', 'type'] as const;
 const ACCESS_KINDS = ['public', 'protected', 'checked'] as const;
 type AccessKindKeyword = (typeof ACCESS_KINDS)[number];
 type CheckedBodyKey = 'optionalParams';
@@ -54,7 +54,6 @@ const CHECKED_BODY_INSERT: Record<CheckedBodyKey, string> = {
 };
 
 const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
-    name: '0200',
     description: '0201',
     example: '0202',
     type: '0203'
@@ -66,11 +65,10 @@ const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     intent: 'intent: "$1"$0',
     query: "query: '''\n$1\n'''$0",
     summary: 'summary: "$1"$0',
-    params: 'params: {\n    $1: {\n        name: $2\n        description: "$3"\n        example: "$4"\n        type: $5\n    }\n}$0'
+    params: 'params: {\n    limit: {\n        description: "$1"\n        example: "$2"\n        type: $3\n    }\n}$0'
 };
 
 const SQL_PARAM_SPEC_INSERT: Record<SqlParamSpecKey, string> = {
-    name: 'name: $1$0',
     description: 'description: "$1"$0',
     example: 'example: "$1"$0',
     type: 'type: $1$0'

@@ -2,7 +2,7 @@ import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
-import { isCheckedAccess, isSqlQuery } from '../src/generated/ast.js';
+import { isCheckedAccess, isSqlParamEntry, isSqlQuery } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
 
 let parse: ReturnType<typeof parseHelper<Model>>;
@@ -14,7 +14,7 @@ beforeAll(async () => {
 });
 
 const checkedSqlWithOptionalParam = `
-database env "ORDERS_DATABASE_URL"
+database postgres env "ORDERS_POSTGRES_DATABASE_URL"
 
 auth
 
@@ -24,15 +24,15 @@ SQL {
         optionalParams: [customerId]
     }
     intent: "orders"
-    query: "SELECT 1 WHERE id = $1"
+    query: "SELECT 1 WHERE id = :customerId"
     params: {
-        $1: { name: customerId description: "c" example: "a" type: string }
+        customerId: { description: "c" example: "a" type: string }
     }
 }
 `;
 
 describe('Cross-reference linking', () => {
-    test('links optionalParams to SqlParamNameField in params', async () => {
+    test('links optionalParams to SqlParamEntry in params', async () => {
         const document = await parse(checkedSqlWithOptionalParam, { validation: true });
 
         const entry = document.parseResult.value.entries[0];
@@ -44,15 +44,15 @@ describe('Cross-reference linking', () => {
         const ref = entry.access.checkedBody?.optionalParams?.[0];
         expect(ref).toBeDefined();
         expect(ref?.$refText).toBe('customerId');
-        expect(ref?.ref?.name).toBe('customerId');
-        expect(ref?.ref?.$type).toBe('SqlParamNameField');
+        expect(ref?.ref?.key).toBe('customerId');
+        expect(isSqlParamEntry(ref?.ref)).toBe(true);
         const linkerErrors = (document.diagnostics ?? []).filter(
             (d) => d.severity === 1 && d.message.includes('Could not resolve reference')
         );
         expect(linkerErrors).toHaveLength(0);
     });
 
-    test('definition provider finds SqlParamNameField from optionalParams usage', async () => {
+    test('definition provider finds SqlParamEntry from optionalParams usage', async () => {
         const document = await parse(checkedSqlWithOptionalParam, { validation: true });
         const text = document.textDocument.getText();
         const optionalParamsUsageOffset = text.indexOf('[customerId]') + 1;
@@ -64,14 +64,14 @@ describe('Cross-reference linking', () => {
         });
         expect(links?.length).toBeGreaterThan(0);
 
-        const paramsNameOffset = text.lastIndexOf('name: customerId');
-        expect(paramsNameOffset).toBeGreaterThan(optionalParamsUsageOffset);
+        const paramsKeyOffset = text.indexOf('customerId:');
+        expect(paramsKeyOffset).toBeGreaterThan(optionalParamsUsageOffset);
         const targetOffset = document.textDocument.offsetAt(links![0]!.targetRange.start);
-        expect(targetOffset).toBeGreaterThanOrEqual(paramsNameOffset);
-        expect(targetOffset).toBeLessThan(paramsNameOffset + 'name: customerId'.length);
+        expect(targetOffset).toBeGreaterThanOrEqual(paramsKeyOffset);
+        expect(targetOffset).toBeLessThan(paramsKeyOffset + 'customerId:'.length);
     });
 
-    test('reference completion via default provider lists SqlParamNameField targets', async () => {
+    test('reference completion via default provider lists SqlParamEntry targets', async () => {
         const document = await parse(checkedSqlWithOptionalParam, { validation: true });
         const text = document.textDocument.getText();
         const emptySlotOffset = text.indexOf('[customerId]') + 1;

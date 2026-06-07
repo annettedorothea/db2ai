@@ -1,15 +1,15 @@
-database env "ORDERS_DATABASE_URL"
+database postgres env "ORDERS_POSTGRES_DATABASE_URL"
 
 auth
 
 SQL {
     toolName: listProducts
     access: public
-    intent: "list products in the orders-database catalog"
-    query: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1"
+    intent: "list products in the orders-postgres catalog"
+    query: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT :limit"
     summary: "Product catalog rows"
     params: {
-        $1: { name: limit description: "max rows" example: "50" type: integer }
+        limit: { description: "max rows" example: "50" type: integer }
     }
 }
 
@@ -18,7 +18,7 @@ SQL {
     access: protected
     intent: '''
         List products that have at least one review, with review details.
-        Protected: requires host credential (MCP header or ORDERS_DATABASE_TOKEN in .env).
+        Protected: requires host credential (MCP header or ORDERS_POSTGRES_TOKEN in .env).
         One row per review; same product may appear multiple times.
     '''
     query: '''
@@ -37,14 +37,14 @@ SQL {
             p.product_id,
             r.review_id
         LIMIT
-            LEAST($1, 200)
+            LEAST(:limit, 200)
     '''
     summary: '''
         Products with reviews (requires credential).
         Join products and reviews; cap 200 rows in SQL.
     '''
     params: {
-        $1: { name: limit description: "max rows" example: "50" type: integer }
+        limit: { description: "max rows" example: "50" type: integer }
     }
 }
 
@@ -58,18 +58,15 @@ SQL {
         When customerId is omitted, the value from the JWT is used.
         Checked access: customerId must match the token claim when provided.
     '''
-    query: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id"
+    query: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = :customerId ORDER BY order_id"
     summary: "Customer order rows"
     params: {
-        $1: {
-            name: customerId
-            description: '''
+        customerId: { description: '''
                 Customer id (e.g. alice, bob).
                 Defaults from JWT when omitted on checked tools.
             '''
             example: "alice"
-            type: string
-        }
+            type: string }
     }
 }
 
@@ -83,24 +80,18 @@ SQL {
         When customerId is omitted, the value from the JWT is used.
         Checked access: customerId must match the token claim when provided.
     '''
-    query: "INSERT INTO orders (customer_id, product_id, quantity) VALUES ($1, $2, 1) RETURNING order_id, customer_id, product_id, quantity"
+    query: "INSERT INTO orders (customer_id, product_id, quantity) VALUES (:customerId, :productId, 1) RETURNING order_id, customer_id, product_id, quantity"
     summary: "Create order for customer and product"
     params: {
-        $1: {
-            name: customerId
-            description: '''
+        customerId: { description: '''
                 Customer id (e.g. alice, bob).
                 Defaults from JWT when omitted on checked tools.
             '''
             example: "alice"
-            type: string
-        }
-        $2: {
-            name: productId
-            description: "Product id from the catalog"
+            type: string }
+        productId: { description: "Product id from the catalog"
             example: "1"
-            type: integer
-        }
+            type: integer }
     }
 }
 
@@ -111,21 +102,15 @@ SQL {
         Insert a new product into the catalog.
         Checked access: admin role required (JWT role claim).
     '''
-    query: "INSERT INTO products (name, price) VALUES ($1, $2) RETURNING product_id, name, price"
+    query: "INSERT INTO products (name, price) VALUES (:productName, :price) RETURNING product_id, name, price"
     summary: "Create product (admin only)"
     params: {
-        $1: {
-            name: productName
-            description: "Product name"
+        productName: { description: "Product name"
             example: "Widget Pro"
-            type: string
-        }
-        $2: {
-            name: price
-            description: "Unit price"
+            type: string }
+        price: { description: "Unit price"
             example: "10.99"
-            type: number
-        }
+            type: number }
     }
 }
 
@@ -136,27 +121,18 @@ SQL {
         Update name and price of an existing product.
         Checked access: admin role required (JWT role claim).
     '''
-    query: "UPDATE products SET name = $2, price = $3 WHERE product_id = $1 RETURNING product_id, name, price"
+    query: "UPDATE products SET name = :productName, price = :price WHERE product_id = :productId RETURNING product_id, name, price"
     summary: "Update product (admin only)"
     params: {
-        $1: {
-            name: productId
-            description: "Product id to update"
+        productId: { description: "Product id to update"
             example: "1"
-            type: integer
-        }
-        $2: {
-            name: productName
-            description: "New product name"
+            type: integer }
+        productName: { description: "New product name"
             example: "Widget Pro"
-            type: string
-        }
-        $3: {
-            name: price
-            description: "New unit price"
+            type: string }
+        price: { description: "New unit price"
             example: "12.99"
-            type: number
-        }
+            type: number }
     }
 }
 
@@ -168,14 +144,11 @@ SQL {
         Checked access: admin role required (JWT role claim).
         Fails if the product is referenced by orders or reviews (foreign key).
     '''
-    query: "DELETE FROM products WHERE product_id = $1 RETURNING product_id, name, price"
+    query: "DELETE FROM products WHERE product_id = :productId RETURNING product_id, name, price"
     summary: "Delete product (admin only)"
     params: {
-        $1: {
-            name: productId
-            description: "Product id to delete"
+        productId: { description: "Product id to delete"
             example: "999"
-            type: integer
-        }
+            type: integer }
     }
 }

@@ -30,7 +30,9 @@ function resolveDirectInvokeHostContext(
         throw new Error(`Missing database URL in environment variable "${connectionEnvKey}".`);
     }
     const databaseDialect =
-        imported.databaseDialect === 'mysql' || imported.databaseDialect === 'postgres'
+        imported.databaseDialect === 'mysql' ||
+        imported.databaseDialect === 'postgres' ||
+        imported.databaseDialect === 'sqlserver'
             ? imported.databaseDialect
             : 'postgres';
     const hostContext: Record<string, unknown> = { connectionString, databaseDialect };

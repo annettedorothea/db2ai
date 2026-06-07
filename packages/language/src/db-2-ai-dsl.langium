@@ -1,12 +1,12 @@
 grammar Db2AiDsl
 
 entry Model:
-    'database' (dialect=DatabaseDialect)? 'env' env=STRING
+    'database' dialect=DatabaseDialect ('env' env=STRING)?
     (auth?='auth')?
     (entries += SqlQuery)*;
 
 DatabaseDialect returns string:
-    'postgres' | 'postgresql' | 'mysql';
+    'postgres' | 'postgresql' | 'mysql' | 'sqlserver' | 'mssql';
 
 SqlQuery:
     'SQL' '{'
@@ -31,25 +31,21 @@ CheckedAccess:
     {infer CheckedAccess} 'checked' ('{' checkedBody=CheckedAccessBody '}')?;
 
 CheckedAccessBody:
-    ('optionalParams' ':' '[' (optionalParams+=[SqlParamNameField:ID] (',' optionalParams+=[SqlParamNameField:ID])*)? ']')?;
+    ('optionalParams' ':' '[' (optionalParams+=[SqlParamEntry:ID] (',' optionalParams+=[SqlParamEntry:ID])*)? ']')?;
 
 SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';
 
 SqlParamEntry:
-    placeholder=PARAM_REF ':' spec=SqlParamSpec;
+    key=ID ':' spec=SqlParamSpec;
 
 SqlParamSpec:
     '{' (fields += SqlParamSpecField)* '}';
 
 SqlParamSpecField:
-    SqlParamNameField |
     'description' ':' description=DslText |
     'example' ':' example=DslText |
     'type' ':' paramType=SqlParamType;
-
-SqlParamNameField:
-    'name' ':' name=ID;
 
 SqlParamType returns string:
     'string' | 'integer' | 'number' | 'boolean';
@@ -57,7 +53,6 @@ SqlParamType returns string:
 DslText returns string:
     STRING | MULTILINE_STRING;
 
-terminal PARAM_REF: /\$[0-9]+/;
 terminal ID: /[a-zA-Z_][a-zA-Z0-9_]*/;
 terminal MULTILINE_STRING: /'''[\s\S]*?'''|"""[\s\S]*?"""/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;

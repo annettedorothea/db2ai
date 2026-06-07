@@ -11,16 +11,16 @@ describe('document-actions validation', () => {
         const parse = parseHelper<Model>(services.Db2AiDsl);
         const document = await parse(
             `
-database env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_DATABASE_URL"
 
 SQL {
     toolName: listFilms
     access: public
     intent: "list films"
-    query: "SELECT * FROM film LIMIT $1 OFFSET $2"
+    query: "SELECT * FROM film LIMIT :limit OFFSET :offset"
     params: {
-        $1: { name: limit description: "max rows" example: "100" type: integer }
-        $2: { name: offset description: "skip rows" example: "0" type: integer }
+        limit: { description: "max rows" example: "100" type: integer }
+        offset: { description: "skip rows" example: "0" type: integer }
     }
 }
 `,
@@ -35,7 +35,7 @@ SQL {
         const parse = parseHelper<Model>(services.Db2AiDsl);
         const document = await parse(
             `
-database env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_DATABASE_URL"
 
 SQL {
     toolName: dupTool

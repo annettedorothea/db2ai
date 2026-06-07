@@ -37,16 +37,16 @@ function errorMessages(doc: LangiumDocument<Model>): string[] {
 describe('Validating', () => {
     test('accepts SQL tool with valid env', async () => {
         document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
                 access: public
                 intent: "list films"
-                query: "SELECT * FROM film LIMIT $1 OFFSET $2"
+                query: "SELECT * FROM film LIMIT :limit OFFSET :offset"
                 params: {
-                    $1: { name: limit description: "max rows" example: "100" type: integer }
-                    $2: { name: offset description: "skip rows" example: "0" type: integer }
+                    limit: { description: "max rows" example: "100" type: integer }
+                    offset: { description: "skip rows" example: "0" type: integer }
                 }
             }
         `);
@@ -56,7 +56,7 @@ describe('Validating', () => {
 
     test('requires toolName, intent, and query', async () => {
         document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 summary: "x"
@@ -71,7 +71,7 @@ describe('Validating', () => {
 
     test('rejects invalid env var name', async () => {
         document = await parseValidated(`
-            database env "not-valid"
+            database postgres env "not-valid"
 
             SQL {
                 toolName: t
@@ -84,10 +84,10 @@ describe('Validating', () => {
         expect(errorMessages(document).some((m) => m.includes('environment variable name'))).toBe(true);
     });
 
-    test('rejects mysql URL for implicit postgres dialect', async () => {
+    test('rejects mysql URL for postgres dialect', async () => {
         process.env.PAGILA_DATABASE_URL = 'mysql://localhost/db';
         document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: t
@@ -108,10 +108,10 @@ describe('Validating', () => {
                 toolName: listFilms
                 access: public
                 intent: "list films"
-                query: "SELECT * FROM film LIMIT $1 OFFSET $2"
+                query: "SELECT * FROM film LIMIT :limit OFFSET :offset"
                 params: {
-                    $1: { name: limit description: "max rows" example: "100" type: integer }
-                    $2: { name: offset description: "skip rows" example: "0" type: integer }
+                    limit: { description: "max rows" example: "100" type: integer }
+                    offset: { description: "skip rows" example: "0" type: integer }
                 }
             }
         `);
@@ -137,7 +137,7 @@ describe('Validating', () => {
 
     test('rejects duplicate tool names', async () => {
         document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: dup

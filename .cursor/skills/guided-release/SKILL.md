@@ -178,7 +178,7 @@ Output (local, not committed): `packages/extension/vscode-api2ai-X.Y.Z.vsix` or 
 ## CP5 — Manual preview (user)
 
 1. Install the **`.vsix`** from CP4; reload window.
-2. Extension Dev Host or copied demo workspace: **`npm run init`**, enable MCP, smoke-test tools.
+2. Extension Dev Host or copied demo workspace: **`npm run start`**, enable MCP, smoke-test tools.
 3. **db2ai:** Docker required for DB demos.
 4. Optional: repeat `npm run vsix:prepare` only if something failed in preview and you fixed it — then new commit before rebuilding VSIX.
 

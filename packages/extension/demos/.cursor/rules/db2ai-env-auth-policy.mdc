@@ -36,7 +36,7 @@ Host-Modi (`hs256` | `static` | `opaque` | `oidc`): siehe Demos-README. db2ai-Pr
 - **Nicht** versuchen, Identitaet per Tool-Aufruf zu wechseln, wenn Env auf eine andere Person zeigt.
 - Wenn der Nutzer **explizit** eine andere Demo-Identitaet will (z. B. anderes JWT in `.env.example`): nur erklaeren, welche Variable er selbst in `.env` setzen soll — **nicht** die Datei fuer ihn aendern.
 
-## Beispiel (orders-database)
+## Beispiel (orders-postgres)
 
 **Anfrage:** „db2ai zeig bobs bestellungen an“ — OAuth-Token gehoert zu `alice`.
 

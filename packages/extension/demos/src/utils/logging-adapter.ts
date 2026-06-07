@@ -1,7 +1,7 @@
 /**
  * Logging adapter (write-once — customize this file; re-generate does not overwrite).
  * Default: stderr with ANSI colors. debug() only when process.env.LOG_LEVEL === 'debug'.
- * Optional prefix: process.env.LOG_SERVICE_PREFIX (set by init / demo npm scripts).
+ * Optional prefix: process.env.LOG_SERVICE_PREFIX (set by start / demo npm scripts).
  */
 const GRAY = '\x1b[90m';
 const RESET = '\x1b[0m';

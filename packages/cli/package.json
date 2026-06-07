@@ -29,6 +29,7 @@
         "commander": "~15.0.0",
         "db-2-ai-dsl-language": "*",
         "mysql2": "^3.22.5",
+        "mssql": "^11.0.1",
         "pg": "~8.21.0",
         "prettier": "^3.8.3",
         "zod": "^4.4.3"

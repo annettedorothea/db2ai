@@ -1,4 +1,4 @@
-database env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_DATABASE_URL"
 
 auth
 
@@ -6,11 +6,11 @@ SQL {
     toolName: listFilms
     access: public
     intent: "list films from Pagila with pagination"
-    query: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2"
+    query: "SELECT * FROM film LIMIT LEAST(:limit, 500) OFFSET :offset"
     summary: "Paginated film rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -21,19 +21,16 @@ SQL {
         List actors from Pagila with pagination.
         Protected: requires DB2AI_AUTH_TOKEN at MCP startup.
     '''
-    query: "SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2"
+    query: "SELECT * FROM actor LIMIT LEAST(:limit, 500) OFFSET :offset"
     summary: "Paginated actor rows"
     params: {
-        $1: {
-            name: limit
-            description: '''
+        limit: { description: '''
                 Max rows per page.
-                SQL caps at 500 via LEAST($1, 500).
+                SQL caps at 500 via LEAST(:limit, 500).
             '''
             example: "100"
-            type: integer
-        }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+            type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -41,11 +38,11 @@ SQL {
     toolName: listCustomers
     access: public
     intent: "list customers with pagination"
-    query: "SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2"
+    query: "SELECT * FROM customer LIMIT LEAST(:limit, 500) OFFSET :offset"
     summary: "Paginated customer rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "10" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "10" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -53,11 +50,11 @@ SQL {
     toolName: listCategories
     access: public
     intent: "list categories with pagination"
-    query: "SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2"
+    query: "SELECT * FROM category LIMIT LEAST(:limit, 500) OFFSET :offset"
     summary: "Paginated category rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -65,11 +62,11 @@ SQL {
     toolName: listCountries
     access: public
     intent: "list countries with pagination"
-    query: "SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2"
+    query: "SELECT * FROM country LIMIT LEAST(:limit, 500) OFFSET :offset"
     summary: "Paginated country rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -83,14 +80,14 @@ SQL {
         FROM
             inventory
         LIMIT
-            LEAST($1, 500)
+            LEAST(:limit, 500)
         OFFSET
-            $2
+            :offset
     '''
     summary: "Paginated inventory rows"
     params: {
-        $1: { name: limit description: "max rows per page" example: "100" type: integer }
-        $2: { name: offset description: "rows to skip" example: "0" type: integer }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 
@@ -110,25 +107,19 @@ SQL {
         FROM
             film
         WHERE
-            rating::text = $1
+            rating::text = :rating
         ORDER BY
             title
         LIMIT
-            $2
+            :maxRows
     '''
     summary: "Films by MPAA rating (G, PG, PG-13, R, NC-17)"
     params: {
-        $1: {
-            name: rating
-            description: "MPAA rating (G, PG, PG-13, R, or NC-17)"
-            example: "PG-13"
-        }
-        $2: {
-            name: maxRows
-            description: "max rows to return"
+        rating: { description: "MPAA rating (G, PG, PG-13, R, or NC-17)"
+            example: "PG-13" }
+        maxRows: { description: "max rows to return"
             example: "20"
-            type: integer
-        }
+            type: integer }
     }
 }
 
@@ -148,29 +139,23 @@ SQL {
         INNER JOIN
             film f ON f.film_id = fa.film_id
         WHERE
-            a.last_name ILIKE $1 || '%'
+            a.last_name ILIKE :lastNamePrefix || '%'
         ORDER BY
             a.last_name,
             f.title
         LIMIT
-            $2
+            :maxRows
     '''
     summary: "Actor–film cast via film_actor join"
     params: {
-        $1: {
-            name: lastNamePrefix
-            description: '''
+        lastNamePrefix: { description: '''
                 Actor last name prefix (case-insensitive).
                 Examples: GAR, BER, HOP — matches last names starting with the prefix.
             '''
-            example: "GAR"
-        }
-        $2: {
-            name: maxRows
-            description: "max rows to return"
+            example: "GAR" }
+        maxRows: { description: "max rows to return"
             example: "25"
-            type: integer
-        }
+            type: integer }
     }
 }
 
@@ -191,25 +176,19 @@ SQL {
         FROM
             film
         WHERE
-            title ILIKE '%' || $1 || '%'
-            OR description ILIKE '%' || $1 || '%'
+            title ILIKE '%' || :searchText || '%'
+            OR description ILIKE '%' || :searchText || '%'
         ORDER BY
             title
         LIMIT
-            $2
+            :maxRows
     '''
     summary: "Film full-text style search (title and description)"
     params: {
-        $1: {
-            name: searchText
-            description: "search text (matched in title or description)"
-            example: "dog"
-        }
-        $2: {
-            name: maxRows
-            description: "max rows to return"
+        searchText: { description: "search text (matched in title or description)"
+            example: "dog" }
+        maxRows: { description: "max rows to return"
             example: "15"
-            type: integer
-        }
+            type: integer }
     }
 }

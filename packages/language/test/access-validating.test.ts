@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-    process.env.ORDERS_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55433/orders_database';
+    process.env.ORDERS_POSTGRES_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55433/orders_postgres';
 });
 
 function parseValidated(input: string) {
@@ -31,7 +31,7 @@ function parseValidated(input: string) {
 describe('Access validating', () => {
     test('reports protected without auth keyword', async () => {
         const document = await parseValidated(`
-            database env "ORDERS_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
 
             SQL {
                 toolName: listActors
@@ -47,7 +47,7 @@ describe('Access validating', () => {
 
     test('accepts checked access with optionalParams for known SQL param', async () => {
         const document = await parseValidated(`
-            database env "ORDERS_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
 
             auth
 
@@ -57,9 +57,9 @@ describe('Access validating', () => {
                     optionalParams: [customerId]
                 }
                 intent: "orders"
-                query: "SELECT 1 FROM orders WHERE customer_id = $1"
+                query: "SELECT 1 FROM orders WHERE customer_id = :customerId"
                 params: {
-                    $1: { name: customerId description: "customer" example: "alice" type: string }
+                    customerId: { description: "customer" example: "alice" type: string }
                 }
             }
         `);
@@ -75,7 +75,7 @@ describe('Access validating', () => {
 
     test('reports unresolved optionalParams reference', async () => {
         const document = await parseValidated(`
-            database env "ORDERS_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
 
             auth
 
@@ -85,9 +85,9 @@ describe('Access validating', () => {
                     optionalParams: [missingParam]
                 }
                 intent: "orders"
-                query: "SELECT 1 FROM orders WHERE customer_id = $1"
+                query: "SELECT 1 FROM orders WHERE customer_id = :customerId"
                 params: {
-                    $1: { name: customerId description: "customer" example: "alice" type: string }
+                    customerId: { description: "customer" example: "alice" type: string }
                 }
             }
         `);

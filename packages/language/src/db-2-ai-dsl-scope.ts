@@ -1,10 +1,10 @@
 import { AstUtils, DefaultScopeComputation } from 'langium';
 import type { AstNode, LangiumDocument } from 'langium';
-import { isSqlParamNameField, isSqlQuery } from './generated/ast.js';
+import { isSqlParamEntry, isSqlQuery } from './generated/ast.js';
 
 /**
- * Param `name` fields live under `params`, but `optionalParams` references them from
- * `access: checked { … }`. Register each SqlParamNameField on its SqlQuery so the
+ * Param map keys live under `params`, but `optionalParams` references them from
+ * `access: checked { … }`. Register each SqlParamEntry on its SqlQuery so the
  * default ScopeProvider finds them when resolving optionalParams cross-refs.
  */
 export class Db2AiDslScopeComputation extends DefaultScopeComputation {
@@ -13,9 +13,9 @@ export class Db2AiDslScopeComputation extends DefaultScopeComputation {
         document: LangiumDocument,
         symbols: Parameters<DefaultScopeComputation['addLocalSymbol']>[2]
     ): void {
-        if (isSqlParamNameField(node)) {
+        if (isSqlParamEntry(node)) {
             const sqlQuery = AstUtils.getContainerOfType(node, isSqlQuery);
-            const name = this.nameProvider.getName(node);
+            const name = node.key !== undefined ? String(node.key).trim() : undefined;
             if (sqlQuery && name) {
                 symbols.add(sqlQuery, this.descriptions.createDescription(node, name, document));
             }

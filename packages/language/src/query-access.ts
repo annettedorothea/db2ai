@@ -1,5 +1,5 @@
 import type { Reference } from 'langium';
-import type { SqlParamNameField, SqlQuery } from './generated/ast.js';
+import type { SqlParamEntry, SqlQuery } from './generated/ast.js';
 import { isCheckedAccess, isProtectedAccess, isPublicAccess } from './generated/ast.js';
 
 export type AccessKind = 'public' | 'protected' | 'checked';
@@ -21,8 +21,12 @@ export function getAccessKind(query: SqlQuery): AccessKind {
     throw new Error('SqlQuery is missing access.');
 }
 
-export function resolveOptionalParamRef(ref: Reference<SqlParamNameField>): string {
-    return ref.ref?.name ?? ref.$refText ?? '';
+export function resolveOptionalParamRef(ref: Reference<SqlParamEntry>): string {
+    const key = ref.ref?.key;
+    if (key !== undefined && String(key).trim().length > 0) {
+        return String(key).trim();
+    }
+    return ref.$refText?.trim() ?? '';
 }
 
 export function getOptionalParams(query: SqlQuery): readonly string[] {

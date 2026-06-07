@@ -36,6 +36,7 @@
     "dependencies": {
         "langium": "~4.2.0",
         "mysql2": "^3.22.5",
+        "mssql": "^11.0.1",
         "pg": "~8.21.0"
     },
     "devDependencies": {

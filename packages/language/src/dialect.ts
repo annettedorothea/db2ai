@@ -1,6 +1,6 @@
 import type { Model } from './generated/ast.js';
 
-export type ResolvedDatabaseDialect = 'postgres' | 'mysql';
+export type ResolvedDatabaseDialect = 'postgres' | 'mysql' | 'sqlserver';
 
 export const DEFAULT_DATABASE_DIALECT: ResolvedDatabaseDialect = 'postgres';
 
@@ -15,6 +15,9 @@ export function normalizeDatabaseDialect(value: string | undefined): ResolvedDat
     if (normalized === 'mysql') {
         return 'mysql';
     }
+    if (normalized === 'sqlserver' || normalized === 'mssql') {
+        return 'sqlserver';
+    }
     return DEFAULT_DATABASE_DIALECT;
 }
 
@@ -23,21 +26,46 @@ export function databaseDialectFromModel(model: Pick<Model, 'dialect'>): Resolve
 }
 
 export function databaseDialectDisplayName(dialect: ResolvedDatabaseDialect): string {
-    return dialect === 'mysql' ? 'MySQL' : 'PostgreSQL';
+    switch (dialect) {
+        case 'mysql':
+            return 'MySQL';
+        case 'sqlserver':
+            return 'SQL Server';
+        default:
+            return 'PostgreSQL';
+    }
 }
 
 export function databaseSchemaDescription(dialect: ResolvedDatabaseDialect): string {
-    return dialect === 'mysql' ? 'current database schema' : 'public schema';
+    switch (dialect) {
+        case 'mysql':
+            return 'current database schema';
+        case 'sqlserver':
+            return 'dbo schema';
+        default:
+            return 'public schema';
+    }
 }
 
 export function isSupportedConnectionUrlForDialect(dialect: ResolvedDatabaseDialect, connectionUrl: string): boolean {
     const trimmed = connectionUrl.trim();
-    if (dialect === 'mysql') {
-        return trimmed.startsWith('mysql://');
+    switch (dialect) {
+        case 'mysql':
+            return trimmed.startsWith('mysql://');
+        case 'sqlserver':
+            return trimmed.startsWith('sqlserver://') || trimmed.startsWith('mssql://');
+        default:
+            return trimmed.startsWith('postgresql://') || trimmed.startsWith('postgres://');
     }
-    return trimmed.startsWith('postgresql://') || trimmed.startsWith('postgres://');
 }
 
 export function expectedConnectionUrlDescription(dialect: ResolvedDatabaseDialect): string {
-    return dialect === 'mysql' ? 'mysql:// URL' : 'postgresql:// or postgres:// URL';
+    switch (dialect) {
+        case 'mysql':
+            return 'mysql:// URL';
+        case 'sqlserver':
+            return 'sqlserver:// or mssql:// URL';
+        default:
+            return 'postgresql:// or postgres:// URL';
+    }
 }

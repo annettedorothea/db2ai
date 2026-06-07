@@ -45,7 +45,7 @@ async function completionAt(content: string, offset: number, parseOptions: Parse
 
 describe('Completion for SQL block keywords', () => {
     test('lists SQL block keywords inside empty SQL block', async () => {
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    `;
+        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);
@@ -55,7 +55,7 @@ describe('Completion for SQL block keywords', () => {
     });
 
     test('does not suggest already used block keywords', async () => {
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listFilms\n    access: public\n    intent: "list films"\n    `;
+        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listFilms\n    access: public\n    intent: "list films"\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);
@@ -68,7 +68,7 @@ describe('Completion for SQL block keywords', () => {
 
     test('lists block keywords without database env value', async () => {
         delete process.env.PAGILA_DATABASE_URL;
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    `;
+        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);
@@ -81,7 +81,7 @@ describe('Completion for SQL block keywords', () => {
 describe('Completion for checked access optionalParams', () => {
     test('suggests optionalParams keyword inside checked access block', async () => {
         const marker = '/*caret*/';
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = $1"\n    params: {\n        $1: { name: customerId description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker));
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('optionalParams');
@@ -89,7 +89,7 @@ describe('Completion for checked access optionalParams', () => {
 
     test('suggests SQL param names inside optionalParams list', async () => {
         const marker = '/*caret*/';
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = $1"\n    params: {\n        $1: { name: customerId description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');
@@ -97,7 +97,7 @@ describe('Completion for checked access optionalParams', () => {
 
     test('suggests SQL param names when editing optionalParams prefix', async () => {
         const marker = '/*caret*/';
-        const header = `database env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = $1"\n    params: {\n        $1: { name: customerId description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');

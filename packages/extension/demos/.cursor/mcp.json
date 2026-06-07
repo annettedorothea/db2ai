@@ -28,6 +28,14 @@
             "auth": {
                 "CLIENT_ID": "mcp-demo-local"
             }
+        },
+        "animals": {
+            "command": "node",
+            "envFile": ".env",
+            "args": ["./generated/cli/stdio-mcp-server.js", "./generated/tools/animals-sqlserver-tools.js"],
+            "env": {
+                "ANIMALS_SQLSERVER_DATABASE_URL": "sqlserver://sa:YourStrong!Passw0rd@localhost:55434/animals?encrypt=true&trustServerCertificate=true"
+            }
         }
     }
 }

@@ -13,7 +13,7 @@ import {
 } from './idp-pages.mjs';
 import { loggingAdapter } from '../src/utils/logging-adapter.js';
 
-const PORT = Number(process.env.ORDERS_DATABASE_OAUTH_IDP_PORT) || 4863;
+const PORT = Number(process.env.ORDERS_POSTGRES_OAUTH_IDP_PORT) || 4863;
 const CLIENT_ID = 'mcp-demo-local';
 const CURSOR_REDIRECT = 'cursor://anysphere.cursor-mcp/oauth/callback';
 const DEMO_USERS = [
@@ -98,7 +98,7 @@ function sendAuthorizeHelpPage(res) {
     sendHtml(
         res,
         renderAuthorizeHelpPage(
-            'Use <strong>Cursor MCP OAuth</strong> on <code>orders</code> (<code>npm run demo:oauth-idp</code>, orders-database Docker).'
+            'Use <strong>Cursor MCP OAuth</strong> on <code>orders</code> (<code>npm run demo:oauth-idp</code>, orders-postgres Docker).'
         )
     );
 }

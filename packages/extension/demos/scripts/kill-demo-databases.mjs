@@ -2,11 +2,30 @@
 /**
  * Remove demo DB containers by fixed name so `docker compose up` never hits name conflicts
  * (e.g. leftover containers from another checkout or compose project label).
+ *
+ * Usage: node ./scripts/kill-demo-databases.mjs [main|mssql|all]
+ *   main  — pagila, sakila, orders-postgres (npm run start / db:up:all)
+ *   mssql — animals-sqlserver only (npm run start:mssql)
+ *   all   — every demo DB container (default for db:kill:all)
  */
 import { spawnSync } from 'node:child_process';
 
 /** Must match container_name in docker-compose.yml. */
-const DEMO_DB_CONTAINER_NAMES = ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-database'];
+export const DEMO_DB_CONTAINER_GROUPS = {
+    main: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgres'],
+    mssql: ['db2ai-animals-sqlserver'],
+    all: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgres', 'db2ai-animals-sqlserver']
+};
+
+function resolveContainerNames(scopeArg) {
+    const scope = scopeArg?.trim() || 'all';
+    const names = DEMO_DB_CONTAINER_GROUPS[scope];
+    if (!names) {
+        console.error(`[db:kill] unknown scope "${scopeArg}" — use: main, mssql, all`);
+        process.exit(1);
+    }
+    return { scope, names };
+}
 
 function containerExists(name) {
     const result = spawnSync('docker', ['inspect', '-f', '{{.Id}}', name], { encoding: 'utf8' });
@@ -24,8 +43,10 @@ function removeContainer(name) {
     }
 }
 
-for (const name of DEMO_DB_CONTAINER_NAMES) {
+const { scope, names } = resolveContainerNames(process.argv[2]);
+
+for (const name of names) {
     removeContainer(name);
 }
 
-console.log('[db:kill] demo database containers cleared.');
+console.log(`[db:kill] ${scope} demo database containers cleared.`);

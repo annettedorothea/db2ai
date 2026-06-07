@@ -7,7 +7,8 @@ import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
 import type { Model } from '../src/generated/ast.js';
 import { validateSqlBlocksWithExamples } from '../src/sql-db-validator.js';
 
-const ordersUrl = process.env.ORDERS_DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:55433/orders_database';
+const ordersUrl =
+    process.env.ORDERS_POSTGRES_DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:55433/orders_postgres';
 const pagilaUrl = process.env.PAGILA_DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:55432/pagila';
 const sakilaUrl = process.env.SAKILA_DATABASE_URL ?? 'mysql://sakila:p_ssW0rd@127.0.0.1:53306/sakila';
 
@@ -72,20 +73,20 @@ describe('EXPLAIN DB validation (integration)', () => {
             ctx.skip();
         }
 
-        process.env.ORDERS_DATABASE_URL = ordersUrl;
+        process.env.ORDERS_POSTGRES_DATABASE_URL = ordersUrl;
         const documentUri = path.join(fixtureDir, 'explain-orders-insert.db2ai');
         const document = await parse(
             `
-            database env "ORDERS_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
 
             SQL {
                 toolName: createOrder
                 access: public
                 intent: "create order"
-                query: "INSERT INTO orders (customer_id, product_id, quantity) VALUES ($1, $2, 1) RETURNING order_id"
+                query: "INSERT INTO orders (customer_id, product_id, quantity) VALUES (:customerId, :productId, 1) RETURNING order_id"
                 params: {
-                    $1: { name: customerId description: "customer" example: "alice" type: string }
-                    $2: { name: productId description: "product" example: "1" type: integer }
+                    customerId: { description: "customer" example: "alice" type: string }
+                    productId: { description: "product" example: "1" type: integer }
                 }
             }
         `,
@@ -109,16 +110,16 @@ describe('EXPLAIN DB validation (integration)', () => {
         const documentUri = path.join(fixtureDir, 'explain-pagila-select.db2ai');
         const document = await parse(
             `
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
                 access: public
                 intent: "list films"
-                query: "SELECT film_id FROM film LIMIT $1 OFFSET $2"
+                query: "SELECT film_id FROM film LIMIT :limit OFFSET :offset"
                 params: {
-                    $1: { name: limit description: "limit" example: "10" type: integer }
-                    $2: { name: offset description: "offset" example: "0" type: integer }
+                    limit: { description: "limit" example: "10" type: integer }
+                    offset: { description: "offset" example: "0" type: integer }
                 }
             }
         `,
@@ -144,10 +145,10 @@ describe('EXPLAIN DB validation (integration)', () => {
                 toolName: listFilms
                 access: public
                 intent: "list films"
-                query: "SELECT film_id FROM film LIMIT $1 OFFSET $2"
+                query: "SELECT film_id FROM film LIMIT :limit OFFSET :offset"
                 params: {
-                    $1: { name: limit description: "limit" example: "10" type: integer }
-                    $2: { name: offset description: "offset" example: "0" type: integer }
+                    limit: { description: "limit" example: "10" type: integer }
+                    offset: { description: "offset" example: "0" type: integer }
                 }
             }
         `,

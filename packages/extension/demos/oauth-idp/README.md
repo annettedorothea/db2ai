@@ -1,9 +1,9 @@
-# Demo OAuth IdP (RS256, port 4863)
+# OAuth IdP (db2ai demos)
 
-| npm script       | Port | Env                              | Signing | MCP consumer    |
+| npm script       | Port | env var                          | Signing | MCP server      |
 | ---------------- | ---- | -------------------------------- | ------- | --------------- |
-| `demo:oauth-idp` | 4863 | `ORDERS_DATABASE_OAUTH_IDP_PORT` | RS256   | `orders` (oidc) |
+| `demo:oauth-idp` | 4863 | `ORDERS_POSTGRES_OAUTH_IDP_PORT` | RS256   | `orders` (oidc) |
 
-Kill: `npm run demo:oauth-idp:kill`
+Started automatically by `npm run start`.
 
-MCP host uses `ORDERS_DATABASE_OAUTH_IDP_URL` (:4863). JWT helpers in [`jwt.mjs`](./jwt.mjs) / [`signing.mjs`](./signing.mjs).
+MCP host uses `ORDERS_POSTGRES_OAUTH_IDP_URL` (:4863). JWT helpers in [`jwt.mjs`](./jwt.mjs) / [`signing.mjs`](./signing.mjs).

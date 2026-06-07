@@ -1,6 +1,6 @@
 import type { ValidationAcceptor } from 'langium';
 import type { SqlParamEntry, SqlQuery } from './generated/ast.js';
-import { extractPlaceholderNumbers } from './sql-params.js';
+import { extractNamedPlaceholders, extractUniqueNamedPlaceholders } from './sql-params.js';
 import { RESERVED_SQL_PARAM_NAMES, parseExampleAsType, parseSqlParamSpec } from './sql-param-spec.js';
 
 export function checkSqlQuery(sqlQuery: SqlQuery, accept: ValidationAcceptor): void {
@@ -24,10 +24,28 @@ function checkSqlRequiredKeys(sqlQuery: SqlQuery, accept: ValidationAcceptor): v
     }
 }
 
+function checkParamKey(entry: SqlParamEntry, accept: ValidationAcceptor): void {
+    const key = entry.key !== undefined ? String(entry.key).trim() : '';
+    if (key.length === 0) {
+        accept('error', 'Param map key must be a valid identifier.', { node: entry, property: 'key' });
+        return;
+    }
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+        accept('error', `Param key "${key}" must be a valid identifier.`, { node: entry, property: 'key' });
+    } else if (RESERVED_SQL_PARAM_NAMES.has(key)) {
+        accept('error', `Param key "${key}" is reserved (use a different name).`, {
+            node: entry,
+            property: 'key'
+        });
+    }
+}
+
 function checkSqlParamSpec(entry: SqlParamEntry, accept: ValidationAcceptor): void {
+    checkParamKey(entry, accept);
+
     const spec = entry.spec;
     if (!spec) {
-        accept('error', 'Param requires a spec block `{ name: …, description: "…" }`.', {
+        accept('error', 'Param requires a spec block `{ description: "…" }`.', {
             node: entry,
             property: 'spec'
         });
@@ -35,17 +53,6 @@ function checkSqlParamSpec(entry: SqlParamEntry, accept: ValidationAcceptor): vo
     }
 
     const parsed = parseSqlParamSpec(spec);
-    if (parsed.name === undefined || parsed.name.length === 0) {
-        accept('error', 'Param spec requires `name: identifier`.', { node: spec, property: 'fields' });
-    } else if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(parsed.name)) {
-        accept('error', `Param name "${parsed.name}" must be a valid identifier.`, { node: spec, property: 'fields' });
-    } else if (RESERVED_SQL_PARAM_NAMES.has(parsed.name)) {
-        accept('error', `Param name "${parsed.name}" is reserved (use a different name).`, {
-            node: spec,
-            property: 'fields'
-        });
-    }
-
     if (parsed.description === undefined || parsed.description.trim().length === 0) {
         accept('error', 'Param spec requires `description: "..."`.', { node: spec, property: 'fields' });
     }
@@ -58,74 +65,78 @@ function checkSqlParamSpec(entry: SqlParamEntry, accept: ValidationAcceptor): vo
     }
 }
 
-function checkUniqueParamNames(entries: SqlParamEntry[], accept: ValidationAcceptor): void {
+function checkUniqueParamKeys(entries: SqlParamEntry[], accept: ValidationAcceptor): void {
     const seen = new Map<string, SqlParamEntry>();
     for (const entry of entries) {
-        const parsed = parseSqlParamSpec(entry.spec);
-        const name = parsed.name;
-        if (!name) {
+        const key = entry.key !== undefined ? String(entry.key).trim() : '';
+        if (!key) {
             continue;
         }
-        const prior = seen.get(name);
+        const prior = seen.get(key);
         if (prior) {
-            accept('error', `Duplicate param name "${name}". Names must be unique within this SQL tool.`, {
+            accept('error', `Duplicate param key "${key}". Keys must be unique within this SQL tool.`, {
                 node: entry,
-                property: 'spec'
+                property: 'key'
             });
         } else {
-            seen.set(name, entry);
+            seen.set(key, entry);
         }
     }
 }
 
 function checkSqlParamMap(sqlQuery: SqlQuery, accept: ValidationAcceptor): void {
     const queryText = sqlQuery.query !== undefined ? String(sqlQuery.query) : '';
-    const placeholdersInQuery = extractPlaceholderNumbers(queryText);
+    const placeholdersInQuery = extractUniqueNamedPlaceholders(queryText);
     const entries = sqlQuery.params?.entries ?? [];
 
     if (placeholdersInQuery.length > 0 && entries.length === 0) {
-        accept('error', 'SQL tool with `$n` placeholders in `query` requires a `params: { … }` block.', {
+        accept('error', 'SQL tool with `:name` placeholders in `query` requires a `params: { … }` block.', {
             node: sqlQuery,
             property: 'params'
         });
         return;
     }
 
-    const seenPlaceholders = new Set<string>();
+    const seenKeys = new Set<string>();
     for (const entry of entries) {
         checkSqlParamSpec(entry, accept);
 
-        const ph = entry.placeholder;
-        if (ph === undefined || ph.trim().length === 0) {
+        const key = entry.key !== undefined ? String(entry.key).trim() : '';
+        if (key.length === 0) {
             continue;
         }
-        if (seenPlaceholders.has(ph)) {
-            accept('error', `Duplicate param key "${ph}". Each placeholder may appear at most once.`, {
+        if (seenKeys.has(key)) {
+            accept('error', `Duplicate param key "${key}". Each key may appear at most once.`, {
                 node: entry,
-                property: 'placeholder'
+                property: 'key'
             });
             continue;
         }
-        seenPlaceholders.add(ph);
+        seenKeys.add(key);
 
-        const index = Number.parseInt(ph.replace(/^\$/, ''), 10);
-        if (!placeholdersInQuery.includes(index)) {
-            accept('error', `Param "${ph}" is not used in \`query\`.`, {
+        if (!placeholdersInQuery.includes(key)) {
+            accept('error', `Param "${key}" is not used in \`query\` (no matching :${key}).`, {
                 node: entry,
-                property: 'placeholder'
+                property: 'key'
             });
         }
     }
 
-    checkUniqueParamNames(entries, accept);
+    checkUniqueParamKeys(entries, accept);
 
-    for (const n of placeholdersInQuery) {
-        const ph = `$${n}`;
-        if (!seenPlaceholders.has(ph)) {
-            accept('error', `Query uses ${ph} but \`params\` has no entry for it.`, {
+    for (const name of placeholdersInQuery) {
+        if (!seenKeys.has(name)) {
+            accept('error', `Query uses :${name} but \`params\` has no entry for "${name}".`, {
                 node: sqlQuery,
                 property: 'query'
             });
+        }
+    }
+
+    const allOccurrences = extractNamedPlaceholders(queryText);
+    for (const name of allOccurrences) {
+        if (!seenKeys.has(name)) {
+            break;
         }
     }
 }

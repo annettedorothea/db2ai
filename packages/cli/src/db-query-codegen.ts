@@ -1,6 +1,13 @@
 import type { Model, SqlQuery } from 'db-2-ai-dsl-language';
+import { databaseDialectFromModel, type ResolvedDatabaseDialect } from 'db-2-ai-dsl-language';
 import { getAccessKind, getOptionalParams, isSqlQuery, type AccessKind } from 'db-2-ai-dsl-language';
-import { jsonSchemaExampleValue, resolveSqlParamsOrdered, type ResolvedSqlParam } from 'db-2-ai-dsl-language';
+import {
+    jsonSchemaExampleValue,
+    mysqlBindParamNames,
+    resolveSqlParamsOrdered,
+    rewriteNamedPlaceholdersForDialect,
+    type ResolvedSqlParam
+} from 'db-2-ai-dsl-language';
 
 export type JsonSchemaDict = Record<string, unknown>;
 
@@ -11,6 +18,7 @@ export type ResolvedSqlToolCodegen = {
     description: string;
     sqlText: string;
     params: ResolvedSqlParam[];
+    mysqlBindNames?: readonly string[];
     access: AccessKind;
 };
 
@@ -78,10 +86,11 @@ function buildSqlDescription(query: SqlQuery, params: ResolvedSqlParam[]): strin
     return lines.join('\n');
 }
 
-function resolveSqlTool(query: SqlQuery): ResolvedSqlToolCodegen {
-    const sqlText = query.query !== undefined ? String(query.query) : '';
+function resolveSqlTool(query: SqlQuery, dialect: ResolvedDatabaseDialect): ResolvedSqlToolCodegen {
+    const logicalSql = query.query !== undefined ? String(query.query) : '';
     const entries = query.params?.entries ?? [];
-    const params = resolveSqlParamsOrdered(entries, sqlText);
+    const params = resolveSqlParamsOrdered(entries, logicalSql);
+    const sqlText = rewriteNamedPlaceholdersForDialect(logicalSql, dialect);
     return {
         kind: 'sql',
         toolName: requireToolName(query.toolName, 'SQL tool'),
@@ -89,15 +98,17 @@ function resolveSqlTool(query: SqlQuery): ResolvedSqlToolCodegen {
         description: buildSqlDescription(query, params),
         sqlText,
         params,
+        mysqlBindNames: dialect === 'mysql' ? mysqlBindParamNames(logicalSql) : undefined,
         access: getAccessKind(query)
     };
 }
 
 export function resolveToolsFromModel(model: Model): ResolvedDbToolCodegen[] {
+    const dialect = databaseDialectFromModel(model);
     const tools: ResolvedDbToolCodegen[] = [];
     for (const entry of model.entries) {
         if (isSqlQuery(entry)) {
-            tools.push(resolveSqlTool(entry));
+            tools.push(resolveSqlTool(entry, dialect));
         }
     }
     return tools;

@@ -37,7 +37,7 @@ function mergeEnv(overrides: Record<string, string | undefined> | undefined): Re
 function collectStderr(transport: StdioClientTransport): () => string {
     let stderr = '';
     transport.stderr?.on('data', (chunk: unknown) => {
-        stderr += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
+        stderr += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk);
     });
     return () => stderr.trim();
 }

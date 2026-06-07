@@ -2,7 +2,7 @@
 /**
  * Mint a demo JWT for tests/direct-invoke: node get-token.mjs alice
  */
-import { mintCustomerToken } from './oauth-idp/jwt.mjs';
+import { mintCustomerToken } from '../oauth-idp/jwt.mjs';
 
 const customerId = process.argv[2];
 if (!customerId) {

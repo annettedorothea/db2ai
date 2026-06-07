@@ -1,5 +1,6 @@
 import pg from 'pg';
 import mysql from 'mysql2/promise';
+import sql from 'mssql';
 import type { Diagnostic } from 'vscode-languageserver';
 import { DiagnosticSeverity } from 'vscode-languageserver';
 import { GrammarUtils } from 'langium';
@@ -9,9 +10,10 @@ import { databaseDialectFromModel, type ResolvedDatabaseDialect } from './dialec
 import { isSupportedConnectionUrlForDialect } from './dialect.js';
 import { isValidEnvVarName, resolveDatabaseUrlFromEnvForDocument } from './schema.js';
 import { coerceExampleValue } from './sql-param-spec.js';
-import { buildMysqlExplainSql, buildPostgresExplainSql } from './sql-db-probe.js';
+import { buildExplainSqlForDialect } from './sql-db-probe.js';
+import { parseSqlserverConnectInput } from './sqlserver-connection.js';
 import {
-    extractPlaceholderNumbers,
+    extractUniqueNamedPlaceholders,
     mysqlBindValues,
     postgresBindValues,
     resolveSqlParamsOrdered
@@ -36,32 +38,32 @@ function queryRange(sqlQuery: SqlQuery): {
     };
 }
 
-function buildExampleValueByIndex(sqlQuery: SqlQuery): {
-    valueByIndex: Map<number, unknown>;
+function buildExampleValueByName(sqlQuery: SqlQuery): {
+    valueByName: Map<string, unknown>;
     missingExample: string[];
 } {
     const sqlText = sqlQuery.query !== undefined ? String(sqlQuery.query) : '';
     const entries = sqlQuery.params?.entries ?? [];
     const ordered = resolveSqlParamsOrdered(entries, sqlText);
-    const valueByIndex = new Map<number, unknown>();
+    const valueByName = new Map<string, unknown>();
     const missingExample: string[] = [];
 
     for (const p of ordered) {
         if (p.example === undefined || p.example.trim().length === 0) {
-            missingExample.push(p.placeholder);
+            missingExample.push(`:${p.name}`);
         } else {
-            valueByIndex.set(p.index, coerceExampleValue(p.example, p.jsonSchemaType));
+            valueByName.set(p.name, coerceExampleValue(p.example, p.jsonSchemaType));
         }
     }
 
-    return { valueByIndex, missingExample };
+    return { valueByName, missingExample };
 }
 
 async function explainPostgresProbe(connectionUrl: string, sqlText: string, values: unknown[]): Promise<void> {
     const client = new pg.Client({ connectionString: connectionUrl });
     await client.connect();
     try {
-        await client.query({ text: buildPostgresExplainSql(sqlText), values });
+        await client.query({ text: buildExplainSqlForDialect(sqlText, 'postgres'), values });
     } finally {
         await client.end();
     }
@@ -70,9 +72,29 @@ async function explainPostgresProbe(connectionUrl: string, sqlText: string, valu
 async function explainMysqlProbe(connectionUrl: string, sqlText: string, values: unknown[]): Promise<void> {
     const connection = await mysql.createConnection(connectionUrl);
     try {
-        await connection.query(buildMysqlExplainSql(sqlText), values as (string | number | boolean | null)[]);
+        await connection.query(
+            buildExplainSqlForDialect(sqlText, 'mysql'),
+            values as (string | number | boolean | null)[]
+        );
     } finally {
         await connection.end();
+    }
+}
+
+async function explainSqlserverProbe(
+    connectionUrl: string,
+    sqlText: string,
+    valueByName: Map<string, unknown>
+): Promise<void> {
+    const pool = await sql.connect(parseSqlserverConnectInput(connectionUrl));
+    try {
+        const request = pool.request();
+        for (const [name, value] of valueByName.entries()) {
+            request.input(name, value);
+        }
+        await request.batch(buildExplainSqlForDialect(sqlText, 'sqlserver'));
+    } finally {
+        await pool.close();
     }
 }
 
@@ -82,12 +104,14 @@ async function probeSqlQuery(
     dialect: ResolvedDatabaseDialect
 ): Promise<void> {
     const sqlText = sqlQuery.query !== undefined ? String(sqlQuery.query) : '';
-    const { valueByIndex } = buildExampleValueByIndex(sqlQuery);
+    const { valueByName } = buildExampleValueByName(sqlQuery);
     const values =
-        dialect === 'mysql' ? mysqlBindValues(sqlText, valueByIndex) : postgresBindValues(sqlText, valueByIndex);
+        dialect === 'mysql' ? mysqlBindValues(sqlText, valueByName) : postgresBindValues(sqlText, valueByName);
 
     if (dialect === 'mysql') {
         await explainMysqlProbe(connectionUrl, sqlText, values);
+    } else if (dialect === 'sqlserver') {
+        await explainSqlserverProbe(connectionUrl, sqlText, valueByName);
     } else {
         await explainPostgresProbe(connectionUrl, sqlText, values);
     }
@@ -117,12 +141,12 @@ export async function validateSqlBlocksWithExamples(model: Model, documentUri: s
             continue;
         }
         const sqlText = entry.query !== undefined ? String(entry.query) : '';
-        const placeholders = extractPlaceholderNumbers(sqlText);
+        const placeholders = extractUniqueNamedPlaceholders(sqlText);
         if (placeholders.length === 0) {
             continue;
         }
 
-        const { missingExample } = buildExampleValueByIndex(entry);
+        const { missingExample } = buildExampleValueByName(entry);
         if (missingExample.length > 0) {
             diagnostics.push({
                 ...range(entry),

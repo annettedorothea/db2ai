@@ -1,0 +1,60 @@
+database sqlserver env "ANIMALS_SQLSERVER_DATABASE_URL"
+
+SQL {
+    toolName: listAnimals
+    access: public
+    intent: "list animals with common name, Latin name, and short English description"
+    query: '''
+        SELECT TOP (:limit)
+            animal_id,
+            common_name,
+            latin_name,
+            description
+        FROM animals
+        ORDER BY common_name
+    '''
+    summary: "Paginated animal catalog"
+    params: {
+        limit: { description: "max rows" example: "20" type: integer }
+    }
+}
+
+SQL {
+    toolName: searchAnimals
+    access: public
+    intent: "search animals by common or Latin name (substring match)"
+    query: '''
+        SELECT TOP (:maxRows)
+            animal_id,
+            common_name,
+            latin_name,
+            description
+        FROM animals
+        WHERE
+            common_name LIKE '%' + :searchText + '%'
+            OR latin_name LIKE '%' + :searchText + '%'
+        ORDER BY common_name
+    '''
+    summary: "Name search in the animal catalog"
+    params: {
+        searchText: { description: "text matched in common or Latin name" example: "fox" }
+        maxRows: { description: "max rows to return" example: "10" type: integer }
+    }
+}
+
+SQL {
+    toolName: createAnimal
+    access: public
+    intent: "insert a new animal row into the catalog"
+    query: '''
+        INSERT INTO animals (common_name, latin_name, description)
+        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description
+        VALUES (:commonName, :latinName, :aboutText)
+    '''
+    summary: "Add one animal to the catalog"
+    params: {
+        commonName: { description: "English common name" example: "European hedgehog" type: string }
+        latinName: { description: "Latin species name" example: "Erinaceus europaeus" type: string }
+        aboutText: { description: "short English description" example: "Small nocturnal insectivore with spines, common in gardens and hedgerows." type: string }
+    }
+}

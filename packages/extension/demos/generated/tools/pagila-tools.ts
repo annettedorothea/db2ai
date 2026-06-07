@@ -33,7 +33,7 @@ export type InvokeOptions = Record<string, unknown>;
 
 export type DbHostContext = {
     connectionString: string;
-    databaseDialect: 'postgres' | 'mysql';
+    databaseDialect: 'postgres' | 'mysql' | 'sqlserver';
     credential?: string;
     jwt?: Record<string, unknown>;
 };
@@ -49,12 +49,12 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'public',
         sqlText: 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':limit',
                 index: 1,
                 name: 'limit',
                 propertyName: 'limit',
@@ -63,7 +63,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'integer'
             },
             {
-                placeholder: '$2',
+                placeholder: ':offset',
                 index: 2,
                 name: 'offset',
                 propertyName: 'offset',
@@ -78,22 +78,22 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated actor rows',
         description:
-            'List actors from Pagila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): \n                Max rows per page.\n                SQL caps at 500 via LEAST($1, 500).\n             (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'List actors from Pagila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): \n                Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n             (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'protected',
         sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':limit',
                 index: 1,
                 name: 'limit',
                 propertyName: 'limit',
                 description:
-                    '\n                Max rows per page.\n                SQL caps at 500 via LEAST($1, 500).\n            ',
+                    '\n                Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n            ',
                 example: '100',
                 jsonSchemaType: 'integer'
             },
             {
-                placeholder: '$2',
+                placeholder: ':offset',
                 index: 2,
                 name: 'offset',
                 propertyName: 'offset',
@@ -108,12 +108,12 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCustomers',
         title: 'Paginated customer rows',
         description:
-            'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 10)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=10, offset=0',
+            'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 10)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=10, offset=0',
         access: 'public',
         sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':limit',
                 index: 1,
                 name: 'limit',
                 propertyName: 'limit',
@@ -122,7 +122,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'integer'
             },
             {
-                placeholder: '$2',
+                placeholder: ':offset',
                 index: 2,
                 name: 'offset',
                 propertyName: 'offset',
@@ -137,12 +137,12 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCategories',
         title: 'Paginated category rows',
         description:
-            'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'public',
         sqlText: 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':limit',
                 index: 1,
                 name: 'limit',
                 propertyName: 'limit',
@@ -151,7 +151,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'integer'
             },
             {
-                placeholder: '$2',
+                placeholder: ':offset',
                 index: 2,
                 name: 'offset',
                 propertyName: 'offset',
@@ -166,12 +166,12 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCountries',
         title: 'Paginated country rows',
         description:
-            'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'public',
         sqlText: 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':limit',
                 index: 1,
                 name: 'limit',
                 propertyName: 'limit',
@@ -180,7 +180,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'integer'
             },
             {
-                placeholder: '$2',
+                placeholder: ':offset',
                 index: 2,
                 name: 'offset',
                 propertyName: 'offset',
@@ -195,13 +195,13 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listInventory',
         title: 'Paginated inventory rows',
         description:
-            'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit ($1): max rows per page (example: 100)\n- offset ($2): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'public',
         sqlText:
             '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 500)\n        OFFSET\n            $2\n    ',
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':limit',
                 index: 1,
                 name: 'limit',
                 propertyName: 'limit',
@@ -210,7 +210,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'integer'
             },
             {
-                placeholder: '$2',
+                placeholder: ':offset',
                 index: 2,
                 name: 'offset',
                 propertyName: 'offset',
@@ -225,13 +225,13 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsByMpaaRating',
         title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
         description:
-            'List films with a given MPAA age rating.\n        Valid ratings: G, PG, PG-13, R, NC-17.\n        Results ordered by title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating ($1): MPAA rating (G, PG, PG-13, R, or NC-17) (example: PG-13)\n- maxRows ($2): max rows to return (example: 20)\n\nExample call: rating=PG-13, maxRows=20',
+            'List films with a given MPAA age rating.\n        Valid ratings: G, PG, PG-13, R, NC-17.\n        Results ordered by title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating (:rating): MPAA rating (G, PG, PG-13, R, or NC-17) (example: PG-13)\n- maxRows (:maxRows): max rows to return (example: 20)\n\nExample call: rating=PG-13, maxRows=20',
         access: 'public',
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ',
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':rating',
                 index: 1,
                 name: 'rating',
                 propertyName: 'rating',
@@ -240,7 +240,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'string'
             },
             {
-                placeholder: '$2',
+                placeholder: ':maxRows',
                 index: 2,
                 name: 'maxRows',
                 propertyName: 'maxRows',
@@ -255,13 +255,13 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsWithActorLastName',
         title: 'Actor–film cast via film_actor join',
         description:
-            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix ($1): \n                Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (example: GAR)\n- maxRows ($2): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
+            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix (:lastNamePrefix): \n                Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (example: GAR)\n- maxRows (:maxRows): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         access: 'public',
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ",
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':lastNamePrefix',
                 index: 1,
                 name: 'lastNamePrefix',
                 propertyName: 'lastNamePrefix',
@@ -271,7 +271,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'string'
             },
             {
-                placeholder: '$2',
+                placeholder: ':maxRows',
                 index: 2,
                 name: 'maxRows',
                 propertyName: 'maxRows',
@@ -286,13 +286,13 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Film full-text style search (title and description)',
         description:
-            'Search films by free text in title or description.\n        Case-insensitive substring match (PostgreSQL ILIKE).\n        Useful for demo queries such as dog, cat, or grace.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText ($1): search text (matched in title or description) (example: dog)\n- maxRows ($2): max rows to return (example: 15)\n\nExample call: searchText=dog, maxRows=15',
+            'Search films by free text in title or description.\n        Case-insensitive substring match (PostgreSQL ILIKE).\n        Useful for demo queries such as dog, cat, or grace.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText (:searchText): search text (matched in title or description) (example: dog)\n- maxRows (:maxRows): max rows to return (example: 15)\n\nExample call: searchText=dog, maxRows=15',
         access: 'public',
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ",
         params: [
             {
-                placeholder: '$1',
+                placeholder: ':searchText',
                 index: 1,
                 name: 'searchText',
                 propertyName: 'searchText',
@@ -301,7 +301,7 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'string'
             },
             {
-                placeholder: '$2',
+                placeholder: ':maxRows',
                 index: 2,
                 name: 'maxRows',
                 propertyName: 'maxRows',
@@ -321,8 +321,8 @@ import * as z from 'zod/v4';
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.number().describe('max rows per page (SQL $1)'),
-            offset: z.number().describe('rows to skip (SQL $2)')
+            limit: z.number().describe('max rows per page (SQL :limit)'),
+            offset: z.number().describe('rows to skip (SQL :offset)')
         })
         .strict(),
     listActors: z
@@ -330,39 +330,39 @@ export const inputZodByTool = {
             limit: z
                 .number()
                 .describe(
-                    'Max rows per page.\n                SQL caps at 500 via LEAST($1, 500).\n             (SQL $1)'
+                    'Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n             (SQL :limit)'
                 ),
-            offset: z.number().describe('rows to skip (SQL $2)')
+            offset: z.number().describe('rows to skip (SQL :offset)')
         })
         .strict(),
     listCustomers: z
         .object({
-            limit: z.number().describe('max rows per page (SQL $1)'),
-            offset: z.number().describe('rows to skip (SQL $2)')
+            limit: z.number().describe('max rows per page (SQL :limit)'),
+            offset: z.number().describe('rows to skip (SQL :offset)')
         })
         .strict(),
     listCategories: z
         .object({
-            limit: z.number().describe('max rows per page (SQL $1)'),
-            offset: z.number().describe('rows to skip (SQL $2)')
+            limit: z.number().describe('max rows per page (SQL :limit)'),
+            offset: z.number().describe('rows to skip (SQL :offset)')
         })
         .strict(),
     listCountries: z
         .object({
-            limit: z.number().describe('max rows per page (SQL $1)'),
-            offset: z.number().describe('rows to skip (SQL $2)')
+            limit: z.number().describe('max rows per page (SQL :limit)'),
+            offset: z.number().describe('rows to skip (SQL :offset)')
         })
         .strict(),
     listInventory: z
         .object({
-            limit: z.number().describe('max rows per page (SQL $1)'),
-            offset: z.number().describe('rows to skip (SQL $2)')
+            limit: z.number().describe('max rows per page (SQL :limit)'),
+            offset: z.number().describe('rows to skip (SQL :offset)')
         })
         .strict(),
     filmsByMpaaRating: z
         .object({
-            rating: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL $1)'),
-            maxRows: z.number().describe('max rows to return (SQL $2)')
+            rating: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL :rating)'),
+            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
         })
         .strict(),
     filmsWithActorLastName: z
@@ -370,15 +370,15 @@ export const inputZodByTool = {
             lastNamePrefix: z
                 .string()
                 .describe(
-                    'Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (SQL $1)'
+                    'Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (SQL :lastNamePrefix)'
                 ),
-            maxRows: z.number().describe('max rows to return (SQL $2)')
+            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
         })
         .strict(),
     searchFilms: z
         .object({
-            searchText: z.string().describe('search text (matched in title or description) (SQL $1)'),
-            maxRows: z.number().describe('max rows to return (SQL $2)')
+            searchText: z.string().describe('search text (matched in title or description) (SQL :searchText)'),
+            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
         })
         .strict()
 };

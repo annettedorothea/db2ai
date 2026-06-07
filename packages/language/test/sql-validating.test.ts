@@ -11,13 +11,11 @@ let caseIndex = 0;
 const fixtureDir = path.resolve(process.cwd(), 'test/fixtures');
 
 const validParamBlock = `
-    $1: {
-        name: rating
+    rating: {
         description: "minimum rating"
         example: "PG"
     }
-    $2: {
-        name: maxRows
+    maxRows: {
         description: "max rows"
         example: "10"
         type: integer
@@ -48,13 +46,13 @@ function errorMessages(doc: LangiumDocument<Model>): string[] {
 describe('SQL tool validation', () => {
     test('accepts matching query placeholders and params', async () => {
         const document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: filmsByRating
                 access: public
                 intent: "films with minimum rating"
-                query: "SELECT film_id FROM film WHERE rating >= $1 LIMIT $2"
+                query: "SELECT film_id FROM film WHERE rating >= :rating LIMIT :maxRows"
                 params: { ${validParamBlock} }
             }
         `);
@@ -62,7 +60,7 @@ describe('SQL tool validation', () => {
         expect(errorMessages(document)).toHaveLength(0);
     });
 
-    test('accepts logical $n placeholders for mysql dialect', async () => {
+    test('accepts named placeholders for mysql dialect', async () => {
         delete process.env.SAKILA_DATABASE_URL;
         const document = await parseValidated(`
             database mysql env "SAKILA_DATABASE_URL"
@@ -71,7 +69,7 @@ describe('SQL tool validation', () => {
                 toolName: filmsByRating
                 access: public
                 intent: "films with a given rating"
-                query: "SELECT film_id FROM film WHERE rating = $1 LIMIT $2"
+                query: "SELECT film_id FROM film WHERE rating = :rating LIMIT :maxRows"
                 params: { ${validParamBlock} }
             }
         `);
@@ -81,23 +79,23 @@ describe('SQL tool validation', () => {
 
     test('rejects missing params entry for placeholder in query', async () => {
         const document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: x
                 access: public
                 intent: "y"
-                query: "SELECT 1 WHERE id = $1"
+                query: "SELECT 1 WHERE id = :id"
                 params: {}
             }
         `);
 
-        expect(errorMessages(document).some((m) => m.includes('params') || m.includes('$1'))).toBe(true);
+        expect(errorMessages(document).some((m) => m.includes('params') || m.includes(':id'))).toBe(true);
     });
 
     test('rejects unused param key', async () => {
         const document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: x
@@ -105,8 +103,7 @@ describe('SQL tool validation', () => {
                 intent: "y"
                 query: "SELECT 1"
                 params: {
-                    $1: {
-                        name: unused
+                    unused: {
                         description: "unused"
                     }
                 }
@@ -116,22 +113,20 @@ describe('SQL tool validation', () => {
         expect(errorMessages(document).some((m) => m.includes('not used'))).toBe(true);
     });
 
-    test('rejects duplicate placeholder keys', async () => {
+    test('rejects duplicate param keys', async () => {
         const document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: x
                 access: public
                 intent: "y"
-                query: "SELECT 1 WHERE a = $1"
+                query: "SELECT 1 WHERE a = :rating"
                 params: {
-                    $1: {
-                        name: first
+                    rating: {
                         description: "a"
                     }
-                    $1: {
-                        name: second
+                    rating: {
                         description: "b"
                     }
                 }
@@ -141,42 +136,17 @@ describe('SQL tool validation', () => {
         expect(errorMessages(document).some((m) => m.includes('Duplicate param'))).toBe(true);
     });
 
-    test('rejects duplicate param names', async () => {
+    test('rejects missing description', async () => {
         const document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: x
                 access: public
                 intent: "y"
-                query: "SELECT 1 WHERE a = $1 AND b = $2"
+                query: "SELECT 1 WHERE a = :maxRows"
                 params: {
-                    $1: {
-                        name: sameName
-                        description: "a"
-                    }
-                    $2: {
-                        name: sameName
-                        description: "b"
-                    }
-                }
-            }
-        `);
-
-        expect(errorMessages(document).some((m) => m.includes('Duplicate param name'))).toBe(true);
-    });
-
-    test('rejects missing name and description', async () => {
-        const document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
-
-            SQL {
-                toolName: x
-                access: public
-                intent: "y"
-                query: "SELECT 1 WHERE a = $1"
-                params: {
-                    $1: {
+                    maxRows: {
                         example: "x"
                     }
                 }
@@ -184,22 +154,20 @@ describe('SQL tool validation', () => {
         `);
 
         const messages = errorMessages(document);
-        expect(messages.some((m) => m.includes('name'))).toBe(true);
         expect(messages.some((m) => m.includes('description'))).toBe(true);
     });
 
     test('rejects invalid example for integer type', async () => {
         const document = await parseValidated(`
-            database env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_DATABASE_URL"
 
             SQL {
                 toolName: x
                 access: public
                 intent: "y"
-                query: "SELECT 1 LIMIT $1"
+                query: "SELECT 1 LIMIT :maxRows"
                 params: {
-                    $1: {
-                        name: maxRows
+                    maxRows: {
                         description: "limit"
                         example: "not-a-number"
                         type: integer
