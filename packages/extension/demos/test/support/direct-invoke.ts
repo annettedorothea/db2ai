@@ -31,6 +31,7 @@ function resolveDirectInvokeHostContext(
     }
     const databaseDialect =
         imported.databaseDialect === 'mysql' ||
+        imported.databaseDialect === 'mariadb' ||
         imported.databaseDialect === 'postgres' ||
         imported.databaseDialect === 'sqlserver'
             ? imported.databaseDialect

@@ -1,4 +1,5 @@
 import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
+import { isMysqlDialect } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
 import { renderInvokeCredentialAndParameterCheck } from './render-check-stubs.js';
 
@@ -9,7 +10,7 @@ function renderOptionValueExpression(
     optionsVar: string
 ): string {
     const optionAccess = `${optionsVar}[${JSON.stringify(propertyName)}]`;
-    if (dialect === 'mysql') {
+    if (isMysqlDialect(dialect)) {
         if (paramType === 'boolean') {
             return `normalizeMysqlBooleanParamValue(${optionAccess})`;
         }
@@ -40,7 +41,7 @@ export function collectSqlBindValueExpressions(
     optionsVar: string
 ): string[] {
     const paramsByName = new Map(tool.params.map((p) => [p.propertyName, p]));
-    if (dialect === 'mysql') {
+    if (isMysqlDialect(dialect)) {
         const bindNames = tool.mysqlBindNames ?? [];
         return bindNames.map((name) => {
             const param = paramsByName.get(name);
@@ -109,7 +110,7 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
         }`;
     }
     const valueExprs = collectSqlBindValueExpressions(tool, dialect, optionsVar).join(', ');
-    if (dialect === 'mysql') {
+    if (isMysqlDialect(dialect)) {
         return `        case ${JSON.stringify(tool.toolName)}: {
             const sqlText = ${JSON.stringify(tool.sqlText)};
             const sqlValues = [${valueExprs}];
@@ -232,7 +233,7 @@ function renderInvokeToolPreambleMysql(hasAuth: boolean, hasChecked: boolean, ty
     }
     loggingAdapter.debug('invokeTool', { toolName });
 ${renderHostBinding(typescript)}${accessChecks}
-    const connectionString = resolveConnectionString(host);
+    const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);
     try {
         switch (toolName) {`;
@@ -247,6 +248,26 @@ function compactSqlForLog(sql: string): string {
 const COMPACT_SQL_FOR_LOG_JS = `
 function compactSqlForLog(sql) {
     return sql.replace(/\\s+/g, ' ').trim();
+}
+`.trim();
+
+const CONNECTION_URL_FOR_MYSQL_DRIVER_TS = `
+function connectionUrlForMysqlDriver(connectionUrl: string): string {
+    const trimmed = connectionUrl.trim();
+    if (trimmed.startsWith('mariadb://')) {
+        return \`mysql://\${trimmed.slice('mariadb://'.length)}\`;
+    }
+    return trimmed;
+}
+`.trim();
+
+const CONNECTION_URL_FOR_MYSQL_DRIVER_JS = `
+function connectionUrlForMysqlDriver(connectionUrl) {
+    const trimmed = connectionUrl.trim();
+    if (trimmed.startsWith('mariadb://')) {
+        return 'mysql://' + trimmed.slice('mariadb://'.length);
+    }
+    return trimmed;
 }
 `.trim();
 
@@ -470,7 +491,9 @@ function normalizeMysqlParamValue(value: unknown): string | number | null {
         return Number(trimmed);
     }
     return text;
-}${helperSection}
+}
+
+${CONNECTION_URL_FOR_MYSQL_DRIVER_TS}${helperSection}
 
 export async function invokeTool(
     toolName: string,
@@ -528,7 +551,9 @@ function normalizeMysqlParamValue(value) {
         return Number(trimmed);
     }
     return text;
-}${helperSection}
+}
+
+${CONNECTION_URL_FOR_MYSQL_DRIVER_JS}${helperSection}
 
 export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
 ${toolCases}
@@ -756,7 +781,7 @@ export function renderInvokeBlockTs(
     const optionsVar = hasChecked ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
-    if (dialect === 'mysql') {
+    if (isMysqlDialect(dialect)) {
         return renderMysqlInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
     }
     if (dialect === 'sqlserver') {
@@ -774,7 +799,7 @@ export function renderInvokeBlockJs(
     const optionsVar = hasChecked ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
-    if (dialect === 'mysql') {
+    if (isMysqlDialect(dialect)) {
         return renderMysqlInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
     }
     if (dialect === 'sqlserver') {

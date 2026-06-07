@@ -135,6 +135,42 @@ describe('Validating', () => {
         expect(errorMessages(document).some((m) => m.includes('MySQL'))).toBe(true);
     });
 
+    test('accepts mariadb URL for explicit mariadb dialect', async () => {
+        process.env.SAKILA_DATABASE_URL = 'mariadb://sakila:p_ssW0rd@localhost:53306/sakila';
+        document = await parseValidated(`
+            database mariadb env "SAKILA_DATABASE_URL"
+
+            SQL {
+                toolName: listFilms
+                access: public
+                intent: "list films"
+                query: "SELECT * FROM film LIMIT :limit OFFSET :offset"
+                params: {
+                    limit: { description: "max rows" example: "100" type: integer }
+                    offset: { description: "skip rows" example: "0" type: integer }
+                }
+            }
+        `);
+
+        expect(errorMessages(document)).toHaveLength(0);
+    });
+
+    test('rejects mysql URL for explicit mariadb dialect', async () => {
+        process.env.SAKILA_DATABASE_URL = 'mysql://sakila:p_ssW0rd@localhost:53306/sakila';
+        document = await parseValidated(`
+            database mariadb env "SAKILA_DATABASE_URL"
+
+            SQL {
+                toolName: listFilms
+                access: public
+                intent: "list films"
+                query: "SELECT 1"
+            }
+        `);
+
+        expect(errorMessages(document).some((m) => m.includes('MariaDB'))).toBe(true);
+    });
+
     test('rejects duplicate tool names', async () => {
         document = await parseValidated(`
             database postgres env "PAGILA_DATABASE_URL"

@@ -6,7 +6,7 @@ entry Model:
     (entries += SqlQuery)*;
 
 DatabaseDialect returns string:
-    'postgres' | 'postgresql' | 'mysql' | 'sqlserver' | 'mssql';
+    'postgres' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlserver' | 'mssql';
 
 SqlQuery:
     'SQL' '{'

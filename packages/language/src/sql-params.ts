@@ -1,6 +1,7 @@
 import type { SqlParamEntry } from './generated/ast.js';
 import type { SqlParamType } from './generated/ast.js';
 import type { ResolvedDatabaseDialect } from './dialect.js';
+import { isMysqlDialect } from './dialect.js';
 import { parseSqlParamSpec, type ParsedSqlParamSpec } from './sql-param-spec.js';
 
 /** Named SQL placeholders `:identifier` (not PostgreSQL casts `::type`). */
@@ -53,7 +54,7 @@ export function rewriteNamedPlaceholdersForSqlserver(sql: string): string {
 }
 
 export function rewriteNamedPlaceholdersForDialect(sql: string, dialect: ResolvedDatabaseDialect): string {
-    if (dialect === 'mysql') {
+    if (isMysqlDialect(dialect)) {
         return rewriteNamedPlaceholdersForMysql(sql);
     }
     if (dialect === 'sqlserver') {

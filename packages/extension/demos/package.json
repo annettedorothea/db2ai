@@ -38,6 +38,7 @@
         "demo:oauth-idp:kill": "node ./oauth-idp/kill-server.mjs",
         "generate:pagila": "node ./scripts/generate.mjs pagila.db2ai generated/tools/pagila-tools.ts && npm run format",
         "generate:sakila": "node ./scripts/generate.mjs sakila.db2ai generated/tools/sakila-tools.ts && npm run format",
+        "generate:sakila-mariadb": "node ./scripts/generate.mjs sakila-mariadb.db2ai generated/tools/sakila-mariadb-tools.ts && npm run format",
         "generate:orders-postgres": "node ./scripts/generate.mjs orders-postgres.db2ai generated/tools/orders-postgres-tools.ts && npm run format",
         "generate:animals-sqlserver": "node ./scripts/generate.mjs animals-sqlserver.db2ai generated/tools/animals-sqlserver-tools.ts && npm run format",
         "generate:all": "node ./scripts/generate-all.mjs && npm run format",

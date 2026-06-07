@@ -1,8 +1,21 @@
 import type { Model } from './generated/ast.js';
 
-export type ResolvedDatabaseDialect = 'postgres' | 'mysql' | 'sqlserver';
+export type ResolvedDatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver';
 
 export const DEFAULT_DATABASE_DIALECT: ResolvedDatabaseDialect = 'postgres';
+
+export function isMysqlDialect(dialect: ResolvedDatabaseDialect): boolean {
+    return dialect === 'mysql' || dialect === 'mariadb';
+}
+
+/** mysql2 expects `mysql://`; rewrite MariaDB URLs at connect time. */
+export function connectionUrlForMysqlDriver(connectionUrl: string): string {
+    const trimmed = connectionUrl.trim();
+    if (trimmed.startsWith('mariadb://')) {
+        return `mysql://${trimmed.slice('mariadb://'.length)}`;
+    }
+    return trimmed;
+}
 
 export function normalizeDatabaseDialect(value: string | undefined): ResolvedDatabaseDialect {
     if (value === undefined || value.trim().length === 0) {
@@ -14,6 +27,9 @@ export function normalizeDatabaseDialect(value: string | undefined): ResolvedDat
     }
     if (normalized === 'mysql') {
         return 'mysql';
+    }
+    if (normalized === 'mariadb') {
+        return 'mariadb';
     }
     if (normalized === 'sqlserver' || normalized === 'mssql') {
         return 'sqlserver';
@@ -29,6 +45,8 @@ export function databaseDialectDisplayName(dialect: ResolvedDatabaseDialect): st
     switch (dialect) {
         case 'mysql':
             return 'MySQL';
+        case 'mariadb':
+            return 'MariaDB';
         case 'sqlserver':
             return 'SQL Server';
         default:
@@ -39,6 +57,7 @@ export function databaseDialectDisplayName(dialect: ResolvedDatabaseDialect): st
 export function databaseSchemaDescription(dialect: ResolvedDatabaseDialect): string {
     switch (dialect) {
         case 'mysql':
+        case 'mariadb':
             return 'current database schema';
         case 'sqlserver':
             return 'dbo schema';
@@ -52,6 +71,8 @@ export function isSupportedConnectionUrlForDialect(dialect: ResolvedDatabaseDial
     switch (dialect) {
         case 'mysql':
             return trimmed.startsWith('mysql://');
+        case 'mariadb':
+            return trimmed.startsWith('mariadb://');
         case 'sqlserver':
             return trimmed.startsWith('sqlserver://') || trimmed.startsWith('mssql://');
         default:
@@ -63,6 +84,8 @@ export function expectedConnectionUrlDescription(dialect: ResolvedDatabaseDialec
     switch (dialect) {
         case 'mysql':
             return 'mysql:// URL';
+        case 'mariadb':
+            return 'mariadb:// URL';
         case 'sqlserver':
             return 'sqlserver:// or mssql:// URL';
         default:

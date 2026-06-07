@@ -1,5 +1,5 @@
 import type { Model, SqlQuery } from 'db-2-ai-dsl-language';
-import { databaseDialectFromModel, type ResolvedDatabaseDialect } from 'db-2-ai-dsl-language';
+import { databaseDialectFromModel, isMysqlDialect, type ResolvedDatabaseDialect } from 'db-2-ai-dsl-language';
 import { getAccessKind, getOptionalParams, isSqlQuery, type AccessKind } from 'db-2-ai-dsl-language';
 import {
     jsonSchemaExampleValue,
@@ -98,7 +98,7 @@ function resolveSqlTool(query: SqlQuery, dialect: ResolvedDatabaseDialect): Reso
         description: buildSqlDescription(query, params),
         sqlText,
         params,
-        mysqlBindNames: dialect === 'mysql' ? mysqlBindParamNames(logicalSql) : undefined,
+        mysqlBindNames: isMysqlDialect(dialect) ? mysqlBindParamNames(logicalSql) : undefined,
         access: getAccessKind(query)
     };
 }

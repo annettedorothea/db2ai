@@ -4,7 +4,9 @@ import type { RowDataPacket } from 'mysql2';
 import type { ResolvedDatabaseDialect } from './dialect.js';
 import {
     DEFAULT_DATABASE_DIALECT,
+    connectionUrlForMysqlDriver,
     expectedConnectionUrlDescription,
+    isMysqlDialect,
     isSupportedConnectionUrlForDialect
 } from './dialect.js';
 import { loadLocalEnvFiles, workspaceDirsForDocumentUri } from './env.js';
@@ -60,10 +62,9 @@ export async function loadSchema(
         throw new Error(`Expected ${expectedConnectionUrlDescription(dialect)} for ${dialect} database.`);
     }
 
-    const loaded =
-        dialect === 'mysql'
-            ? await loadMysqlSchema(connectionUrl.trim())
-            : await loadPostgresSchema(connectionUrl.trim());
+    const loaded = isMysqlDialect(dialect)
+        ? await loadMysqlSchema(connectionUrl.trim(), dialect as 'mysql' | 'mariadb')
+        : await loadPostgresSchema(connectionUrl.trim());
     cache.set(key, loaded);
     return loaded;
 }
@@ -100,8 +101,8 @@ async function loadPostgresSchema(connectionUrl: string): Promise<LoadedSchema> 
 type MysqlTableRow = RowDataPacket & { table_name: string };
 type MysqlColumnRow = RowDataPacket & { table_name: string; column_name: string };
 
-async function loadMysqlSchema(connectionUrl: string): Promise<LoadedSchema> {
-    const connection = await mysql.createConnection(connectionUrl);
+async function loadMysqlSchema(connectionUrl: string, dialect: 'mysql' | 'mariadb'): Promise<LoadedSchema> {
+    const connection = await mysql.createConnection(connectionUrlForMysqlDriver(connectionUrl));
     try {
         const [tablesRows] = await connection.query<MysqlTableRow[]>(
             `SELECT TABLE_NAME AS table_name
@@ -122,7 +123,7 @@ async function loadMysqlSchema(connectionUrl: string): Promise<LoadedSchema> {
             list.push(row.column_name);
             columnsByTable[row.table_name] = list;
         }
-        return { dialect: 'mysql', tables, columnsByTable };
+        return { dialect, tables, columnsByTable };
     } finally {
         await connection.end();
     }

@@ -20,6 +20,7 @@ export function buildSqlserverExplainSql(sqlText: string): string {
 export function buildExplainSqlForDialect(sqlText: string, dialect: ResolvedDatabaseDialect): string {
     switch (dialect) {
         case 'mysql':
+        case 'mariadb':
             return buildMysqlExplainSql(sqlText);
         case 'sqlserver':
             return buildSqlserverExplainSql(sqlText);

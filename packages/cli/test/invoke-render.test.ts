@@ -46,4 +46,10 @@ describe('collectSqlBindValueExpressions', () => {
         expect(exprs[1]).toContain('options["searchText"]');
         expect(exprs[2]).toContain('normalizeMysqlParamValue');
     });
+
+    test('mariadb uses the same bind expressions as mysql', () => {
+        const mysqlExprs = collectSqlBindValueExpressions(tool, 'mysql', 'options');
+        const mariadbExprs = collectSqlBindValueExpressions(tool, 'mariadb', 'options');
+        expect(mariadbExprs).toEqual(mysqlExprs);
+    });
 });

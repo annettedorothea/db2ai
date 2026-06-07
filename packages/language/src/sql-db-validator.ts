@@ -6,7 +6,8 @@ import { DiagnosticSeverity } from 'vscode-languageserver';
 import { GrammarUtils } from 'langium';
 import type { Model, SqlQuery } from './generated/ast.js';
 import { isSqlQuery } from './generated/ast.js';
-import { databaseDialectFromModel, type ResolvedDatabaseDialect } from './dialect.js';
+import { databaseDialectFromModel, isMysqlDialect, type ResolvedDatabaseDialect } from './dialect.js';
+import { connectionUrlForMysqlDriver } from './dialect.js';
 import { isSupportedConnectionUrlForDialect } from './dialect.js';
 import { isValidEnvVarName, resolveDatabaseUrlFromEnvForDocument } from './schema.js';
 import { coerceExampleValue } from './sql-param-spec.js';
@@ -70,7 +71,7 @@ async function explainPostgresProbe(connectionUrl: string, sqlText: string, valu
 }
 
 async function explainMysqlProbe(connectionUrl: string, sqlText: string, values: unknown[]): Promise<void> {
-    const connection = await mysql.createConnection(connectionUrl);
+    const connection = await mysql.createConnection(connectionUrlForMysqlDriver(connectionUrl));
     try {
         await connection.query(
             buildExplainSqlForDialect(sqlText, 'mysql'),
@@ -105,10 +106,11 @@ async function probeSqlQuery(
 ): Promise<void> {
     const sqlText = sqlQuery.query !== undefined ? String(sqlQuery.query) : '';
     const { valueByName } = buildExampleValueByName(sqlQuery);
-    const values =
-        dialect === 'mysql' ? mysqlBindValues(sqlText, valueByName) : postgresBindValues(sqlText, valueByName);
+    const values = isMysqlDialect(dialect)
+        ? mysqlBindValues(sqlText, valueByName)
+        : postgresBindValues(sqlText, valueByName);
 
-    if (dialect === 'mysql') {
+    if (isMysqlDialect(dialect)) {
         await explainMysqlProbe(connectionUrl, sqlText, values);
     } else if (dialect === 'sqlserver') {
         await explainSqlserverProbe(connectionUrl, sqlText, valueByName);

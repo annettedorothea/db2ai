@@ -181,6 +181,23 @@ describe('Parsing tests', () => {
         expect(document.parseResult.value.env).toBe('SAKILA_DATABASE_URL');
     });
 
+    test('parses explicit mariadb dialect', async () => {
+        document = await parse(`
+            database mariadb env "SAKILA_DATABASE_URL"
+
+            SQL {
+                toolName: listFilms
+                access: public
+                intent: "list films"
+                query: "SELECT 1"
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        expect(document.parseResult.value.dialect).toBe('mariadb');
+        expect(document.parseResult.value.env).toBe('SAKILA_DATABASE_URL');
+    });
+
     test('parses explicit sqlserver dialect and mssql alias', async () => {
         document = await parse(`
             database sqlserver env "ANIMALS_SQLSERVER_DATABASE_URL"

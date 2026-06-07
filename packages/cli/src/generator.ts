@@ -37,7 +37,12 @@ function bundleSafeGeneratorImplementationDir(): string {
 const __generatorDirname = bundleSafeGeneratorImplementationDir();
 
 function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialectFromModel>): ProjectBootstrapConfig {
-    const databaseDriverDep = databaseDialect === 'mysql' ? 'mysql2' : databaseDialect === 'sqlserver' ? 'mssql' : 'pg';
+    const databaseDriverDep =
+        databaseDialect === 'mysql' || databaseDialect === 'mariadb'
+            ? 'mysql2'
+            : databaseDialect === 'sqlserver'
+              ? 'mssql'
+              : 'pg';
     return {
         hostProduct: 'db2ai',
         generatorImplementationDir: __generatorDirname,

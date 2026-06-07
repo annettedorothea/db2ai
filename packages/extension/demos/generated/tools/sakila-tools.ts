@@ -33,7 +33,7 @@ export type InvokeOptions = Record<string, unknown>;
 
 export type DbHostContext = {
     connectionString: string;
-    databaseDialect: 'postgres' | 'mysql' | 'sqlserver';
+    databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver';
     credential?: string;
     jwt?: Record<string, unknown>;
 };
@@ -335,6 +335,14 @@ function normalizeMysqlParamValue(value: unknown): string | number | null {
     return text;
 }
 
+function connectionUrlForMysqlDriver(connectionUrl: string): string {
+    const trimmed = connectionUrl.trim();
+    if (trimmed.startsWith('mariadb://')) {
+        return `mysql://${trimmed.slice('mariadb://'.length)}`;
+    }
+    return trimmed;
+}
+
 function compactSqlForLog(sql: string): string {
     return sql.replace(/\s+/g, ' ').trim();
 }
@@ -361,7 +369,7 @@ export async function invokeTool(
             );
         }
     }
-    const connectionString = resolveConnectionString(host);
+    const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);
     try {
         switch (toolName) {
