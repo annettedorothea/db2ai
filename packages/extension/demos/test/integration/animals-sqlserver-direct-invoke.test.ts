@@ -21,8 +21,7 @@ describe('animals-sqlserver generated module direct invocation', () => {
             sourcePath: animalsSqlserverSourcePath,
             generatedToolsName: 'animals-sqlserver-tools',
             databaseEnv: 'ANIMALS_SQLSERVER_DATABASE_URL',
-            connectionString,
-            isolateFixtureProjectRoot: true
+            connectionString
         };
     }
 

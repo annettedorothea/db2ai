@@ -33,7 +33,8 @@ function resolveDirectInvokeHostContext(
         imported.databaseDialect === 'mysql' ||
         imported.databaseDialect === 'mariadb' ||
         imported.databaseDialect === 'postgres' ||
-        imported.databaseDialect === 'sqlserver'
+        imported.databaseDialect === 'sqlserver' ||
+        imported.databaseDialect === 'oracle'
             ? imported.databaseDialect
             : 'postgres';
     const hostContext: Record<string, unknown> = { connectionString, databaseDialect };

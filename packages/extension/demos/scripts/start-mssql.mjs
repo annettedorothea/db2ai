@@ -9,7 +9,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { loadDemoEnvLocal } from './load-env-local.mjs';
 import { buildStdioHostLaunch } from './mcp-stdio-demos.mjs';
-import { waitForForegroundShutdown } from './foreground-lifecycle.mjs';
+import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const foreground =
@@ -67,14 +67,13 @@ async function main() {
 
     const env = { ...process.env, LOG_SERVICE_PREFIX: 'mcp-stdio:animals-sqlserver', LOG_LEVEL: 'debug' };
     const { args } = buildStdioHostLaunch(STDIO_DEMO_NAME, demosRoot, env);
-    console.log('[start:mssql] Starting stdio MCP host in foreground (Ctrl+C stops MCP + Docker)…');
+    console.log('[start:mssql] Starting stdio MCP host in foreground (Ctrl+C stops MCP host)…');
     const child = spawn(process.execPath, args, { cwd: demosRoot, stdio: 'inherit', env });
     serviceChildren.push(child);
-    await waitForForegroundShutdown({
+    await waitForForegroundServiceShutdown({
         label: 'start:mssql',
         serviceChildren,
-        demosRoot,
-        dbKillNpmScript: 'db:kill:mssql'
+        demosRoot
     });
 }
 

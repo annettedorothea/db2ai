@@ -21,8 +21,11 @@ import {
     postgresBindValues,
     resolveSqlParamsOrdered
 } from './sql-params.js';
+import { probeDatabaseConnectivity } from './sql-db-connectivity.js';
+import { formatDatabaseUnreachableReason, isDatabaseUnreachableError } from './sql-connection-error.js';
 
 const SQL_DB_DIAGNOSTIC_SOURCE = 'db2ai-sql';
+const DB_UNREACHABLE_QUERY_MESSAGE = 'DB validation skipped: database unreachable.';
 
 function queryRange(sqlQuery: SqlQuery): {
     start: { line: number; character: number };
@@ -35,6 +38,23 @@ function queryRange(sqlQuery: SqlQuery): {
 
     const queryCst = GrammarUtils.findNodeForProperty(blockCst, 'query');
     const range = (queryCst ?? blockCst).range;
+    return {
+        start: { line: range.start.line, character: range.start.character },
+        end: { line: range.end.line, character: range.end.character }
+    };
+}
+
+function envRange(model: Model): {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+} {
+    const modelCst = model.$cstNode;
+    if (!modelCst) {
+        return { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
+    }
+
+    const envCst = GrammarUtils.findNodeForProperty(modelCst, 'env');
+    const range = (envCst ?? modelCst).range;
     return {
         start: { line: range.start.line, character: range.start.character },
         end: { line: range.end.line, character: range.end.character }
@@ -137,6 +157,34 @@ async function probeSqlQuery(
     }
 }
 
+function envUnreachableDiagnostic(model: Model, envName: string, err: unknown): Diagnostic {
+    return {
+        range: envRange(model),
+        severity: DiagnosticSeverity.Warning,
+        source: SQL_DB_DIAGNOSTIC_SOURCE,
+        message: `DB validation skipped: cannot connect to database (${envName}): ${formatDatabaseUnreachableReason(err)}`
+    };
+}
+
+function queryUnreachableDiagnostic(entry: SqlQuery): Diagnostic {
+    return {
+        range: queryRange(entry),
+        severity: DiagnosticSeverity.Warning,
+        source: SQL_DB_DIAGNOSTIC_SOURCE,
+        message: DB_UNREACHABLE_QUERY_MESSAGE
+    };
+}
+
+function querySqlErrorDiagnostic(entry: SqlQuery, err: unknown): Diagnostic {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+        range: queryRange(entry),
+        severity: DiagnosticSeverity.Error,
+        source: SQL_DB_DIAGNOSTIC_SOURCE,
+        message: `SQL validation failed: ${message}`
+    };
+}
+
 export async function validateSqlBlocksWithExamples(model: Model, documentUri: string): Promise<Diagnostic[]> {
     const diagnostics: Diagnostic[] = [];
     const envName = model.env;
@@ -150,11 +198,17 @@ export async function validateSqlBlocksWithExamples(model: Model, documentUri: s
         return diagnostics;
     }
 
-    const range = (sqlQuery: SqlQuery) => ({
-        range: queryRange(sqlQuery),
-        severity: DiagnosticSeverity.Error,
-        source: SQL_DB_DIAGNOSTIC_SOURCE
-    });
+    const envNameText = String(envName);
+    let databaseUnreachable = false;
+
+    try {
+        await probeDatabaseConnectivity(connectionUrl, dialect);
+    } catch (err) {
+        if (isDatabaseUnreachableError(err, dialect)) {
+            databaseUnreachable = true;
+            diagnostics.push(envUnreachableDiagnostic(model, envNameText, err));
+        }
+    }
 
     for (const entry of model.entries) {
         if (!isSqlQuery(entry)) {
@@ -169,21 +223,31 @@ export async function validateSqlBlocksWithExamples(model: Model, documentUri: s
         const { missingExample } = buildExampleValueByName(entry);
         if (missingExample.length > 0) {
             diagnostics.push({
-                ...range(entry),
+                range: queryRange(entry),
                 severity: DiagnosticSeverity.Warning,
+                source: SQL_DB_DIAGNOSTIC_SOURCE,
                 message: `DB validation skipped: missing example for ${missingExample.join(', ')}.`
             });
+            continue;
+        }
+
+        if (databaseUnreachable) {
+            diagnostics.push(queryUnreachableDiagnostic(entry));
             continue;
         }
 
         try {
             await probeSqlQuery(entry, connectionUrl, dialect);
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            diagnostics.push({
-                ...range(entry),
-                message: `SQL validation failed: ${message}`
-            });
+            if (isDatabaseUnreachableError(err, dialect)) {
+                databaseUnreachable = true;
+                if (!diagnostics.some((d) => d.message.startsWith('DB validation skipped: cannot connect'))) {
+                    diagnostics.push(envUnreachableDiagnostic(model, envNameText, err));
+                }
+                diagnostics.push(queryUnreachableDiagnostic(entry));
+            } else {
+                diagnostics.push(querySqlErrorDiagnostic(entry, err));
+            }
         }
     }
 

@@ -21,8 +21,7 @@ describe('plants-oracle generated module direct invocation', () => {
             sourcePath: plantsOracleSourcePath,
             generatedToolsName: 'plants-oracle-tools',
             databaseEnv: 'PLANTS_ORACLE_DATABASE_URL',
-            connectionString,
-            isolateFixtureProjectRoot: true
+            connectionString
         };
     }
 
@@ -41,7 +40,7 @@ describe('plants-oracle generated module direct invocation', () => {
     it('invokes searchPlants by substring', async () => {
         await withGeneratedDirectInvokeFixture(plantsOracleFixture(), async ({ generated, hostContext }) => {
             const result = asRecord(
-                await generated.invokeTool('searchPlants', { searchText: 'oak', maxRows: 5 }, hostContext)
+                await generated.invokeTool('searchPlants', { searchText: 'Rose', maxRows: 5 }, hostContext)
             );
             expect(result.rowCount).toBeGreaterThan(0);
             const rows = result.rows as Record<string, unknown>[];
@@ -49,7 +48,7 @@ describe('plants-oracle generated module direct invocation', () => {
                 rows.some((row) =>
                     String(row.COMMON_NAME ?? row.common_name)
                         .toLowerCase()
-                        .includes('oak')
+                        .includes('rose')
                 )
             ).toBe(true);
         });

@@ -6,6 +6,8 @@ export * from './dialect.js';
 export * from './sql-params.js';
 export * from './sql-param-spec.js';
 export * from './sql-db-probe.js';
+export * from './sql-db-connectivity.js';
+export * from './sql-connection-error.js';
 export * from './sql-db-validator.js';
 export * from './sqlserver-connection.js';
 export * from './oracle-connection.js';

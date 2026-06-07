@@ -36,16 +36,20 @@ async function loadDocument(file: string, validation: boolean): Promise<LangiumD
     return document;
 }
 
+function collectSqlDbDiagnostics(document: CliLangiumDocument, file: string) {
+    const model = document.parseResult?.value;
+    if (!isModel(model)) {
+        return [];
+    }
+    const uri = document.uri?.toString() ?? URI.file(path.resolve(file)).toString();
+    return validateSqlBlocksWithExamples(model, uri);
+}
+
 function db2aiGenerateValidationOptions(file: string) {
     return {
         beforeBuild: () => loadLocalEnvFiles([process.cwd(), path.dirname(path.resolve(file))]),
         extraErrors: async (document: CliLangiumDocument) => {
-            const model = document.parseResult?.value;
-            if (!isModel(model)) {
-                return [];
-            }
-            const uri = document.uri?.toString() ?? URI.file(path.resolve(file)).toString();
-            const sqlDbDiags = await validateSqlBlocksWithExamples(model, uri);
+            const sqlDbDiags = await collectSqlDbDiagnostics(document, file);
             return sqlDbDiags
                 .filter((d) => d.severity === DiagnosticSeverity.Error)
                 .map((d) => ({
@@ -81,11 +85,21 @@ export async function parseAction(file: string): Promise<void> {
 export async function validateAction(file: string): Promise<void> {
     loadLocalEnvFiles([process.cwd(), path.dirname(path.resolve(file))]);
     const document = await loadDocument(file, true);
+    const sqlDbDiags = await collectSqlDbDiagnostics(document, file);
     const errors = [
         ...collectLangiumDocumentErrors(document),
-        ...(await db2aiGenerateValidationOptions(file).extraErrors!(document))
+        ...sqlDbDiags
+            .filter((d) => d.severity === DiagnosticSeverity.Error)
+            .map((d) => ({
+                severity: d.severity,
+                message: d.message,
+                range: d.range
+            }))
     ];
-    const warnings = (document.diagnostics ?? []).filter((d) => d.severity === DiagnosticSeverity.Warning);
+    const warnings = [
+        ...(document.diagnostics ?? []).filter((d) => d.severity === DiagnosticSeverity.Warning),
+        ...sqlDbDiags.filter((d) => d.severity === DiagnosticSeverity.Warning)
+    ];
 
     if (errors.length > 0) {
         printDocumentValidationErrors(document, errors);

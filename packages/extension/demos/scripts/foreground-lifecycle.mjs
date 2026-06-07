@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Foreground start scripts: stop MCP child processes and demo Docker on Ctrl+C.
+ * Foreground start scripts: stop MCP child processes on Ctrl+C or when a child exits.
  */
 import { spawnSync } from 'node:child_process';
 
@@ -46,43 +46,41 @@ async function stopServiceChildren(serviceChildren) {
     await Promise.all(waits);
 }
 
+function allServiceChildrenExited(serviceChildren) {
+    return serviceChildren.every((child) => child.exitCode !== null);
+}
+
 /**
- * Wait for SIGINT/SIGTERM; stop children and optionally run an npm db-kill script.
+ * Wait for SIGINT/SIGTERM or for all children to exit (stdio-inherit MCP often receives Ctrl+C alone).
  *
  * @param {{
  *   label: string;
  *   serviceChildren: ChildProcess[];
  *   demosRoot: string;
- *   dbKillNpmScript?: string;
  * }} options
  * @returns {Promise<void>}
  */
-export function waitForForegroundShutdown({ label, serviceChildren, demosRoot, dbKillNpmScript }) {
+export function waitForForegroundServiceShutdown({ label, serviceChildren, demosRoot }) {
     let shuttingDown = false;
 
-    const shutdown = async (signal) => {
+    const shutdown = async (reason) => {
         if (shuttingDown) {
             return;
         }
         shuttingDown = true;
-        console.log(`[${label}] ${signal} — stopping foreground services…`);
+        console.log(`[${label}] ${reason} — stopping foreground services…`);
         await stopServiceChildren(serviceChildren);
-
-        if (dbKillNpmScript) {
-            console.log(`[${label}] stopping Docker (${dbKillNpmScript})…`);
-            const result = spawnSync('npm', ['run', dbKillNpmScript], {
-                cwd: demosRoot,
-                stdio: 'inherit',
-                shell: process.platform === 'win32'
-            });
-            if (result.status !== 0) {
-                console.warn(`[${label}] ${dbKillNpmScript} exited with status ${result.status ?? 'unknown'}`);
-            }
-        }
-
-        console.log(`[${label}] stopped.`);
+        console.log(`[${label}] stopped (Docker containers keep running — npm run db:kill:* to stop).`);
         process.exit(0);
     };
+
+    for (const child of serviceChildren) {
+        child.on('exit', () => {
+            if (allServiceChildrenExited(serviceChildren)) {
+                void shutdown('child exit');
+            }
+        });
+    }
 
     return new Promise((resolve) => {
         process.once('SIGINT', () => {
@@ -92,14 +90,4 @@ export function waitForForegroundShutdown({ label, serviceChildren, demosRoot, d
             shutdown('SIGTERM').then(resolve);
         });
     });
-}
-
-/**
- * Stop foreground MCP/IDP children only (no Docker). For npm run start:foreground.
- *
- * @param {{ label: string; serviceChildren: ChildProcess[]; demosRoot: string }} options
- * @returns {Promise<void>}
- */
-export function waitForForegroundServiceShutdown({ label, serviceChildren, demosRoot }) {
-    return waitForForegroundShutdown({ label, serviceChildren, demosRoot, dbKillNpmScript: undefined });
 }

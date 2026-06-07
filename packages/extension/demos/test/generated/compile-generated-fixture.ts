@@ -24,6 +24,13 @@ function findCompileWorkspaceRoot(startDir: string): CompileWorkspaceRoot {
             demosCandidate = { root: dir, extendsConfig: 'tsconfig.generated.json' };
         }
         if (fs.existsSync(path.join(dir, 'tsconfig.build.json'))) {
+            const resolvedStart = path.resolve(startDir);
+            if (
+                demosCandidate &&
+                (resolvedStart === demosCandidate.root || resolvedStart.startsWith(`${demosCandidate.root}${path.sep}`))
+            ) {
+                return demosCandidate;
+            }
             return { root: dir, extendsConfig: 'tsconfig.json' };
         }
         const parent = path.dirname(dir);
@@ -39,6 +46,22 @@ function findCompileWorkspaceRoot(startDir: string): CompileWorkspaceRoot {
     }
 }
 
+/** Copy *-shim.d.ts from demos workspace into tmp fixture (shims must sit under rootDir). */
+function syncDemosModuleShims(projectRoot: string, workspace: CompileWorkspaceRoot): string[] {
+    const includes: string[] = [];
+    try {
+        for (const entry of fs.readdirSync(workspace.root)) {
+            if (entry.endsWith('-shim.d.ts')) {
+                fs.copyFileSync(path.join(workspace.root, entry), path.join(projectRoot, entry));
+                includes.push(entry);
+            }
+        }
+    } catch {
+        /* workspace root unreadable */
+    }
+    return includes;
+}
+
 function compileGeneratedInDir(projectRoot: string, workspace: CompileWorkspaceRoot, include: string[]): void {
     const tsconfigRelExtends = path
         .relative(projectRoot, path.join(workspace.root, workspace.extendsConfig))
@@ -47,6 +70,7 @@ function compileGeneratedInDir(projectRoot: string, workspace: CompileWorkspaceR
     const isDemosTmpFixture =
         workspace.extendsConfig === 'tsconfig.generated.json' &&
         path.resolve(projectRoot) !== path.resolve(workspace.root);
+    const tsInclude = isDemosTmpFixture ? [...include, ...syncDemosModuleShims(projectRoot, workspace)] : include;
     const tsconfig: Record<string, unknown> = {
         extends: tsconfigRelExtends,
         compilerOptions: {
@@ -60,7 +84,7 @@ function compileGeneratedInDir(projectRoot: string, workspace: CompileWorkspaceR
             skipLibCheck: true,
             noUnusedLocals: false
         },
-        include
+        include: tsInclude
     };
     if (isDemosTmpFixture) {
         tsconfig.exclude = [];

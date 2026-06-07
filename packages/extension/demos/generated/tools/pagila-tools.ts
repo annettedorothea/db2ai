@@ -33,7 +33,7 @@ export type InvokeOptions = Record<string, unknown>;
 
 export type DbHostContext = {
     connectionString: string;
-    databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver';
+    databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
     jwt?: Record<string, unknown>;
 };

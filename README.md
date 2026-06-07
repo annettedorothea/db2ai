@@ -41,26 +41,16 @@ No repository checkout required.
 ## Example
 
 ```db2ai
-database env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_DATABASE_URL"
 
 SQL {
     toolName: listFilms
+    access: public
     intent: "list films from Pagila with pagination"
-
-    query: "SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2"
-
+    query: "SELECT * FROM film LIMIT LEAST(:limit, 500) OFFSET :offset"
     params: {
-        $1: {
-            name: limit
-            type: integer
-            example: "100"
-        }
-
-        $2: {
-            name: offset
-            type: integer
-            example: "0"
-        }
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 ```
@@ -88,7 +78,17 @@ Building MCP tools for databases usually requires:
 
 db2ai lets you focus on describing business capabilities instead of writing boilerplate.
 
-Queries are validated against a live PostgreSQL or MySQL database using `EXPLAIN` (dry-run, no data changes) before tools are generated.
+Queries are validated against a live database using dry-run probes (`EXPLAIN` / compile-only checks; no data changes) before tools are generated.
+
+---
+
+## Supported database dialects
+
+- PostgreSQL
+- MySQL
+- MariaDB
+- SQL Server
+- Oracle
 
 ---
 
