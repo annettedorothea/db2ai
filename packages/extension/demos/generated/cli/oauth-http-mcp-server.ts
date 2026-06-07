@@ -87,7 +87,7 @@ async function loadCredentialTransformModule(httpHostConfig: OAuthHttpHostRuntim
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
-type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver';
+type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
 
 type ApiLikeHostContext = {
     baseUrl?: string;
@@ -187,7 +187,11 @@ function loadLocalEnvFiles(startDirs: string[], options?: { refresh?: boolean })
 }
 
 function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' || value === 'mariadb' || value === 'sqlserver'
+    return value === 'postgres' ||
+        value === 'mysql' ||
+        value === 'mariadb' ||
+        value === 'sqlserver' ||
+        value === 'oracle'
         ? value
         : undefined;
 }
@@ -205,6 +209,9 @@ function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialec
             connectionString.startsWith('mssql://') ||
             /^Server=/i.test(connectionString)
         );
+    }
+    if (dialect === 'oracle') {
+        return connectionString.startsWith('oracle://');
     }
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }

@@ -4,5 +4,5 @@
         "rootDir": "src",
         "outDir": "out"
     },
-    "include": ["src/**/*.ts"]
+    "include": ["src/**/*.ts", "oracledb-shim.d.ts"]
 }

@@ -1,6 +1,6 @@
 import type { Model } from './generated/ast.js';
 
-export type ResolvedDatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver';
+export type ResolvedDatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
 
 export const DEFAULT_DATABASE_DIALECT: ResolvedDatabaseDialect = 'postgres';
 
@@ -34,6 +34,9 @@ export function normalizeDatabaseDialect(value: string | undefined): ResolvedDat
     if (normalized === 'sqlserver' || normalized === 'mssql') {
         return 'sqlserver';
     }
+    if (normalized === 'oracle') {
+        return 'oracle';
+    }
     return DEFAULT_DATABASE_DIALECT;
 }
 
@@ -49,6 +52,8 @@ export function databaseDialectDisplayName(dialect: ResolvedDatabaseDialect): st
             return 'MariaDB';
         case 'sqlserver':
             return 'SQL Server';
+        case 'oracle':
+            return 'Oracle';
         default:
             return 'PostgreSQL';
     }
@@ -61,6 +66,8 @@ export function databaseSchemaDescription(dialect: ResolvedDatabaseDialect): str
             return 'current database schema';
         case 'sqlserver':
             return 'dbo schema';
+        case 'oracle':
+            return 'current user schema';
         default:
             return 'public schema';
     }
@@ -75,6 +82,8 @@ export function isSupportedConnectionUrlForDialect(dialect: ResolvedDatabaseDial
             return trimmed.startsWith('mariadb://');
         case 'sqlserver':
             return trimmed.startsWith('sqlserver://') || trimmed.startsWith('mssql://');
+        case 'oracle':
+            return trimmed.startsWith('oracle://');
         default:
             return trimmed.startsWith('postgresql://') || trimmed.startsWith('postgres://');
     }
@@ -88,6 +97,8 @@ export function expectedConnectionUrlDescription(dialect: ResolvedDatabaseDialec
             return 'mariadb:// URL';
         case 'sqlserver':
             return 'sqlserver:// or mssql:// URL';
+        case 'oracle':
+            return 'oracle:// URL';
         default:
             return 'postgresql:// or postgres:// URL';
     }

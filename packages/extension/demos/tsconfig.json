@@ -11,7 +11,8 @@
         "src/utils/**/*.ts",
         "test/**/*.ts",
         "vitest.config.ts",
-        "mssql-shim.d.ts"
+        "mssql-shim.d.ts",
+        "oracledb-shim.d.ts"
     ],
     "exclude": ["node_modules", "tmp"]
 }

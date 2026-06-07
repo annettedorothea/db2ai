@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { loadDemoEnvLocal } from './load-env-local.mjs';
 import { buildHostLaunch, HTTP_START_DEMO_NAMES } from './mcp-http-demos.mjs';
 import { buildOAuthHostLaunch, OAUTH_HTTP_DEMOS, OAUTH_HTTP_START_DEMO_NAMES } from './mcp-oauth-demos.mjs';
+import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const foreground =
     process.env.START_FOREGROUND === '1' ||
@@ -89,26 +90,6 @@ function startService(label, argv, extraEnv = {}, logPort) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`[start] Could not start ${label}: ${message}`);
     }
-}
-
-function waitForShutdownSignal() {
-    return new Promise((resolve) => {
-        const shutdown = (signal) => {
-            console.log(`[start] ${signal} — stopping demo services…`);
-            for (const child of serviceChildren) {
-                if (child.pid) {
-                    try {
-                        process.kill(child.pid, 'SIGTERM');
-                    } catch {
-                        /* already exited */
-                    }
-                }
-            }
-            resolve();
-        };
-        process.once('SIGINT', () => shutdown('SIGINT'));
-        process.once('SIGTERM', () => shutdown('SIGTERM'));
-    });
 }
 
 async function waitForHttpOk(url, { timeoutMs = 20_000, intervalMs = 200, label = url } = {}) {
@@ -210,8 +191,8 @@ async function main() {
 
     if (foreground) {
         console.log('[start] Setup done — services running. Cursor Settings → Tools & MCPs: enable servers, then reload MCP.');
-        console.log('[start] Ctrl+C stops all demo processes started here.');
-        await waitForShutdownSignal();
+        console.log('[start] Ctrl+C stops MCP/IDP processes started here (Docker keeps running).');
+        await waitForForegroundServiceShutdown({ label: 'start', serviceChildren, demosRoot });
         return;
     }
     console.log('[start] Done. Demo services run in background (npm run demo:kill-all to stop).');

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { mysqlBindValues, postgresBindValues, rewriteNamedPlaceholdersForPostgres } from '../src/sql-params.js';
+import { mysqlBindValues, postgresBindValues, rewriteNamedPlaceholdersForDialect } from '../src/sql-params.js';
 
 describe('SQL bind value order', () => {
     test('postgres uses one value per distinct named placeholder', () => {
@@ -15,9 +15,15 @@ describe('SQL bind value order', () => {
     test('postgres rewrite reuses the same $n for repeated :name', () => {
         const sql =
             "SELECT 1 WHERE title ILIKE '%' || :searchText || '%' OR description ILIKE '%' || :searchText || '%' LIMIT :maxRows";
-        expect(rewriteNamedPlaceholdersForPostgres(sql)).toBe(
+        expect(rewriteNamedPlaceholdersForDialect(sql, 'postgres')).toBe(
             "SELECT 1 WHERE title ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%' LIMIT $2"
         );
+    });
+
+    test('oracle keeps native :name placeholders', () => {
+        const sql =
+            "SELECT 1 FROM plants WHERE common_name LIKE '%' || :searchText || '%' FETCH FIRST :maxRows ROWS ONLY";
+        expect(rewriteNamedPlaceholdersForDialect(sql, 'oracle')).toBe(sql);
     });
 
     test('mysql repeats values for each placeholder occurrence', () => {

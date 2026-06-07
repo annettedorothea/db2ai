@@ -7,6 +7,6 @@
         "outDir": ".",
         "types": ["node"]
     },
-    "include": ["generated/**/*.ts", "src/auth/**/*.ts", "src/utils/**/*.ts", "mssql-shim.d.ts"],
+    "include": ["generated/**/*.ts", "src/auth/**/*.ts", "src/utils/**/*.ts", "mssql-shim.d.ts", "oracledb-shim.d.ts"],
     "exclude": ["node_modules", "tmp"]
 }

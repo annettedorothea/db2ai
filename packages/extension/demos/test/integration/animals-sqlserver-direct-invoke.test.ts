@@ -48,4 +48,43 @@ describe('animals-sqlserver generated module direct invocation', () => {
             expect(rows.some((row) => String(row.common_name).toLowerCase().includes('fox'))).toBe(true);
         });
     }, 240_000);
+
+    it('creates, updates, and deletes an animal', async () => {
+        await withGeneratedDirectInvokeFixture(animalsSqlserverFixture(), async ({ generated, hostContext }) => {
+            const created = asRecord(
+                await generated.invokeTool(
+                    'createAnimal',
+                    {
+                        commonName: 'Test shrew',
+                        latinName: 'Sorex testus',
+                        aboutText: 'Temporary row for integration test.'
+                    },
+                    hostContext
+                )
+            );
+            expect(created.rowCount).toBe(1);
+            const createdRows = created.rows as Record<string, unknown>[];
+            const animalId = Number(createdRows[0]?.animal_id);
+            expect(animalId).toBeGreaterThan(0);
+
+            const updated = asRecord(
+                await generated.invokeTool(
+                    'updateAnimal',
+                    {
+                        animalId,
+                        commonName: 'Updated shrew',
+                        latinName: 'Sorex updated',
+                        aboutText: 'Updated description.'
+                    },
+                    hostContext
+                )
+            );
+            expect(updated.rowCount).toBe(1);
+            expect(String((updated.rows as Record<string, unknown>[])[0]?.common_name)).toBe('Updated shrew');
+
+            const deleted = asRecord(await generated.invokeTool('deleteAnimal', { animalId }, hostContext));
+            expect(deleted.rowCount).toBe(1);
+            expect(Number((deleted.rows as Record<string, unknown>[])[0]?.animal_id)).toBe(animalId);
+        });
+    }, 240_000);
 });

@@ -33,7 +33,7 @@ export type InvokeOptions = Record<string, unknown>;
 
 export type DbHostContext = {
     connectionString: string;
-    databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver';
+    databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
     jwt?: Record<string, unknown>;
 };
@@ -133,6 +133,75 @@ export const generatedTools: GeneratedTool[] = [
                 jsonSchemaType: 'string'
             }
         ]
+    },
+    {
+        kind: 'sql',
+        toolName: 'updateAnimal',
+        title: 'Update one animal by id',
+        description:
+            'update an existing animal row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName (:commonName): English common name (example: European hedgehog)\n- latinName (:latinName): Latin species name (example: Erinaceus europaeus)\n- aboutText (:aboutText): short English description (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)\n- animalId (:animalId): animal id to update (example: 1)\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows., animalId=1',
+        access: 'public',
+        sqlText:
+            '\n        UPDATE animals\n        SET\n            common_name = @commonName,\n            latin_name = @latinName,\n            description = @aboutText\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        WHERE animal_id = @animalId\n    ',
+        params: [
+            {
+                placeholder: ':commonName',
+                index: 1,
+                name: 'commonName',
+                propertyName: 'commonName',
+                description: 'English common name',
+                example: 'European hedgehog',
+                jsonSchemaType: 'string'
+            },
+            {
+                placeholder: ':latinName',
+                index: 2,
+                name: 'latinName',
+                propertyName: 'latinName',
+                description: 'Latin species name',
+                example: 'Erinaceus europaeus',
+                jsonSchemaType: 'string'
+            },
+            {
+                placeholder: ':aboutText',
+                index: 3,
+                name: 'aboutText',
+                propertyName: 'aboutText',
+                description: 'short English description',
+                example: 'Small nocturnal insectivore with spines, common in gardens and hedgerows.',
+                jsonSchemaType: 'string'
+            },
+            {
+                placeholder: ':animalId',
+                index: 4,
+                name: 'animalId',
+                propertyName: 'animalId',
+                description: 'animal id to update',
+                example: '1',
+                jsonSchemaType: 'integer'
+            }
+        ]
+    },
+    {
+        kind: 'sql',
+        toolName: 'deleteAnimal',
+        title: 'Remove one animal by id',
+        description:
+            'delete an animal row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- animalId (:animalId): animal id to delete (example: 999)\n\nExample call: animalId=999',
+        access: 'public',
+        sqlText:
+            '\n        DELETE FROM animals\n        OUTPUT DELETED.animal_id, DELETED.common_name, DELETED.latin_name, DELETED.description\n        WHERE animal_id = @animalId\n    ',
+        params: [
+            {
+                placeholder: ':animalId',
+                index: 1,
+                name: 'animalId',
+                propertyName: 'animalId',
+                description: 'animal id to delete',
+                example: '999',
+                jsonSchemaType: 'integer'
+            }
+        ]
     }
 ];
 
@@ -155,7 +224,16 @@ export const inputZodByTool = {
             latinName: z.string().describe('Latin species name (SQL :latinName)'),
             aboutText: z.string().describe('short English description (SQL :aboutText)')
         })
-        .strict()
+        .strict(),
+    updateAnimal: z
+        .object({
+            commonName: z.string().describe('English common name (SQL :commonName)'),
+            latinName: z.string().describe('Latin species name (SQL :latinName)'),
+            aboutText: z.string().describe('short English description (SQL :aboutText)'),
+            animalId: z.number().describe('animal id to update (SQL :animalId)')
+        })
+        .strict(),
+    deleteAnimal: z.object({ animalId: z.number().describe('animal id to delete (SQL :animalId)') }).strict()
 };
 
 import sql from 'mssql';
@@ -302,6 +380,68 @@ export async function invokeTool(
                         commonName: options['commonName'],
                         latinName: options['latinName'],
                         aboutText: options['aboutText']
+                    }
+                });
+                const result = await request.query(sqlText);
+                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case 'updateAnimal': {
+                const sqlText =
+                    '\n        UPDATE animals\n        SET\n            common_name = @commonName,\n            latin_name = @latinName,\n            description = @aboutText\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        WHERE animal_id = @animalId\n    ';
+                const request = pool.request();
+                request.input(
+                    'commonName',
+                    sql.NVarChar(sql.MAX),
+                    options['commonName'] !== undefined && options['commonName'] !== null
+                        ? String(options['commonName'])
+                        : null
+                );
+                request.input(
+                    'latinName',
+                    sql.NVarChar(sql.MAX),
+                    options['latinName'] !== undefined && options['latinName'] !== null
+                        ? String(options['latinName'])
+                        : null
+                );
+                request.input(
+                    'aboutText',
+                    sql.NVarChar(sql.MAX),
+                    options['aboutText'] !== undefined && options['aboutText'] !== null
+                        ? String(options['aboutText'])
+                        : null
+                );
+                request.input('animalId', sql.Int, normalizeSqlserverNumericParamValue(options['animalId']));
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'updateAnimal',
+                    sql: compactSqlForLog(sqlText),
+                    values: {
+                        commonName: options['commonName'],
+                        latinName: options['latinName'],
+                        aboutText: options['aboutText'],
+                        animalId: options['animalId']
+                    }
+                });
+                const result = await request.query(sqlText);
+                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                return {
+                    rows: resultRows,
+                    rowCount: resultRows.length
+                };
+            }
+            case 'deleteAnimal': {
+                const sqlText =
+                    '\n        DELETE FROM animals\n        OUTPUT DELETED.animal_id, DELETED.common_name, DELETED.latin_name, DELETED.description\n        WHERE animal_id = @animalId\n    ';
+                const request = pool.request();
+                request.input('animalId', sql.Int, normalizeSqlserverNumericParamValue(options['animalId']));
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'deleteAnimal',
+                    sql: compactSqlForLog(sqlText),
+                    values: {
+                        animalId: options['animalId']
                     }
                 });
                 const result = await request.query(sqlText);

@@ -228,6 +228,25 @@ describe('Parsing tests', () => {
         expect(document.parseResult.value.dialect).toBe('mssql');
     });
 
+    test('parses explicit oracle dialect', async () => {
+        document = await parse(`
+            database oracle env "PLANTS_ORACLE_DATABASE_URL"
+
+            SQL {
+                toolName: listPlants
+                access: public
+                intent: "list plants"
+                query: "SELECT 1 FROM plants FETCH FIRST :limit ROWS ONLY"
+                params: {
+                    limit: { description: "max rows" example: "5" type: integer }
+                }
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        expect(document.parseResult.value.dialect).toBe('oracle');
+    });
+
     test('parses SQL tool with summary and params', async () => {
         document = await parse(`
             database postgres env "PAGILA_DATABASE_URL"

@@ -10,6 +10,12 @@ export const STDIO_DEMOS = {
         defaultConnection:
             'sqlserver://sa:YourStrong!Passw0rd@localhost:55434/animals?encrypt=true&trustServerCertificate=true',
         prerequisite: 'Docker animals-sqlserver (npm run db:animals-sqlserver:up)'
+    },
+    'plants-oracle': {
+        tools: 'plants-oracle-tools.js',
+        connectionEnv: 'PLANTS_ORACLE_DATABASE_URL',
+        defaultConnection: 'oracle://plants:PlantsDemo123@localhost:55221/FREEPDB1',
+        prerequisite: 'Docker plants-oracle (npm run db:plants-oracle:up; docker login container-registry.oracle.com once)'
     }
 };
 

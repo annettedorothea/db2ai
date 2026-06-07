@@ -1,5 +1,6 @@
 import pg from 'pg';
 import mysql from 'mysql2/promise';
+import oracledb from 'oracledb';
 import type { RowDataPacket } from 'mysql2';
 import type { ResolvedDatabaseDialect } from './dialect.js';
 import {
@@ -9,6 +10,7 @@ import {
     isMysqlDialect,
     isSupportedConnectionUrlForDialect
 } from './dialect.js';
+import { parseOracleConnectInput } from './oracle-connection.js';
 import { loadLocalEnvFiles, workspaceDirsForDocumentUri } from './env.js';
 
 export type LoadedSchema = {
@@ -64,7 +66,9 @@ export async function loadSchema(
 
     const loaded = isMysqlDialect(dialect)
         ? await loadMysqlSchema(connectionUrl.trim(), dialect as 'mysql' | 'mariadb')
-        : await loadPostgresSchema(connectionUrl.trim());
+        : dialect === 'oracle'
+          ? await loadOracleSchema(connectionUrl.trim())
+          : await loadPostgresSchema(connectionUrl.trim());
     cache.set(key, loaded);
     return loaded;
 }
@@ -126,6 +130,42 @@ async function loadMysqlSchema(connectionUrl: string, dialect: 'mysql' | 'mariad
         return { dialect, tables, columnsByTable };
     } finally {
         await connection.end();
+    }
+}
+
+type OracleTableRow = { TABLE_NAME: string };
+type OracleColumnRow = { TABLE_NAME: string; COLUMN_NAME: string };
+
+async function loadOracleSchema(connectionUrl: string): Promise<LoadedSchema> {
+    const config = parseOracleConnectInput(connectionUrl);
+    const connection = await oracledb.getConnection(config);
+    try {
+        const tablesResult = await connection.execute<OracleTableRow>(
+            `SELECT table_name
+             FROM user_tables
+             WHERE table_name NOT LIKE 'BIN$%'
+             ORDER BY table_name`,
+            {},
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const columnsResult = await connection.execute<OracleColumnRow>(
+            `SELECT table_name, column_name
+             FROM user_tab_columns
+             ORDER BY table_name, column_id`,
+            {},
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const tables = (tablesResult.rows ?? []).map((row) => row.TABLE_NAME.toLowerCase());
+        const columnsByTable: Record<string, string[]> = {};
+        for (const row of columnsResult.rows ?? []) {
+            const tableName = row.TABLE_NAME.toLowerCase();
+            const list = columnsByTable[tableName] ?? [];
+            list.push(row.COLUMN_NAME.toLowerCase());
+            columnsByTable[tableName] = list;
+        }
+        return { dialect: 'oracle', tables, columnsByTable };
+    } finally {
+        await connection.close();
     }
 }
 

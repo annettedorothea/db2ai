@@ -26,6 +26,8 @@ export type DockerDatabaseConfig = {
     databaseUrlEnv: string;
     composeUpScript: string;
     waitTimeoutMs?: number;
+    /** When set, used instead of Docker health=healthy (e.g. Oracle FREEPDB1 sqlplus probe). */
+    readyWaitNpmScript?: string;
     buildConnectionString: (hostPort: string) => string;
 };
 
@@ -134,6 +136,23 @@ export async function waitForHealthyDockerContainer(
     throw new Error(`${description} container exists but did not become healthy (health: ${current.health}).`);
 }
 
+async function waitForDatabaseReady(demosRoot: string, config: DockerDatabaseConfig): Promise<DockerContainerState> {
+    if (config.readyWaitNpmScript) {
+        await requireCommand('npm', ['--prefix', demosRoot, 'run', config.readyWaitNpmScript]);
+        const current = await inspectDockerContainer(config.containerName, config.containerPort);
+        if (!current.running) {
+            throw new Error(`${config.description} container is not running after ${config.readyWaitNpmScript}.`);
+        }
+        return current;
+    }
+    return waitForHealthyDockerContainer(
+        config.containerName,
+        config.containerPort,
+        config.description,
+        config.waitTimeoutMs
+    );
+}
+
 function configuredHostPort(envName: string): string | undefined {
     const configured = process.env[envName]?.trim();
     return configured && configured.length > 0 ? configured : undefined;
@@ -158,12 +177,7 @@ export async function ensureDockerDatabase(
         if (!current.running) {
             await requireCommand('docker', ['start', config.containerName]);
         }
-        const ready = await waitForHealthyDockerContainer(
-            config.containerName,
-            config.containerPort,
-            config.description,
-            config.waitTimeoutMs
-        );
+        const ready = await waitForDatabaseReady(demosRoot, config);
         if (!ready.hostPort) {
             throw new Error(
                 `${config.description} container is healthy, but its published host port could not be detected.`
@@ -206,16 +220,9 @@ export async function ensureDockerDatabase(
         }
     }
 
-    const ready = await waitForHealthyDockerContainer(
-        config.containerName,
-        config.containerPort,
-        config.description,
-        config.waitTimeoutMs
-    );
+    const ready = await waitForDatabaseReady(demosRoot, config);
     if (!ready.hostPort) {
-        throw new Error(
-            `${config.description} container is healthy, but its published host port could not be detected.`
-        );
+        throw new Error(`${config.description} container is ready, but its published host port could not be detected.`);
     }
     if (configuredPort !== undefined && ready.hostPort !== configuredPort) {
         throw new Error(

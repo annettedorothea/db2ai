@@ -31,4 +31,19 @@ describe('dialect', () => {
             'mysql://user:pass@localhost:3306/sakila'
         );
     });
+
+    test('normalizes oracle dialect and accepts oracle:// URLs', () => {
+        expect(normalizeDatabaseDialect('oracle')).toBe('oracle');
+        expect(
+            databaseDialectFromModel({
+                dialect: 'oracle'
+            })
+        ).toBe('oracle');
+        expect(isSupportedConnectionUrlForDialect('oracle', 'oracle://plants:pass@localhost:55221/FREEPDB1')).toBe(
+            true
+        );
+        expect(isSupportedConnectionUrlForDialect('oracle', 'mysql://plants:pass@localhost:55221/FREEPDB1')).toBe(
+            false
+        );
+    });
 });

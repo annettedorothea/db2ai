@@ -1,6 +1,7 @@
 import pg from 'pg';
 import mysql from 'mysql2/promise';
 import sql from 'mssql';
+import oracledb from 'oracledb';
 import type { Diagnostic } from 'vscode-languageserver';
 import { DiagnosticSeverity } from 'vscode-languageserver';
 import { GrammarUtils } from 'langium';
@@ -13,6 +14,7 @@ import { isValidEnvVarName, resolveDatabaseUrlFromEnvForDocument } from './schem
 import { coerceExampleValue } from './sql-param-spec.js';
 import { buildExplainSqlForDialect } from './sql-db-probe.js';
 import { parseSqlserverConnectInput } from './sqlserver-connection.js';
+import { parseOracleConnectInput } from './oracle-connection.js';
 import {
     extractUniqueNamedPlaceholders,
     mysqlBindValues,
@@ -99,6 +101,20 @@ async function explainSqlserverProbe(
     }
 }
 
+async function explainOracleProbe(
+    connectionUrl: string,
+    sqlText: string,
+    valueByName: Map<string, unknown>
+): Promise<void> {
+    const connection = await oracledb.getConnection(parseOracleConnectInput(connectionUrl));
+    try {
+        const binds = Object.fromEntries(valueByName.entries());
+        await connection.execute(buildExplainSqlForDialect(sqlText, 'oracle'), binds);
+    } finally {
+        await connection.close();
+    }
+}
+
 async function probeSqlQuery(
     sqlQuery: SqlQuery,
     connectionUrl: string,
@@ -114,6 +130,8 @@ async function probeSqlQuery(
         await explainMysqlProbe(connectionUrl, sqlText, values);
     } else if (dialect === 'sqlserver') {
         await explainSqlserverProbe(connectionUrl, sqlText, valueByName);
+    } else if (dialect === 'oracle') {
+        await explainOracleProbe(connectionUrl, sqlText, valueByName);
     } else {
         await explainPostgresProbe(connectionUrl, sqlText, values);
     }

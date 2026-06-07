@@ -53,12 +53,20 @@ export function rewriteNamedPlaceholdersForSqlserver(sql: string): string {
     return sql.replace(NAMED_PLACEHOLDER_REGEX, (_match, name: string) => `@${name}`);
 }
 
+/** Oracle uses native `:name` bind variables — no rewrite. */
+export function rewriteNamedPlaceholdersForOracle(sql: string): string {
+    return sql;
+}
+
 export function rewriteNamedPlaceholdersForDialect(sql: string, dialect: ResolvedDatabaseDialect): string {
     if (isMysqlDialect(dialect)) {
         return rewriteNamedPlaceholdersForMysql(sql);
     }
     if (dialect === 'sqlserver') {
         return rewriteNamedPlaceholdersForSqlserver(sql);
+    }
+    if (dialect === 'oracle') {
+        return rewriteNamedPlaceholdersForOracle(sql);
     }
     return rewriteNamedPlaceholdersForPostgres(sql);
 }

@@ -17,6 +17,21 @@ export function buildSqlserverExplainSql(sqlText: string): string {
     return `SET NOEXEC ON; ${rewritten}; SET NOEXEC OFF;`;
 }
 
+/** Oracle EXPLAIN PLAN cannot parse DML RETURNING; validate the base statement only. */
+function stripOracleDmlReturningClause(sqlText: string): string {
+    return sqlText
+        .trim()
+        .replace(/;\s*$/, '')
+        .replace(/\bRETURNING\s+[\s\S]+$/i, '')
+        .trim();
+}
+
+/** Oracle dry-run probe — parse/plan without executing DML. */
+export function buildOracleExplainSql(sqlText: string): string {
+    const explainTarget = stripOracleDmlReturningClause(sqlText);
+    return `EXPLAIN PLAN FOR ${rewriteNamedPlaceholdersForDialect(explainTarget, 'oracle')}`;
+}
+
 export function buildExplainSqlForDialect(sqlText: string, dialect: ResolvedDatabaseDialect): string {
     switch (dialect) {
         case 'mysql':
@@ -24,6 +39,8 @@ export function buildExplainSqlForDialect(sqlText: string, dialect: ResolvedData
             return buildMysqlExplainSql(sqlText);
         case 'sqlserver':
             return buildSqlserverExplainSql(sqlText);
+        case 'oracle':
+            return buildOracleExplainSql(sqlText);
         default:
             return buildPostgresExplainSql(sqlText);
     }

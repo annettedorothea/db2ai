@@ -3,9 +3,10 @@
  * Remove demo DB containers by fixed name so `docker compose up` never hits name conflicts
  * (e.g. leftover containers from another checkout or compose project label).
  *
- * Usage: node ./scripts/kill-demo-databases.mjs [main|mssql|all]
+ * Usage: node ./scripts/kill-demo-databases.mjs [main|mssql|oracle|all]
  *   main  — pagila, sakila, orders-postgres (npm run start / db:up:all)
  *   mssql — animals-sqlserver only (npm run start:mssql)
+ *   oracle — plants-oracle only (npm run start:oracle)
  *   all   — every demo DB container (default for db:kill:all)
  */
 import { spawnSync } from 'node:child_process';
@@ -14,14 +15,15 @@ import { spawnSync } from 'node:child_process';
 export const DEMO_DB_CONTAINER_GROUPS = {
     main: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgres'],
     mssql: ['db2ai-animals-sqlserver'],
-    all: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgres', 'db2ai-animals-sqlserver']
+    oracle: ['db2ai-plants-oracle'],
+    all: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgres', 'db2ai-animals-sqlserver', 'db2ai-plants-oracle']
 };
 
 function resolveContainerNames(scopeArg) {
     const scope = scopeArg?.trim() || 'all';
     const names = DEMO_DB_CONTAINER_GROUPS[scope];
     if (!names) {
-        console.error(`[db:kill] unknown scope "${scopeArg}" — use: main, mssql, all`);
+        console.error(`[db:kill] unknown scope "${scopeArg}" — use: main, mssql, oracle, all`);
         process.exit(1);
     }
     return { scope, names };

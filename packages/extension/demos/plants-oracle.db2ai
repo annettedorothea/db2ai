@@ -1,0 +1,99 @@
+database oracle env "PLANTS_ORACLE_DATABASE_URL"
+
+SQL {
+    toolName: listPlants
+    access: public
+    intent: "list plants with common name, Latin name, and short English description"
+    query: '''
+        SELECT
+            plant_id,
+            common_name,
+            latin_name,
+            description
+        FROM plants
+        ORDER BY common_name
+        FETCH FIRST :limit ROWS ONLY
+    '''
+    summary: "Paginated plant catalog"
+    params: {
+        limit: { description: "max rows" example: "20" type: integer }
+    }
+}
+
+SQL {
+    toolName: searchPlants
+    access: public
+    intent: "search plants by common or Latin name (substring match)"
+    query: '''
+        SELECT
+            plant_id,
+            common_name,
+            latin_name,
+            description
+        FROM plants
+        WHERE
+            common_name LIKE '%' || :searchText || '%'
+            OR latin_name LIKE '%' || :searchText || '%'
+        ORDER BY common_name
+        FETCH FIRST :maxRows ROWS ONLY
+    '''
+    summary: "Name search in the plant catalog"
+    params: {
+        searchText: { description: "text matched in common or Latin name" example: "oak" }
+        maxRows: { description: "max rows to return" example: "10" type: integer }
+    }
+}
+
+SQL {
+    toolName: createPlant
+    access: public
+    intent: "insert a new plant row into the catalog"
+    query: '''
+        INSERT INTO plants (common_name, latin_name, description)
+        VALUES (:commonName, :latinName, :aboutText)
+        RETURNING plant_id, common_name, latin_name, description
+    '''
+    summary: "Add one plant to the catalog"
+    params: {
+        commonName: { description: "English common name" example: "Mint" type: string }
+        latinName: { description: "Latin species name" example: "Mentha spicata" type: string }
+        aboutText: { description: "short English description" example: "Aromatic herb with serrated leaves, used fresh in drinks and cooking." type: string }
+    }
+}
+
+SQL {
+    toolName: updatePlant
+    access: public
+    intent: "update an existing plant row in the catalog"
+    query: '''
+        UPDATE plants
+        SET
+            common_name = :commonName,
+            latin_name = :latinName,
+            description = :aboutText
+        WHERE plant_id = :plantId
+        RETURNING plant_id, common_name, latin_name, description
+    '''
+    summary: "Update one plant by id"
+    params: {
+        plantId: { description: "plant id to update" example: "1" type: integer }
+        commonName: { description: "English common name" example: "Mint" type: string }
+        latinName: { description: "Latin species name" example: "Mentha spicata" type: string }
+        aboutText: { description: "short English description" example: "Aromatic herb with serrated leaves, used fresh in drinks and cooking." type: string }
+    }
+}
+
+SQL {
+    toolName: deletePlant
+    access: public
+    intent: "delete a plant row from the catalog by id"
+    query: '''
+        DELETE FROM plants
+        WHERE plant_id = :plantId
+        RETURNING plant_id, common_name, latin_name, description
+    '''
+    summary: "Remove one plant by id"
+    params: {
+        plantId: { description: "plant id to delete" example: "999" type: integer }
+    }
+}

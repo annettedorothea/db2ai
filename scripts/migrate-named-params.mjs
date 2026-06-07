@@ -61,7 +61,7 @@ function migrateSqlBlocks(content) {
 
 function migrateContent(content) {
     let out = content;
-    if (/^database env /m.test(out) && !/^database (postgres|postgresql|mysql|sqlserver|mssql) /m.test(out)) {
+    if (/^database env /m.test(out) && !/^database (postgres|postgresql|mysql|mariadb|sqlserver|mssql|oracle) /m.test(out)) {
         out = out.replace(/^database env /m, 'database postgres env ');
     }
     return migrateSqlBlocks(out);

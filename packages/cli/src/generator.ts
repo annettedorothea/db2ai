@@ -42,7 +42,9 @@ function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialec
             ? 'mysql2'
             : databaseDialect === 'sqlserver'
               ? 'mssql'
-              : 'pg';
+              : databaseDialect === 'oracle'
+                ? 'oracledb'
+                : 'pg';
     return {
         hostProduct: 'db2ai',
         generatorImplementationDir: __generatorDirname,
@@ -54,7 +56,8 @@ function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialec
             zod: '^4.4.3',
             pg: '^8.16.0',
             mysql2: '^3.22.3',
-            mssql: '^11.0.1'
+            mssql: '^11.0.1',
+            oracledb: '^6.10.0'
         },
         resolvePackageRoot(dir) {
             const oneUp = path.resolve(dir, '..');

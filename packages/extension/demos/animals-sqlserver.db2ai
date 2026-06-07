@@ -58,3 +58,40 @@ SQL {
         aboutText: { description: "short English description" example: "Small nocturnal insectivore with spines, common in gardens and hedgerows." type: string }
     }
 }
+
+SQL {
+    toolName: updateAnimal
+    access: public
+    intent: "update an existing animal row in the catalog"
+    query: '''
+        UPDATE animals
+        SET
+            common_name = :commonName,
+            latin_name = :latinName,
+            description = :aboutText
+        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description
+        WHERE animal_id = :animalId
+    '''
+    summary: "Update one animal by id"
+    params: {
+        animalId: { description: "animal id to update" example: "1" type: integer }
+        commonName: { description: "English common name" example: "European hedgehog" type: string }
+        latinName: { description: "Latin species name" example: "Erinaceus europaeus" type: string }
+        aboutText: { description: "short English description" example: "Small nocturnal insectivore with spines, common in gardens and hedgerows." type: string }
+    }
+}
+
+SQL {
+    toolName: deleteAnimal
+    access: public
+    intent: "delete an animal row from the catalog by id"
+    query: '''
+        DELETE FROM animals
+        OUTPUT DELETED.animal_id, DELETED.common_name, DELETED.latin_name, DELETED.description
+        WHERE animal_id = :animalId
+    '''
+    summary: "Remove one animal by id"
+    params: {
+        animalId: { description: "animal id to delete" example: "999" type: integer }
+    }
+}

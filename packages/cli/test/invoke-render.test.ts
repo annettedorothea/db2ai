@@ -52,4 +52,11 @@ describe('collectSqlBindValueExpressions', () => {
         const mariadbExprs = collectSqlBindValueExpressions(tool, 'mariadb', 'options');
         expect(mariadbExprs).toEqual(mysqlExprs);
     });
+
+    test('oracle emits one expression per unique named placeholder', () => {
+        const exprs = collectSqlBindValueExpressions(tool, 'oracle', 'options');
+        expect(exprs).toHaveLength(2);
+        expect(exprs[0]).toContain('options["searchText"]');
+        expect(exprs[1]).toContain('normalizeOracleNumericParamValue');
+    });
 });

@@ -1,5 +1,5 @@
 import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
-import { isMysqlDialect } from 'db-2-ai-dsl-language';
+import { isMysqlDialect, isOracleNumericReturningColumn, prepareOracleDmlReturning } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
 import { renderInvokeCredentialAndParameterCheck } from './render-check-stubs.js';
 
@@ -22,6 +22,15 @@ function renderOptionValueExpression(
         }
         if (paramType === 'boolean') {
             return `normalizeSqlserverBooleanParamValue(${optionAccess})`;
+        }
+        return `${optionAccess} !== undefined && ${optionAccess} !== null ? String(${optionAccess}) : null`;
+    }
+    if (dialect === 'oracle') {
+        if (paramType === 'integer' || paramType === 'number') {
+            return `normalizeOracleNumericParamValue(${optionAccess})`;
+        }
+        if (paramType === 'boolean') {
+            return `normalizeOracleBooleanParamValue(${optionAccess})`;
         }
         return `${optionAccess} !== undefined && ${optionAccess} !== null ? String(${optionAccess}) : null`;
     }
@@ -83,11 +92,69 @@ function renderSqlserverInputLines(tool: ResolvedSqlToolCodegen, optionsVar: str
         .join('\n');
 }
 
+function renderOracleBindObjectLines(tool: ResolvedSqlToolCodegen, optionsVar: string): string {
+    return tool.params
+        .map((param) => {
+            const valueExpr = renderOptionValueExpression(
+                param.propertyName,
+                'oracle',
+                param.jsonSchemaType,
+                optionsVar
+            );
+            return `                ${JSON.stringify(param.name)}: ${valueExpr},`;
+        })
+        .join('\n');
+}
+
+function renderOracleOutBindLines(tool: ResolvedSqlToolCodegen): string {
+    const prepared = prepareOracleDmlReturning(tool.sqlText);
+    if (!prepared) {
+        return '';
+    }
+    return prepared.outBindNames
+        .map((name, index) => {
+            const column = prepared.returningColumns[index];
+            if (isOracleNumericReturningColumn(column)) {
+                return `                ${JSON.stringify(name)}: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },`;
+            }
+            return `                ${JSON.stringify(name)}: { type: oracledb.STRING, dir: oracledb.BIND_OUT, maxSize: 4000 },`;
+        })
+        .join('\n');
+}
+
 function renderSqlInvokeCase(
     tool: ResolvedSqlToolCodegen,
     dialect: ResolvedDatabaseDialect,
     optionsVar: string
 ): string {
+    if (dialect === 'oracle') {
+        const prepared = prepareOracleDmlReturning(tool.sqlText);
+        const bindLines = renderOracleBindObjectLines(tool, optionsVar);
+        const outBindLines = renderOracleOutBindLines(tool);
+        const resultRowsExpr = prepared
+            ? `rowsFromOracleDmlReturning(result.outBinds, ${JSON.stringify(prepared.returningColumns)}, ${JSON.stringify(prepared.outBindNames)})`
+            : 'Array.isArray(result.rows) ? result.rows : []';
+        return `        case ${JSON.stringify(tool.toolName)}: {
+            const sqlText = ${JSON.stringify(prepared?.sqlText ?? tool.sqlText)};
+            const binds = {
+${bindLines}${outBindLines.length > 0 ? `\n${outBindLines}` : ''}
+            };
+            loggingAdapter.debug('executeSql', {
+                toolName: ${JSON.stringify(tool.toolName)},
+                sql: compactSqlForLog(sqlText),
+                values: binds
+            });
+            const result = await connection.execute(sqlText, binds, {
+                outFormat: oracledb.OUT_FORMAT_OBJECT,
+                autoCommit: true
+            });
+            const resultRows = ${resultRowsExpr};
+            return {
+                rows: resultRows,
+                rowCount: resultRows.length
+            };
+        }`;
+    }
     if (dialect === 'sqlserver') {
         const inputLines = renderSqlserverInputLines(tool, optionsVar);
         return `        case ${JSON.stringify(tool.toolName)}: {
@@ -149,6 +216,9 @@ type InvokeParamHelperFlags = {
     mysqlBoolean: boolean;
     sqlserverNumeric: boolean;
     sqlserverBoolean: boolean;
+    oracleNumeric: boolean;
+    oracleBoolean: boolean;
+    oracleDmlReturning: boolean;
 };
 
 function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokeParamHelperFlags {
@@ -157,18 +227,26 @@ function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokePa
         postgresBoolean: false,
         mysqlBoolean: false,
         sqlserverNumeric: false,
-        sqlserverBoolean: false
+        sqlserverBoolean: false,
+        oracleNumeric: false,
+        oracleBoolean: false,
+        oracleDmlReturning: false
     };
     for (const tool of tools) {
+        if (prepareOracleDmlReturning(tool.sqlText)) {
+            flags.oracleDmlReturning = true;
+        }
         for (const param of tool.params) {
             if (param.jsonSchemaType === 'integer' || param.jsonSchemaType === 'number') {
                 flags.postgresNumeric = true;
                 flags.sqlserverNumeric = true;
+                flags.oracleNumeric = true;
             }
             if (param.jsonSchemaType === 'boolean') {
                 flags.postgresBoolean = true;
                 flags.mysqlBoolean = true;
                 flags.sqlserverBoolean = true;
+                flags.oracleBoolean = true;
             }
         }
     }
@@ -625,6 +703,113 @@ function normalizeSqlserverBooleanParamValue(value) {
 }
 `.trim();
 
+const ORACLE_NUMERIC_HELPER_TS = `
+function normalizeOracleNumericParamValue(value: unknown): number | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+`.trim();
+
+const ORACLE_BOOLEAN_HELPER_TS = `
+function normalizeOracleBooleanParamValue(value: unknown): boolean | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+const ORACLE_NUMERIC_HELPER_JS = `
+function normalizeOracleNumericParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+`.trim();
+
+const ORACLE_BOOLEAN_HELPER_JS = `
+function normalizeOracleBooleanParamValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    const lower = String(value).trim().toLowerCase();
+    if (lower === 'true') {
+        return true;
+    }
+    if (lower === 'false') {
+        return false;
+    }
+    return null;
+}
+`.trim();
+
+const ORACLE_DML_RETURNING_HELPER_TS = `
+function rowsFromOracleDmlReturning(
+    outBinds: Record<string, unknown[]> | undefined,
+    columns: string[],
+    bindNames: string[]
+): Record<string, unknown>[] {
+    if (!outBinds || columns.length === 0) {
+        return [];
+    }
+    const row: Record<string, unknown> = {};
+    for (let index = 0; index < columns.length; index++) {
+        const values = outBinds[bindNames[index]];
+        row[columns[index].toUpperCase()] =
+            Array.isArray(values) && values.length > 0 ? values[0] : null;
+    }
+    return [row];
+}
+`.trim();
+
+const ORACLE_DML_RETURNING_HELPER_JS = `
+function rowsFromOracleDmlReturning(outBinds, columns, bindNames) {
+    if (!outBinds || columns.length === 0) {
+        return [];
+    }
+    const row = {};
+    for (let index = 0; index < columns.length; index++) {
+        const values = outBinds[bindNames[index]];
+        row[columns[index].toUpperCase()] =
+            Array.isArray(values) && values.length > 0 ? values[0] : null;
+    }
+    return [row];
+}
+`.trim();
+
+function renderInvokeToolPreambleOracle(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
+    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+    return `
+    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
+    if (!toolMeta) {
+        throw new Error('Unknown tool: ' + toolName);
+    }
+    loggingAdapter.debug('invokeTool', { toolName });
+${renderHostBinding(typescript)}${accessChecks}
+    const connectionString = resolveConnectionString(host);
+    const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));
+    try {
+        switch (toolName) {`;
+}
+
 function renderInvokeToolPreambleSqlserver(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
     const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
     return `
@@ -638,6 +823,67 @@ ${renderHostBinding(typescript)}${accessChecks}
     const pool = await sql.connect(parseSqlserverConnectInput(connectionString));
     try {
         switch (toolName) {`;
+}
+
+function renderOracleInvokeBlockTs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreambleOracle(hasAuth, hasChecked, true);
+    const helpers = [
+        COMPACT_SQL_FOR_LOG_TS,
+        flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_TS : '',
+        flags.oracleBoolean ? ORACLE_BOOLEAN_HELPER_TS : '',
+        flags.oracleDmlReturning ? ORACLE_DML_RETURNING_HELPER_TS : ''
+    ]
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = `\n\n${helpers}`;
+    return `
+import oracledb from 'oracledb';
+
+function resolveConnectionString(hostContext: DbHostContext): string {
+    const cs = hostContext.connectionString?.trim();
+    if (cs) {
+        return cs;
+    }
+    throw new Error(
+        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
+    );
+}
+
+function parseOracleConnectInput(connectionString: string): { user: string; password: string; connectString: string } {
+    const trimmed = connectionString.trim();
+    const asHttp = trimmed.replace(/^oracle:\\/\\//i, 'http://');
+    const url = new URL(asHttp);
+    const serviceName = url.pathname.replace(/^\\//, '');
+    if (serviceName.length === 0) {
+        throw new Error('Oracle connection URL must include a service name path (e.g. oracle://user:pass@host:1521/FREEPDB1).');
+    }
+    const port = url.port.length > 0 ? url.port : '1521';
+    return {
+        user: decodeURIComponent(url.username),
+        password: decodeURIComponent(url.password),
+        connectString: \`\${url.hostname}:\${port}/\${serviceName}\`
+    };
+}${helperSection}
+
+export async function invokeTool(
+    toolName: string,
+    options: InvokeOptions = {},
+    hostContext?: DbHostContext
+): Promise<unknown> {${preamble}
+${toolCases}
+            default:
+                throw new Error('Unknown tool: ' + toolName);
+        }
+    } finally {
+        await connection.close();
+    }
+}
+`.trim();
 }
 
 function renderSqlserverInvokeBlockTs(
@@ -702,6 +948,65 @@ ${toolCases}
         }
     } finally {
         await pool.close();
+    }
+}
+`.trim();
+}
+
+function renderOracleInvokeBlockJs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasAuth: boolean,
+    hasChecked: boolean
+): string {
+    const preamble = renderInvokeToolPreambleOracle(hasAuth, hasChecked, false);
+    const helpers = [
+        COMPACT_SQL_FOR_LOG_JS,
+        flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_JS : '',
+        flags.oracleBoolean ? ORACLE_BOOLEAN_HELPER_JS : '',
+        flags.oracleDmlReturning ? ORACLE_DML_RETURNING_HELPER_JS : ''
+    ]
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = `\n\n${helpers}`;
+    return `
+import oracledb from 'oracledb';
+
+function resolveConnectionString(hostContext) {
+    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
+        const cs = String(hostContext.connectionString).trim();
+        if (cs.length > 0) {
+            return cs;
+        }
+    }
+    throw new Error(
+        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
+    );
+}
+
+function parseOracleConnectInput(connectionString) {
+    const trimmed = String(connectionString).trim();
+    const asHttp = trimmed.replace(/^oracle:\\/\\//i, 'http://');
+    const url = new URL(asHttp);
+    const serviceName = url.pathname.replace(/^\\//, '');
+    if (serviceName.length === 0) {
+        throw new Error('Oracle connection URL must include a service name path (e.g. oracle://user:pass@host:1521/FREEPDB1).');
+    }
+    const port = url.port.length > 0 ? url.port : '1521';
+    return {
+        user: decodeURIComponent(url.username),
+        password: decodeURIComponent(url.password),
+        connectString: url.hostname + ':' + port + '/' + serviceName
+    };
+}${helperSection}
+
+export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
+${toolCases}
+            default:
+                throw new Error('Unknown tool: ' + toolName);
+        }
+    } finally {
+        await connection.close();
     }
 }
 `.trim();
@@ -787,6 +1092,9 @@ export function renderInvokeBlockTs(
     if (dialect === 'sqlserver') {
         return renderSqlserverInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
     }
+    if (dialect === 'oracle') {
+        return renderOracleInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+    }
     return renderPostgresInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
 }
 
@@ -804,6 +1112,9 @@ export function renderInvokeBlockJs(
     }
     if (dialect === 'sqlserver') {
         return renderSqlserverInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+    }
+    if (dialect === 'oracle') {
+        return renderOracleInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
     }
     return renderPostgresInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
 }
