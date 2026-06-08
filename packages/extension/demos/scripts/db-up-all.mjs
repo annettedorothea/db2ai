@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Start every demo database container and apply SQL Server / Oracle schemas.
+ * Start demo database containers except Oracle (Pagila, Sakila, orders-postgres, animals-sqlserver).
+ *
+ * Oracle (plants-oracle) needs a separate registry login — use npm run start:oracle.
  *
  * Usage: node ./scripts/db-up-all.mjs  (npm run db:up:all)
  */
@@ -38,14 +40,9 @@ console.log('[db:up:all] clearing previous demo DB containers…');
 runNpm(['run', 'db:kill:all']);
 
 console.log('[db:up:all] starting Pagila, Sakila, orders-postgres, animals-sqlserver…');
-runDocker(['--profile', 'mssql', '--profile', 'oracle', 'up', '-d', '--wait', 'pagila', 'sakila', 'orders-postgres', 'animals-sqlserver']);
+runDocker(['--profile', 'mssql', 'up', '-d', '--wait', 'pagila', 'sakila', 'orders-postgres', 'animals-sqlserver']);
 
-console.log('[db:up:all] starting plants-oracle (slow — may take several minutes)…');
-runDocker(['--profile', 'oracle', 'up', '-d', 'plants-oracle']);
-runNpm(['run', 'db:plants-oracle:wait']);
-
-console.log('[db:up:all] applying demo schemas…');
+console.log('[db:up:all] applying animals-sqlserver schema…');
 runNodeScript('./scripts/apply-animals-sqlserver-schema.mjs');
-runNodeScript('./scripts/apply-plants-oracle-schema.mjs');
 
-console.log('[db:up:all] all demo databases are up.');
+console.log('[db:up:all] demo databases are up (Oracle excluded — npm run start:oracle when needed).');

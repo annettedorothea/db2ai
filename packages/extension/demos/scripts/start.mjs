@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Demo workspace setup: kill stale MCP/IDP, env from example (once), install, Docker DBs, generate, compile,
- * start MCP hosts.
+ * Demo workspace setup: kill stale MCP/IDP, env from example (once), install, Docker DBs (except Oracle),
+ * generate (all DSLs including plants-oracle), compile, start MCP hosts.
+ *
+ * Oracle DB: npm run start:oracle (separate — needs docker login container-registry.oracle.com once).
  *
  * Default (npm run start): background — terminal free after setup.
  * Foreground (npm run start:foreground): logs in this terminal until Ctrl+C.
@@ -192,12 +194,14 @@ async function main() {
     if (foreground) {
         console.log('[start] Setup done — services running. Cursor Settings → Tools & MCPs: enable servers, then reload MCP.');
         console.log('[start] Ctrl+C stops MCP/IDP processes started here (npm run demo:kill-all also stops Docker).');
+        console.log('[start] Oracle plants demo: npm run start:oracle (after docker login container-registry.oracle.com).');
         await waitForForegroundServiceShutdown({ label: 'start', serviceChildren, demosRoot });
         return;
     }
     console.log('[start] Done. Demo services run in background (npm run demo:kill-all stops MCP, IDP, and Docker).');
     console.log('[start] Cursor Settings → Tools & MCPs: enable servers, then reload MCP.');
     console.log('[start] Live logs: npm run start:foreground');
+    console.log('[start] Oracle plants demo: npm run start:oracle (after docker login container-registry.oracle.com).');
 }
 
 main().catch((error) => {

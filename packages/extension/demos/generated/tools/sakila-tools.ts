@@ -254,7 +254,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-tools';
-export const mcpServerVersion = '0.2.0';
+export const mcpServerVersion = '0.2.1';
 
 import * as z from 'zod/v4';
 

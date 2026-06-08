@@ -22,7 +22,7 @@ Set `database env "YOUR_VAR"` (or `database mysql env "YOUR_VAR"`) in the DSL an
 
 1. Install this extension (VSIX).
 2. Command Palette → **db2ai: Create demo workspace (MCP examples)** → choose an empty folder.
-3. In that folder run **`npm run start`** (requires Docker: creates `.env` from `.env.example` if missing, install, start DBs, generate, compile).
+3. In that folder run **`npm run start`** (requires Docker: creates `.env` from `.env.example` if missing, install, start DBs except Oracle, generate all DSLs, compile). For the **`plants`** Oracle demo: **`npm run start:oracle`** after one-time `docker login container-registry.oracle.com`.
 4. Edit **`.env`** for database URLs and optional static token (`DB2AI_AUTH_TOKEN` for `sakila`).
 5. Open the demo folder as the workspace. In Cursor Settings → **Tools & MCP**, enable servers from `.cursor/mcp.json` (`sakila`, `pagila`, `orders`).
 

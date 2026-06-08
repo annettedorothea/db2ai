@@ -15,7 +15,7 @@ export const STDIO_DEMOS = {
         tools: 'plants-oracle-tools.js',
         connectionEnv: 'PLANTS_ORACLE_DATABASE_URL',
         defaultConnection: 'oracle://plants:PlantsDemo123@localhost:55221/FREEPDB1',
-        prerequisite: 'Docker plants-oracle (npm run db:plants-oracle:up; docker login container-registry.oracle.com once)'
+        prerequisite: 'Docker plants-oracle (npm run start:oracle; docker login container-registry.oracle.com once)'
     }
 };
 

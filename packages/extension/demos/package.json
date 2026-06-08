@@ -5,6 +5,7 @@
     "scripts": {
         "start": "node ./scripts/start.mjs",
         "start:foreground": "START_FOREGROUND=1 node ./scripts/start.mjs",
+        "start:oracle": "node ./scripts/start-oracle.mjs",
         "demo:kill-all": "LOG_SERVICE_PREFIX=kill-all node ./scripts/kill-all-demos.mjs",
         "db:pagila:up": "docker compose up -d --wait pagila",
         "db:sakila:up": "docker compose up -d --wait sakila",
