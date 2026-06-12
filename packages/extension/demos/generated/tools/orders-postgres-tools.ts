@@ -51,6 +51,27 @@ export type CheckedHostContext = {
 export const generatedTools: GeneratedTool[] = [
     {
         kind: 'sql',
+        toolName: 'listCustomerOrders',
+        title: 'Customer order rows',
+        description:
+            'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId (:customerId): Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools. (example: alice)\n\nExample call: customerId=alice',
+        access: 'checked',
+        sqlText:
+            '\n        SELECT\n            order_id,\n            customer_id,\n            product_id,\n            quantity\n        FROM\n            orders\n        WHERE\n            customer_id = $1\n        ORDER BY\n            order_id\n    ',
+        params: [
+            {
+                placeholder: ':customerId',
+                index: 1,
+                name: 'customerId',
+                propertyName: 'customerId',
+                description: 'Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools.',
+                example: 'alice',
+                jsonSchemaType: 'string'
+            }
+        ]
+    },
+    {
+        kind: 'sql',
         toolName: 'listProducts',
         title: 'Product catalog rows',
         description:
@@ -87,28 +108,6 @@ export const generatedTools: GeneratedTool[] = [
                 description: 'max rows',
                 example: '50',
                 jsonSchemaType: 'integer'
-            }
-        ]
-    },
-    {
-        kind: 'sql',
-        toolName: 'listCustomerOrders',
-        title: 'Customer order rows',
-        description:
-            'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId (:customerId): \n                Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (example: alice)\n\nExample call: customerId=alice',
-        access: 'checked',
-        sqlText:
-            'SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id',
-        params: [
-            {
-                placeholder: ':customerId',
-                index: 1,
-                name: 'customerId',
-                propertyName: 'customerId',
-                description:
-                    '\n                Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n            ',
-                example: 'alice',
-                jsonSchemaType: 'string'
             }
         ]
     },
@@ -249,18 +248,18 @@ const parameterCheckers: Record<
 import * as z from 'zod/v4';
 
 export const inputZodByTool = {
-    listProducts: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
-    listProductsWithReviews: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
     listCustomerOrders: z
         .object({
             customerId: z
                 .string()
                 .describe(
-                    'Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (SQL :customerId)'
+                    'Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools. (SQL :customerId)'
                 )
                 .optional()
         })
         .strict(),
+    listProducts: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
+    listProductsWithReviews: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
     createOrder: z
         .object({
             customerId: z
@@ -352,6 +351,25 @@ export async function invokeTool(
     await client.connect();
     try {
         switch (toolName) {
+            case 'listCustomerOrders': {
+                const sqlText =
+                    '\n        SELECT\n            order_id,\n            customer_id,\n            product_id,\n            quantity\n        FROM\n            orders\n        WHERE\n            customer_id = $1\n        ORDER BY\n            order_id\n    ';
+                const sqlValues = [
+                    optionsResolved['customerId'] !== undefined && optionsResolved['customerId'] !== null
+                        ? String(optionsResolved['customerId'])
+                        : null
+                ];
+                loggingAdapter.debug('executeSql', {
+                    toolName: 'listCustomerOrders',
+                    sql: compactSqlForLog(sqlText),
+                    values: sqlValues
+                });
+                const result = await client.query({ text: sqlText, values: sqlValues });
+                return {
+                    rows: result.rows,
+                    rowCount: result.rowCount ?? result.rows.length
+                };
+            }
             case 'listProducts': {
                 const sqlText = 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1';
                 const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
@@ -372,25 +390,6 @@ export async function invokeTool(
                 const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listProductsWithReviews',
-                    sql: compactSqlForLog(sqlText),
-                    values: sqlValues
-                });
-                const result = await client.query({ text: sqlText, values: sqlValues });
-                return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
-                };
-            }
-            case 'listCustomerOrders': {
-                const sqlText =
-                    'SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = $1 ORDER BY order_id';
-                const sqlValues = [
-                    optionsResolved['customerId'] !== undefined && optionsResolved['customerId'] !== null
-                        ? String(optionsResolved['customerId'])
-                        : null
-                ];
-                loggingAdapter.debug('executeSql', {
-                    toolName: 'listCustomerOrders',
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });

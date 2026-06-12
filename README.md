@@ -73,15 +73,26 @@ SQL {
         When customerId is omitted, the value from the JWT is used.
         Checked access: customerId must match the token claim when provided.
     '''
-    query: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = :customerId ORDER BY order_id"
+    query: '''
+        SELECT
+            order_id,
+            customer_id,
+            product_id,
+            quantity
+        FROM
+            orders
+        WHERE
+            customer_id = :customerId
+        ORDER BY
+            order_id
+    '''
     summary: "Customer order rows"
     params: {
-        customerId: { description: '''
-                Customer id (e.g. alice, bob).
-                Defaults from JWT when omitted on checked tools.
-            '''
+        customerId: {
+            description: "Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools."
             example: "alice"
-            type: string }
+            type: string
+        }
     }
 }
 ```

@@ -3,6 +3,38 @@ database postgres env "ORDERS_POSTGRES_DATABASE_URL"
 auth
 
 SQL {
+    toolName: listCustomerOrders
+    access: checked {
+        optionalParams: [customerId]
+    }
+    intent: '''
+        List orders for a customer.
+        When customerId is omitted, the value from the JWT is used.
+        Checked access: customerId must match the token claim when provided.
+    '''
+    query: '''
+        SELECT
+            order_id,
+            customer_id,
+            product_id,
+            quantity
+        FROM
+            orders
+        WHERE
+            customer_id = :customerId
+        ORDER BY
+            order_id
+    '''
+    summary: "Customer order rows"
+    params: {
+        customerId: { 
+            description: "Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools."
+            example: "alice"
+            type: string }
+    }
+}
+
+SQL {
     toolName: listProducts
     access: public
     intent: "list products in the orders-postgres catalog"
@@ -45,28 +77,6 @@ SQL {
     '''
     params: {
         limit: { description: "max rows" example: "50" type: integer }
-    }
-}
-
-SQL {
-    toolName: listCustomerOrders
-    access: checked {
-        optionalParams: [customerId]
-    }
-    intent: '''
-        List orders for a customer.
-        When customerId is omitted, the value from the JWT is used.
-        Checked access: customerId must match the token claim when provided.
-    '''
-    query: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = :customerId ORDER BY order_id"
-    summary: "Customer order rows"
-    params: {
-        customerId: { description: '''
-                Customer id (e.g. alice, bob).
-                Defaults from JWT when omitted on checked tools.
-            '''
-            example: "alice"
-            type: string }
     }
 }
 
@@ -152,3 +162,4 @@ SQL {
             type: integer }
     }
 }
+
