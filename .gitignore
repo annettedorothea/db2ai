@@ -3,6 +3,7 @@
 !.vscode/launch.json
 !.vscode/settings.json
 !.vscode/tasks.json
+.cursor/plans/
 node_modules/
 dist/
 out/

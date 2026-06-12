@@ -1,26 +1,29 @@
 # db2ai
 
-> **Pre-release** — early access; APIs, DSL, and generated output may change before v1.0.
+> **Pre-release** --- early access; APIs, DSL, and generated output may
+> change before v1.0.
 
 ## Turn your database into AI-ready tools.
 
-Generate MCP-compatible tools from SQL queries without writing custom MCP servers.
+Generate MCP-compatible tools from SQL queries without writing custom MCP
+servers.
 
-db2ai lets you define SQL-based tools, enrich them with AI-friendly metadata, and generate MCP tools that can be used by AI agents.
+db2ai lets you define SQL-based tools, enrich them with AI-friendly metadata,
+and generate MCP tools that can be used by AI agents.
 
-Perfect for exposing existing business data to Claude, ChatGPT, Cursor, and other MCP-compatible runtimes.
+Perfect for exposing existing business data to Claude, ChatGPT, Cursor, and
+other MCP-compatible runtimes.
 
 ---
 
 ## Get Started
 
-The fastest way to try db2ai is with the VSIX extension and the bundled demo workspace.
+The fastest way to try db2ai is with the VSIX extension and the bundled demo
+workspace.
 
 ### 1. Install the VSIX
 
-Download the latest release:
-
-https://github.com/annettedorothea/db2ai/releases
+Download the [latest release](https://github.com/annettedorothea/db2ai/releases).
 
 ### 2. Create a Demo Workspace
 
@@ -40,22 +43,50 @@ No repository checkout required.
 
 ---
 
+## Demo
+
+![db2ai demo](images/db2ai.gif)
+
+The video shows:
+
+- editing a `.db2ai` file and defining SQL tools with `access: public`,
+  `protected`, and `checked`
+- generating MCP tool modules and auth stubs on save
+- implementing checked-access authorization in TypeScript (JWT claims, role
+  checks)
+- enabling the generated MCP server in Cursor and signing in to obtain a JWT
+- calling the same tool as different users and observing allowed vs denied
+  access
+
+---
+
 ## Example
 
 ```db2ai
-database postgres env "PAGILA_DATABASE_URL"
-
 SQL {
-    toolName: listFilms
-    access: public
-    intent: "list films from Pagila with pagination"
-    query: "SELECT * FROM film LIMIT LEAST(:limit, 500) OFFSET :offset"
+    toolName: listCustomerOrders
+    access: checked {
+        optionalParams: [customerId]
+    }
+    intent: '''
+        List orders for a customer.
+        When customerId is omitted, the value from the JWT is used.
+        Checked access: customerId must match the token claim when provided.
+    '''
+    query: "SELECT order_id, customer_id, product_id, quantity FROM orders WHERE customer_id = :customerId ORDER BY order_id"
+    summary: "Customer order rows"
     params: {
-        limit: { description: "max rows per page" example: "100" type: integer }
-        offset: { description: "rows to skip" example: "0" type: integer }
+        customerId: { description: '''
+                Customer id (e.g. alice, bob).
+                Defaults from JWT when omitted on checked tools.
+            '''
+            example: "alice"
+            type: string }
     }
 }
 ```
+
+### Flow
 
 ```text
 Database
@@ -78,9 +109,11 @@ Building MCP tools for databases usually requires:
 - maintaining MCP server code
 - keeping database access and tool descriptions in sync
 
-db2ai lets you focus on describing business capabilities instead of writing boilerplate.
+db2ai lets you focus on describing business capabilities instead of writing
+boilerplate.
 
-Queries are validated against a live database using dry-run probes (`EXPLAIN` / compile-only checks; no data changes) before tools are generated.
+Queries are validated against a live database using dry-run probes (`EXPLAIN` /
+compile-only checks; no data changes) before tools are generated.
 
 ---
 
@@ -96,21 +129,24 @@ Queries are validated against a live database using dry-run probes (`EXPLAIN` / 
 
 ## Documentation
 
-The architecture behind db2ai is documented in core2ai:
+The architecture behind db2ai is documented in
+[core2ai](https://github.com/annettedorothea/core2ai):
 
-- Tool Factory
-- Tool Authoring
-- AI Runtime
-- Personas
+- [Tool Factory](https://github.com/annettedorothea/core2ai/blob/main/docs/01-layer-1-tool-factory.md)
+- [Tool Authoring](https://github.com/annettedorothea/core2ai/blob/main/docs/02-layer-2-tool-authoring.md)
+- [AI Runtime](https://github.com/annettedorothea/core2ai/blob/main/docs/03-layer-3-ai-runtime.md)
+- [Personas](https://github.com/annettedorothea/core2ai/blob/main/docs/04-personas.md)
 
-https://github.com/annettedorothea/core2ai/tree/main/docs
+Overview: [core2ai docs](https://github.com/annettedorothea/core2ai/tree/main/docs)
 
 ---
 
 ## Related Projects
 
-- **core2ai** – shared runtime and platform architecture
-- **api2ai** – generate MCP tools from OpenAPI specifications
+- [**core2ai**](https://github.com/annettedorothea/core2ai) --- shared runtime
+  and code generation infrastructure
+- [**api2ai**](https://github.com/annettedorothea/api2ai) --- generate MCP tools
+  from OpenAPI specifications
 
 ---
 
