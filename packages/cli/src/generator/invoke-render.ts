@@ -329,6 +329,11 @@ function compactSqlForLog(sql) {
 }
 `.trim();
 
+function renderInvokeOptionsParam(hasSqlTools: boolean, hasChecked: boolean, typescript: boolean): string {
+    const name = hasSqlTools || hasChecked ? 'options' : '_options';
+    return typescript ? `${name}: InvokeOptions = {}` : `${name} = {}`;
+}
+
 const CONNECTION_URL_FOR_MYSQL_DRIVER_TS = `
 function connectionUrlForMysqlDriver(connectionUrl: string): string {
     const trimmed = connectionUrl.trim();
@@ -449,11 +454,13 @@ function renderPostgresInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, true);
     const helpers = [
-        COMPACT_SQL_FOR_LOG_TS,
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_TS : '',
         flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_TS : ''
     ]
@@ -475,7 +482,7 @@ function resolveConnectionString(hostContext: DbHostContext): string {
 
 export async function invokeTool(
     toolName: string,
-    options: InvokeOptions = {},
+    ${optionsParam},
     hostContext?: DbHostContext
 ): Promise<unknown> {${preamble}
 ${toolCases}
@@ -493,11 +500,13 @@ function renderPostgresInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, false);
     const helpers = [
-        COMPACT_SQL_FOR_LOG_JS,
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_JS : '',
         flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_JS : ''
     ]
@@ -519,7 +528,7 @@ function resolveConnectionString(hostContext) {
     );
 }${helperSection}
 
-export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
+export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
 ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
@@ -535,10 +544,12 @@ function renderMysqlInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, true);
-    const mysqlHelpers = [COMPACT_SQL_FOR_LOG_TS, flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_TS : '']
+    const mysqlHelpers = [hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '', flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_TS : '']
         .filter((block) => block.length > 0)
         .join('\n\n');
     const helperSection = `\n\n${mysqlHelpers}`;
@@ -575,7 +586,7 @@ ${CONNECTION_URL_FOR_MYSQL_DRIVER_TS}${helperSection}
 
 export async function invokeTool(
     toolName: string,
-    options: InvokeOptions = {},
+    ${optionsParam},
     hostContext?: DbHostContext
 ): Promise<unknown> {${preamble}
 ${toolCases}
@@ -593,10 +604,12 @@ function renderMysqlInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, false);
-    const mysqlHelpers = [COMPACT_SQL_FOR_LOG_JS, flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_JS : '']
+    const mysqlHelpers = [hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '', flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_JS : '']
         .filter((block) => block.length > 0)
         .join('\n\n');
     const helperSection = `\n\n${mysqlHelpers}`;
@@ -633,7 +646,7 @@ function normalizeMysqlParamValue(value) {
 
 ${CONNECTION_URL_FOR_MYSQL_DRIVER_JS}${helperSection}
 
-export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
+export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
 ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
@@ -829,11 +842,13 @@ function renderOracleInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreambleOracle(hasAuth, hasChecked, true);
     const helpers = [
-        COMPACT_SQL_FOR_LOG_TS,
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_TS : '',
         flags.oracleBoolean ? ORACLE_BOOLEAN_HELPER_TS : '',
         flags.oracleDmlReturning ? ORACLE_DML_RETURNING_HELPER_TS : ''
@@ -872,7 +887,7 @@ function parseOracleConnectInput(connectionString: string): { user: string; pass
 
 export async function invokeTool(
     toolName: string,
-    options: InvokeOptions = {},
+    ${optionsParam},
     hostContext?: DbHostContext
 ): Promise<unknown> {${preamble}
 ${toolCases}
@@ -890,11 +905,13 @@ function renderSqlserverInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreambleSqlserver(hasAuth, hasChecked, true);
     const helpers = [
-        COMPACT_SQL_FOR_LOG_TS,
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_TS : '',
         flags.sqlserverBoolean ? SQLSERVER_BOOLEAN_HELPER_TS : ''
     ]
@@ -939,7 +956,7 @@ function parseSqlserverConnectInput(connectionString: string): string | Record<s
 
 export async function invokeTool(
     toolName: string,
-    options: InvokeOptions = {},
+    ${optionsParam},
     hostContext?: DbHostContext
 ): Promise<unknown> {${preamble}
 ${toolCases}
@@ -957,11 +974,13 @@ function renderOracleInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreambleOracle(hasAuth, hasChecked, false);
     const helpers = [
-        COMPACT_SQL_FOR_LOG_JS,
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
         flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_JS : '',
         flags.oracleBoolean ? ORACLE_BOOLEAN_HELPER_JS : '',
         flags.oracleDmlReturning ? ORACLE_DML_RETURNING_HELPER_JS : ''
@@ -1000,7 +1019,7 @@ function parseOracleConnectInput(connectionString) {
     };
 }${helperSection}
 
-export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
+export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
 ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
@@ -1016,11 +1035,13 @@ function renderSqlserverInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean
+    hasChecked: boolean,
+    hasSqlTools: boolean,
+    optionsParam: string
 ): string {
     const preamble = renderInvokeToolPreambleSqlserver(hasAuth, hasChecked, false);
     const helpers = [
-        COMPACT_SQL_FOR_LOG_JS,
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
         flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_JS : '',
         flags.sqlserverBoolean ? SQLSERVER_BOOLEAN_HELPER_JS : ''
     ]
@@ -1065,7 +1086,7 @@ function parseSqlserverConnectInput(connectionString) {
     };
 }${helperSection}
 
-export async function invokeTool(toolName, options = {}, hostContext) {${preamble}
+export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
 ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
@@ -1086,16 +1107,18 @@ export function renderInvokeBlockTs(
     const optionsVar = hasChecked ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
+    const hasSqlTools = tools.length > 0;
+    const optionsParam = renderInvokeOptionsParam(hasSqlTools, hasChecked, true);
     if (isMysqlDialect(dialect)) {
-        return renderMysqlInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+        return renderMysqlInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
     }
     if (dialect === 'sqlserver') {
-        return renderSqlserverInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+        return renderSqlserverInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
     }
     if (dialect === 'oracle') {
-        return renderOracleInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+        return renderOracleInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
     }
-    return renderPostgresInvokeBlockTs(toolCases, flags, hasAuth, hasChecked);
+    return renderPostgresInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
 }
 
 export function renderInvokeBlockJs(
@@ -1107,14 +1130,16 @@ export function renderInvokeBlockJs(
     const optionsVar = hasChecked ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
+    const hasSqlTools = tools.length > 0;
+    const optionsParam = renderInvokeOptionsParam(hasSqlTools, hasChecked, false);
     if (isMysqlDialect(dialect)) {
-        return renderMysqlInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+        return renderMysqlInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
     }
     if (dialect === 'sqlserver') {
-        return renderSqlserverInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+        return renderSqlserverInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
     }
     if (dialect === 'oracle') {
-        return renderOracleInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+        return renderOracleInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
     }
-    return renderPostgresInvokeBlockJs(toolCases, flags, hasAuth, hasChecked);
+    return renderPostgresInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
 }

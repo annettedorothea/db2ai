@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { collectSqlBindValueExpressions } from '../src/generator/invoke-render.js';
+import { collectSqlBindValueExpressions, renderInvokeBlockTs } from '../src/generator/invoke-render.js';
 import type { ResolvedSqlToolCodegen } from '../src/db-query-codegen.js';
+
+describe('renderInvokeBlockTs', () => {
+    test('omits compactSqlForLog when there are no SQL tools', () => {
+        const block = renderInvokeBlockTs([], 'postgres', false, false);
+        expect(block).not.toContain('compactSqlForLog');
+        expect(block).toContain('_options: InvokeOptions = {}');
+    });
+});
 
 describe('collectSqlBindValueExpressions', () => {
     const tool: ResolvedSqlToolCodegen = {
