@@ -86,6 +86,11 @@ describe('orders-postgres oauth-http-mcp-server (oidc JWKS validation)', () => {
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
         await copyLoggingAdapterStub(runRoot);
+        await fs.mkdir(path.join(runRoot, 'src/auth/orders-postgres-tools'), { recursive: true });
+        await fs.copyFile(
+            path.join(demosRoot, 'src/auth/orders-postgres-tools/verifyCredential.ts'),
+            path.join(runRoot, 'src/auth/orders-postgres-tools/verifyCredential.ts')
+        );
         compileGeneratedForSmoke(runRoot);
 
         const oauthHostPath = path.join(runRoot, 'generated/cli/oauth-http-mcp-server.js');
@@ -101,10 +106,6 @@ describe('orders-postgres oauth-http-mcp-server (oidc JWKS validation)', () => {
                 idpBaseUrl,
                 '--oauth-scope',
                 'orders-postgres',
-                '--oauth-token-validation',
-                'oidc',
-                '--oauth-issuer',
-                idpBaseUrl,
                 '--port',
                 String(mcpPort),
                 '--path',
@@ -114,7 +115,8 @@ describe('orders-postgres oauth-http-mcp-server (oidc JWKS validation)', () => {
                 cwd: runRoot,
                 env: {
                     ...process.env,
-                    ORDERS_POSTGRES_DATABASE_URL: connectionString
+                    ORDERS_POSTGRES_DATABASE_URL: connectionString,
+                    ORDERS_POSTGRES_OAUTH_IDP_URL: idpBaseUrl
                 },
                 stdio: ['ignore', 'pipe', 'pipe']
             }

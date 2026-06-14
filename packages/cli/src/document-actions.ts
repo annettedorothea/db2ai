@@ -14,7 +14,7 @@ import chalk from 'chalk';
 import type { LangiumDocument } from 'langium';
 import { NodeFileSystem } from 'langium/node';
 import * as path from 'node:path';
-import { DiagnosticSeverity } from 'vscode-languageserver-types';
+import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
 import { URI } from 'vscode-uri';
 import { loadLocalEnvFiles } from './env.js';
 
@@ -45,11 +45,26 @@ function collectSqlDbDiagnostics(document: CliLangiumDocument, file: string) {
     return validateSqlBlocksWithExamples(model, uri);
 }
 
-function db2aiGenerateValidationOptions(file: string) {
-    return {
+function printSqlDbWarnings(document: CliLangiumDocument, warnings: Diagnostic[]): void {
+    for (const diagnostic of warnings) {
+        const hasRange =
+            diagnostic.range.start.line > 0 ||
+            diagnostic.range.start.character > 0 ||
+            (diagnostic.range.end?.character ?? diagnostic.range.start.character) > diagnostic.range.start.character;
+        const location = hasRange ? `line ${diagnostic.range.start.line + 1}: ` : '';
+        console.error(chalk.yellow(`${location}${diagnostic.message}`));
+    }
+}
+
+export async function assertDocumentValidOrExit(file: string): Promise<LangiumDocument> {
+    const services = createDb2AiDslServices(NodeFileSystem).Db2AiDsl;
+    let sqlDbWarnings: Diagnostic[] = [];
+
+    const document = (await assertDocumentValidForGenerate(file, services, {
         beforeBuild: () => loadLocalEnvFiles([process.cwd(), path.dirname(path.resolve(file))]),
-        extraErrors: async (document: CliLangiumDocument) => {
-            const sqlDbDiags = await collectSqlDbDiagnostics(document, file);
+        extraErrors: async (doc: CliLangiumDocument) => {
+            const sqlDbDiags = await collectSqlDbDiagnostics(doc, file);
+            sqlDbWarnings = sqlDbDiags.filter((d) => d.severity === DiagnosticSeverity.Warning);
             return sqlDbDiags
                 .filter((d) => d.severity === DiagnosticSeverity.Error)
                 .map((d) => ({
@@ -58,16 +73,13 @@ function db2aiGenerateValidationOptions(file: string) {
                     range: d.range
                 }));
         }
-    };
-}
+    })) as LangiumDocument;
 
-export async function assertDocumentValidOrExit(file: string): Promise<LangiumDocument> {
-    const services = createDb2AiDslServices(NodeFileSystem).Db2AiDsl;
-    return assertDocumentValidForGenerate(
-        file,
-        services,
-        db2aiGenerateValidationOptions(file)
-    ) as Promise<LangiumDocument>;
+    if (sqlDbWarnings.length > 0) {
+        printSqlDbWarnings(document, sqlDbWarnings);
+    }
+
+    return document;
 }
 
 export async function parseAction(file: string): Promise<void> {

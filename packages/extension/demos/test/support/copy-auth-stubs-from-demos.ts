@@ -19,10 +19,15 @@ async function copyAuthTree(sourceDir: string, targetDir: string): Promise<void>
 }
 
 /** Copy implemented auth stubs into a tmp fixture before generate (write-once stubs are preserved). */
-export async function copyAuthStubsFromDemos(targetRoot: string): Promise<void> {
+export async function copyAuthStubsFromDemos(targetRoot: string, moduleDir?: string): Promise<void> {
     const sourceAuthDir = path.join(demosRoot, 'src', 'auth');
     if (!existsSync(sourceAuthDir)) {
         return;
     }
-    await copyAuthTree(sourceAuthDir, path.join(targetRoot, 'src', 'auth'));
+    const source = moduleDir ? path.join(sourceAuthDir, moduleDir) : sourceAuthDir;
+    if (!existsSync(source)) {
+        return;
+    }
+    const target = moduleDir ? path.join(targetRoot, 'src', 'auth', moduleDir) : path.join(targetRoot, 'src', 'auth');
+    await copyAuthTree(source, target);
 }

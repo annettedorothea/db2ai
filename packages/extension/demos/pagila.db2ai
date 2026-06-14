@@ -16,7 +16,7 @@ SQL {
 
 SQL {
     toolName: listActors
-    access: protected
+    access: checked
     intent: '''
         List actors from Pagila with pagination.
         Protected: requires DB2AI_AUTH_TOKEN at MCP startup.

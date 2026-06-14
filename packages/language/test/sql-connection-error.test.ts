@@ -10,6 +10,14 @@ describe('sql-connection-error', () => {
     test('isDatabaseUnreachableError detects Oracle listener errors', () => {
         expect(isDatabaseUnreachableError(new Error('ORA-12541: TNS:no listener'), 'oracle')).toBe(true);
         expect(isDatabaseUnreachableError(new Error('NJS-503: connection to host failed'), 'oracle')).toBe(true);
+        expect(
+            isDatabaseUnreachableError(
+                new Error(
+                    'NJS-518: cannot connect to Oracle Database. Service "FREEPDB1" is not registered with the listener at host 127.0.0.1 port 55221.'
+                ),
+                'oracle'
+            )
+        ).toBe(true);
     });
 
     test('isDatabaseUnreachableError rejects SQL syntax and schema errors', () => {

@@ -37,12 +37,32 @@ export async function renderCheckStubs(
 
 export function renderInvokeCredentialAndParameterCheck(hasAuth: boolean, hasChecked: boolean): string {
     const credentialGuard = hasAuth
-        ? `
+        ? hasChecked
+            ? `
+    let credential = host.credential;
+    let sessionClaims = host.sessionClaims;
     if (toolMeta.access !== 'public') {
-        if (!host.credential || !String(host.credential).trim()) {
+        if (!credential || !String(credential).trim()) {
             throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; stateless HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; relay HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
+        }
+        if (sessionClaims === undefined) {
+            const verified = await verifyCredential({ inboundCredential: String(credential).trim() });
+            credential = verified.upstreamCredential;
+            sessionClaims = verified.sessionClaims;
+        }
+    }`
+            : `
+    if (toolMeta.access !== 'public') {
+        const credential = host.credential;
+        if (!credential || !String(credential).trim()) {
+            throw new Error(
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; relay HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+            );
+        }
+        if (host.sessionClaims === undefined) {
+            await verifyCredential({ inboundCredential: String(credential).trim() });
         }
     }`
         : '';
@@ -56,8 +76,8 @@ export function renderInvokeCredentialAndParameterCheck(hasAuth: boolean, hasChe
         }
         optionsResolved = await Promise.resolve(
             check(options, {
-                credential: String(host.credential).trim(),
-                jwt: host.jwt
+                credential: String(credential).trim(),
+                sessionClaims
             })
         );
     }`

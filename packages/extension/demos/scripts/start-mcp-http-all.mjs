@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Start db2ai stateless HTTP MCP hosts used by start / mcp.json (pagila).
+ * Start relay HTTP MCP hosts used by start / mcp.json (passthrough: pagila).
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';

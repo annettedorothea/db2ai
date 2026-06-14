@@ -15,11 +15,11 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 ## Transport (stdio vs. HTTP vs. OAuth, siehe `mcp.json`)
 
-- **`sakila`:** `DB2AI_AUTH_TOKEN` + `MCP_AUTH_EXPECTED` (gleicher Wert) in `.env`; Host `--credential-validation static`.
-- **`pagila`:** protected Pagila-Tools brauchen `headers.x-api-token: demo`; Host validiert gegen `MCP_AUTH_EXPECTED` (`static`).
-- **`orders`:** Cursor OAuth Sign-in; Host `--oauth-token-validation oidc` — kein Token in Env schreiben.
+- **`sakila` (stdio):** `DB2AI_AUTH_TOKEN` in `.env` (gleicher Wert wie `MCP_AUTH_EXPECTED`); Validierung in `src/auth/sakila-tools/verifyCredential.ts`.
+- **`pagila` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung in `src/auth/pagila-tools/verifyCredential.ts` gegen `MCP_AUTH_EXPECTED`.
+- **`orders` (HTTP (oauth)):** Cursor OAuth Sign-in; Validierung in `verifyCredential` — kein Token in Env schreiben.
 
-Host-Modi (`hs256` | `static` | `opaque` | `oidc`): siehe Demos-README. db2ai-Produktion: `static`/`hs256` — nicht `opaque` ohne zweiten Pruefer.
+Auth-Logik liegt in `src/auth/**/verifyCredential.ts` (OAuth-Gate und stdio/relay) — nicht mehr als Host-CLI-Flags.
 
 ## Auth-Fehler: Fehler melden, nicht umgehen
 

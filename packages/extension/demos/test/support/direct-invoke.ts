@@ -59,7 +59,7 @@ export type DirectInvokeFixtureOptions = {
     authEnv?: string;
     /** Credential/JWT value for authEnv before host context is resolved (empty string allowed) */
     authToken?: string;
-    /** Copy source + auth stubs into tmp fixture so checked-access imports resolve locally */
+    /** @deprecated fixture always copies DSL + auth stubs into tmp */
     isolateFixtureProjectRoot?: boolean;
 };
 
@@ -83,16 +83,12 @@ export async function withGeneratedDirectInvokeFixture(
     try {
         process.env[options.databaseEnv] = options.connectionString;
 
-        let generateSourcePath = options.sourcePath;
-
-        if (options.isolateFixtureProjectRoot) {
-            await copyAuthStubsFromDemos(runRoot);
-            generateSourcePath = path.join(runRoot, path.basename(options.sourcePath));
-            await fs.copyFile(options.sourcePath, generateSourcePath);
-        }
+        await copyLoggingAdapterStub(runRoot);
+        await copyAuthStubsFromDemos(runRoot, options.generatedToolsName);
+        const generateSourcePath = path.join(runRoot, path.basename(options.sourcePath));
+        await fs.copyFile(options.sourcePath, generateSourcePath);
 
         runDemoGenerate(generateSourcePath, generatedTsPath);
-        await copyLoggingAdapterStub(runRoot);
         compileGeneratedForSmoke(runRoot);
 
         const imported = (await import(`${pathToFileURL(generatedJsPath).href}?t=${Date.now()}`)) as Record<

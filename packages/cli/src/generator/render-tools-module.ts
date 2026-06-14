@@ -8,6 +8,9 @@ import {
 } from 'db-2-ai-dsl-language';
 import {
     buildInputZodBlock,
+    ensureVerifyCredentialStubFromSource,
+    renderVerifyCredentialImport,
+    renderVerifyCredentialReExport,
     resolveMcpServerIdentityFromDestination,
     type ProjectBootstrapConfig
 } from '@core2ai/core/codegen';
@@ -82,9 +85,12 @@ function requiresAuthLiteral(model: Model): string {
     return needsCredential ? 'true' : 'false';
 }
 
-function renderGeneratedImports(parameterCheckerImports: string): string {
+function renderGeneratedImports(parameterCheckerImports: string, verifyCredentialImport: string): string {
     const loggingImport = "import { loggingAdapter } from '../../src/utils/logging-adapter.js';";
     const parts = [loggingImport];
+    if (verifyCredentialImport.length > 0) {
+        parts.push(verifyCredentialImport);
+    }
     if (parameterCheckerImports.length > 0) {
         parts.push(parameterCheckerImports);
     }
@@ -113,6 +119,13 @@ function authRuntimeKind(model: Model): 'none' | 'credential' {
     return model.auth ? 'credential' : 'none';
 }
 
+function modelRequiresAuth(model: Model): boolean {
+    if (!model.auth) {
+        return false;
+    }
+    return model.entries.some((entry) => isSqlQuery(entry) && getAccessKind(entry) !== 'public');
+}
+
 function assembleToolsModuleSource(
     tools: ResolvedDbToolCodegen[],
     connectionEnv: string,
@@ -121,11 +134,18 @@ function assembleToolsModuleSource(
     toolRuntimeBlock: string,
     model: Model,
     source: string,
-    parameterCheckerImports: string
+    destinationTsPath: string,
+    parameterCheckerImports: string,
+    verifyStubPath: string | undefined
 ): string {
     const toolsLiteral = serializeToolsForModule(tools);
     const sourceRef = renderSourceReference(source);
-    const importPrefix = renderGeneratedImports(parameterCheckerImports);
+    const importPrefix = renderGeneratedImports(
+        parameterCheckerImports,
+        verifyStubPath !== undefined ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath) : ''
+    );
+    const verifyExportBlock =
+        verifyStubPath !== undefined ? `\n${renderVerifyCredentialReExport(destinationTsPath, verifyStubPath)}\n` : '';
     return `/**
  * Generated from: ${sourceRef}
  */
@@ -134,7 +154,7 @@ ${importPrefix}export const connectionEnv = ${JSON.stringify(connectionEnv)};
 export const databaseDialect = ${JSON.stringify(databaseDialect)};
 
 export const requiresAuth = ${requiresAuthLiteral(model)};
-
+${verifyExportBlock}
 export type GeneratedSqlParam = {
     placeholder: string;
     index: number;
@@ -161,12 +181,12 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export type CheckedHostContext = {
     credential: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export const generatedTools: GeneratedTool[] = ${toolsLiteral};
@@ -177,7 +197,7 @@ ${toolRuntimeBlock}
 }
 
 /** Renders `generated/tools/*-tools.ts` source text. */
-export function renderToolsModule(input: RenderToolsModuleInput): string {
+export async function renderToolsModule(input: RenderToolsModuleInput): Promise<string> {
     const { model, source, destinationTsPath, stubPaths, bootstrapConfig, databaseDialect } = input;
     const envName = String(model.env).trim();
     const tools = resolveToolsFromModel(model);
@@ -197,6 +217,10 @@ export function renderToolsModule(input: RenderToolsModuleInput): string {
     const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
     const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, hasChecked);
 
+    const verifyStubPath = modelRequiresAuth(model)
+        ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
+        : undefined;
+
     return assembleToolsModuleSource(
         tools,
         envName,
@@ -205,6 +229,8 @@ export function renderToolsModule(input: RenderToolsModuleInput): string {
         `${authRuntimePrefix}${inputZodBlock}\n${invokeBlockTs}`,
         model,
         source,
-        parameterCheckerImports
+        destinationTsPath,
+        parameterCheckerImports,
+        verifyStubPath
     );
 }

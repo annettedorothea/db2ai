@@ -2,7 +2,6 @@
 /**
  * Generated MCP stdio host (static runtime — no @core2ai/core).
  */
-import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -21,8 +20,19 @@ type ApiLikeHostContext = {
     connectionString?: string;
     databaseDialect?: DatabaseDialect;
     credential?: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
+
+type VerifyCredentialInput = {
+    inboundCredential: string;
+};
+
+type VerifyCredentialResult = {
+    upstreamCredential: string;
+    sessionClaims?: Record<string, unknown>;
+};
+
+type VerifyCredentialFn = (input: VerifyCredentialInput) => Promise<VerifyCredentialResult>;
 
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
@@ -33,6 +43,7 @@ type GeneratedHostModule = {
     requiresAuth: boolean;
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
+    verifyCredential?: VerifyCredentialFn;
 };
 
 function stripOptionalQuotes(value: string): string {
@@ -113,37 +124,6 @@ function loadLocalEnvFiles(startDirs: string[], options?: { refresh?: boolean })
     return loadedFiles;
 }
 
-function decodeJwtPayloadUnsafe(token: string): Record<string, unknown> {
-    const parts = String(token).trim().split('.');
-    if (parts.length !== 3) {
-        throw new Error('credential is not a JWT (expected three dot-separated segments).');
-    }
-    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    while (b64.length % 4 !== 0) {
-        b64 += '=';
-    }
-    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as Record<string, unknown>;
-}
-
-function credentialWithOptionalJwt(credential: string | undefined): {
-    credential?: string;
-    jwt?: Record<string, unknown>;
-} {
-    if (!credential?.trim()) {
-        return {};
-    }
-    const trimmed = credential.trim();
-    const segments = trimmed.split('.');
-    if (segments.length !== 3) {
-        return { credential: trimmed };
-    }
-    try {
-        return { credential: trimmed, jwt: decodeJwtPayloadUnsafe(trimmed) };
-    } catch {
-        return { credential: trimmed };
-    }
-}
-
 function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
     return value === 'postgres' ||
         value === 'mysql' ||
@@ -174,229 +154,11 @@ function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialec
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
 }
 
-type HostCredentialValidationMode = 'hs256' | 'static' | 'opaque' | 'oidc';
-
-type CredentialValidationFields = {
-    credentialValidation?: HostCredentialValidationMode;
-    jwtSecretEnvKey?: string;
-    authExpectedEnvKey?: string;
-};
-
-function parseHostCredentialValidationMode(raw: string | undefined): HostCredentialValidationMode {
-    if (raw === 'hs256' || raw === 'static' || raw === 'opaque' || raw === 'oidc') {
-        return raw;
-    }
-    throw new Error('Invalid credential validation mode (expected hs256|static|opaque|oidc): ' + String(raw));
-}
-
-function readJwtSecretFromEnv(jwtSecretEnvKey: string): string {
-    const value = process.env[jwtSecretEnvKey]?.trim();
-    if (!value) {
-        throw new Error('Environment variable "' + jwtSecretEnvKey + '" is missing or empty.');
-    }
-    return value;
-}
-
-function verifyAccessTokenJwt(
-    token: string,
-    secret: string
-): { ok: true; payload: Record<string, unknown> } | { ok: false } {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-        return { ok: false };
-    }
-    const [headerSeg, payloadSeg, sigSeg] = parts;
-    const signingInput = headerSeg + '.' + payloadSeg;
-    const expected = crypto.createHmac('sha256', secret).update(signingInput).digest();
-    let actual: Buffer;
-    try {
-        let b64 = sigSeg.replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4 !== 0) {
-            b64 += '=';
-        }
-        actual = Buffer.from(b64, 'base64');
-    } catch {
-        return { ok: false };
-    }
-    if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
-        return { ok: false };
-    }
-    try {
-        let b64 = payloadSeg.replace(/-/g, '+').replace(/_/g, '/');
-        while (b64.length % 4 !== 0) {
-            b64 += '=';
-        }
-        const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as Record<string, unknown>;
-        const now = Math.floor(Date.now() / 1000);
-        if (typeof payload.exp === 'number' && payload.exp < now) {
-            return { ok: false };
-        }
-        return { ok: true, payload };
-    } catch {
-        return { ok: false };
-    }
-}
-
-function timingSafeEqualStrings(a: string, b: string): boolean {
-    const aBuf = Buffer.from(a);
-    const bBuf = Buffer.from(b);
-    if (aBuf.length !== bBuf.length) {
-        return false;
-    }
-    return crypto.timingSafeEqual(aBuf, bBuf);
-}
-
-function generatedHasCheckedTool(generated: GeneratedHostModule): boolean {
-    return generated.generatedTools.some((t) => t.access === 'checked');
-}
-
-function warnCredentialValidationModeAtStartup(
-    generated: GeneratedHostModule,
-    mode: HostCredentialValidationMode
-): void {
-    if (mode === 'opaque' && generated.connectionEnv) {
-        loggingAdapter.warn(
-            '[mcp] opaque credential validation on db2ai — host is the only auth layer; prefer static or hs256 in production.'
-        );
-    }
-    if (mode === 'opaque' && generatedHasCheckedTool(generated)) {
-        loggingAdapter.warn(
-            '[mcp] opaque mode with checked tools — JWT claims in src/auth are not cryptographically verified.'
-        );
-    }
-}
-
-function validateStdioOrHttpCredentialValidationAtStartup(
-    generated: GeneratedHostModule,
-    fields: CredentialValidationFields
-): void {
-    if (!generated.requiresAuth) {
-        return;
-    }
-    if (!fields.credentialValidation) {
-        throw new Error(
-            'Generated tools require auth; pass --credential-validation <hs256|static|opaque> on the MCP host.'
-        );
-    }
-    const mode = fields.credentialValidation;
-    if (mode === 'oidc') {
-        throw new Error(
-            'credential validation mode "oidc" is not supported on stdio or stateless HTTP — use OAuth HTTP host.'
-        );
-    }
-    if (mode === 'static') {
-        const expectedKey = fields.authExpectedEnvKey?.trim();
-        if (!expectedKey) {
-            throw new Error('Required for static validation: --auth-expected-env <ENV_VAR_NAME>');
-        }
-        const expected = process.env[expectedKey]?.trim();
-        if (!expected) {
-            throw new Error(
-                'Environment variable "' + expectedKey + '" is missing or empty (required by --auth-expected-env).'
-            );
-        }
-    }
-    if (mode === 'hs256') {
-        const secretKey = fields.jwtSecretEnvKey?.trim();
-        if (!secretKey) {
-            throw new Error('Required for hs256 validation: --jwt-secret-env <ENV_VAR_NAME>');
-        }
-        readJwtSecretFromEnv(secretKey);
-    }
-    warnCredentialValidationModeAtStartup(generated, mode);
-}
-
-async function verifyHostCredential(
-    credential: string,
-    fields: CredentialValidationFields
-): Promise<{ ok: true; payload?: Record<string, unknown> } | { ok: false }> {
-    const trimmed = credential.trim();
-    if (!trimmed) {
-        return { ok: false };
-    }
-    const mode = fields.credentialValidation ?? 'opaque';
-    if (mode === 'opaque') {
-        return { ok: true };
-    }
-    if (mode === 'static') {
-        const expectedKey = fields.authExpectedEnvKey?.trim();
-        if (!expectedKey) {
-            return { ok: false };
-        }
-        const expected = process.env[expectedKey]?.trim();
-        if (!expected) {
-            return { ok: false };
-        }
-        return timingSafeEqualStrings(trimmed, expected) ? { ok: true } : { ok: false };
-    }
-    if (mode === 'hs256') {
-        const secretKey = fields.jwtSecretEnvKey?.trim();
-        if (!secretKey) {
-            return { ok: false };
-        }
-        const secret = readJwtSecretFromEnv(secretKey);
-        return verifyAccessTokenJwt(trimmed, secret);
-    }
-    return { ok: false };
-}
-
-async function resolveVerifiedHostCredential(
-    rawCredential: string | undefined,
-    generated: GeneratedHostModule,
-    fields: CredentialValidationFields
-): Promise<{ credential?: string; jwt?: Record<string, unknown> }> {
+function resolveRelayHostCredential(rawCredential: string | undefined): { credential?: string } {
     if (!rawCredential?.trim()) {
         return {};
     }
-    if (!generated.requiresAuth || !fields.credentialValidation) {
-        return credentialWithOptionalJwt(rawCredential);
-    }
-    const verified = await verifyHostCredential(rawCredential, fields);
-    if (!verified.ok) {
-        throw new Error('Invalid host credential (failed ' + fields.credentialValidation + ' validation).');
-    }
-    const trimmed = rawCredential.trim();
-    if (verified.payload) {
-        return { credential: trimmed, jwt: verified.payload };
-    }
-    return credentialWithOptionalJwt(trimmed);
-}
-
-function parseCredentialValidationArgvFlags(
-    argv: string[],
-    index: number
-): {
-    nextIndex: number;
-    credentialValidation?: HostCredentialValidationMode;
-    jwtSecretEnvKey?: string;
-    authExpectedEnvKey?: string;
-} {
-    const arg = argv[index];
-    if (arg === '--credential-validation') {
-        const raw = argv[index + 1];
-        if (!raw) {
-            throw new Error('Missing value after --credential-validation');
-        }
-        return {
-            nextIndex: index + 2,
-            credentialValidation: parseHostCredentialValidationMode(raw)
-        };
-    }
-    if (arg === '--jwt-secret-env') {
-        const raw = argv[index + 1];
-        if (!raw) {
-            throw new Error('Missing value after --jwt-secret-env');
-        }
-        return { nextIndex: index + 2, jwtSecretEnvKey: raw };
-    }
-    if (arg === '--auth-expected-env') {
-        const raw = argv[index + 1];
-        if (!raw) {
-            throw new Error('Missing value after --auth-expected-env');
-        }
-        return { nextIndex: index + 2, authExpectedEnvKey: raw };
-    }
-    return { nextIndex: index };
+    return { credential: rawCredential.trim() };
 }
 
 function formatToolError(err: unknown): string {
@@ -419,6 +181,9 @@ function readGeneratedModule(imported: Record<string, unknown>): GeneratedHostMo
     const mcpServerName = imported.mcpServerName;
     const mcpServerVersion = imported.mcpServerVersion;
     const connectionEnv = imported.connectionEnv;
+    const verifyCredential = imported.verifyCredential;
+    const verifyCredentialFn =
+        typeof verifyCredential === 'function' ? (verifyCredential as VerifyCredentialFn) : undefined;
     return {
         generatedTools: generatedTools as Array<{ toolName: string; title?: string; description: string }>,
         invokeTool: invokeTool as (
@@ -434,7 +199,8 @@ function readGeneratedModule(imported: Record<string, unknown>): GeneratedHostMo
         mcpServerVersion: typeof mcpServerVersion === 'string' ? mcpServerVersion : undefined,
         requiresAuth: imported.requiresAuth === true,
         connectionEnv: typeof connectionEnv === 'string' ? connectionEnv : undefined,
-        databaseDialect: parseDatabaseDialect(imported.databaseDialect)
+        databaseDialect: parseDatabaseDialect(imported.databaseDialect),
+        verifyCredential: verifyCredentialFn
     };
 }
 
@@ -527,7 +293,7 @@ async function registerMcpTools(
     attachListToolsDebugLogging(server, generated);
 }
 
-type HostRuntimeConfig = CredentialValidationFields & {
+type HostRuntimeConfig = {
     baseUrlEnvKey?: string;
     authEnvKey?: string;
     envDirs: string[];
@@ -536,9 +302,6 @@ type HostRuntimeConfig = CredentialValidationFields & {
 function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let authEnv: string | undefined;
-    let credentialValidation: HostCredentialValidationMode | undefined;
-    let jwtSecretEnvKey: string | undefined;
-    let authExpectedEnvKey: string | undefined;
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--base-url-env') {
@@ -555,20 +318,6 @@ function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
             }
             continue;
         }
-        if (arg === '--credential-validation' || arg === '--jwt-secret-env' || arg === '--auth-expected-env') {
-            const parsed = parseCredentialValidationArgvFlags(argv, i);
-            if (parsed.credentialValidation !== undefined) {
-                credentialValidation = parsed.credentialValidation;
-            }
-            if (parsed.jwtSecretEnvKey !== undefined) {
-                jwtSecretEnvKey = parsed.jwtSecretEnvKey;
-            }
-            if (parsed.authExpectedEnvKey !== undefined) {
-                authExpectedEnvKey = parsed.authExpectedEnvKey;
-            }
-            i = parsed.nextIndex - 1;
-            continue;
-        }
         if (arg.startsWith('-')) {
             throw new Error('Unknown option: ' + arg);
         }
@@ -577,10 +326,7 @@ function parseHostArgv(argv: string[], envDirs: string[]): HostRuntimeConfig {
     return {
         baseUrlEnvKey: baseUrlEnv,
         authEnvKey: authEnv,
-        envDirs,
-        credentialValidation,
-        jwtSecretEnvKey,
-        authExpectedEnvKey
+        envDirs
     };
 }
 
@@ -626,7 +372,11 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     if (generated.requiresAuth && !hostConfig.authEnvKey?.trim()) {
         throw new Error('Generated tools require auth; pass --auth-env <ENV_VAR_NAME> on the MCP host.');
     }
-    validateStdioOrHttpCredentialValidationAtStartup(generated, hostConfig);
+    if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
+        throw new Error(
+            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+        );
+    }
 }
 
 async function resolveHostContextForCall(
@@ -634,7 +384,7 @@ async function resolveHostContextForCall(
     generated: GeneratedHostModule
 ): Promise<ApiLikeHostContext> {
     const credential = readCredentialFromEnv(hostConfig.authEnvKey);
-    const { credential: c, jwt } = await resolveVerifiedHostCredential(credential, generated, hostConfig);
+    const { credential: c } = resolveRelayHostCredential(credential);
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -648,14 +398,14 @@ async function resolveHostContextForCall(
                 'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
             );
         }
-        return { connectionString, databaseDialect: dialect, credential: c, jwt };
+        return { connectionString, databaseDialect: dialect, credential: c };
     }
     const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
         throw new Error('Missing host base URL. Pass --base-url-env on stdio-mcp-server.js and set the variable.');
     }
-    return { baseUrl, credential: c, jwt };
+    return { baseUrl, credential: c };
 }
 
 async function runStdioMcpServer(

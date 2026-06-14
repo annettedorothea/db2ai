@@ -11,7 +11,6 @@ export const OAUTH_HTTP_DEMOS = {
         defaultOAuthIdpUrl: 'http://127.0.0.1:4863',
         portEnv: 'ORDERS_POSTGRES_OAUTH_HTTP_PORT',
         defaultPort: 4871,
-        tokenValidation: 'oidc',
         oauthScope: 'orders-postgres',
         mcpServerName: 'orders',
         prerequisite: 'Docker orders-postgres + oauth-idp :4863 (RS256)'
@@ -51,7 +50,6 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
     const port = resolvePort(demo, env);
     const hostJs = path.join(demosRoot, 'generated/cli/oauth-http-mcp-server.js');
     const toolsJs = path.join(demosRoot, 'generated/tools', demo.tools);
-    const tokenValidation = demo.tokenValidation;
     const oauthScope = demo.oauthScope ?? name;
     const args = [
         hostJs,
@@ -60,23 +58,13 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
         env[demo.oauthIdpUrlEnv],
         '--oauth-scope',
         oauthScope,
-        '--oauth-token-validation',
-        tokenValidation,
         '--port',
         String(port),
         '--path',
         '/mcp'
     ];
-    if (tokenValidation === 'oidc') {
-        const issuer = (env.OAUTH_ISSUER ?? env[demo.oauthIdpUrlEnv]).trim();
-        args.push('--oauth-issuer', issuer);
-        const audience = env.OAUTH_AUDIENCE?.trim();
-        if (audience) {
-            args.push('--oauth-audience', audience);
-        }
-    }
     const mcpUrl = `http://127.0.0.1:${port}/mcp`;
-    return { demo, port, args, mcpUrl, tokenValidation };
+    return { demo, port, args, mcpUrl };
 }
 
 export function listOAuthHttpPorts(env = process.env) {

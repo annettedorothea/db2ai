@@ -9,9 +9,9 @@ export {
     type McpStdioSession
 } from './mcp-stdio-smoke.js';
 export {
-    connectMcpStatelessHttp,
-    withMcpStatelessHttpSession,
-    type McpStatelessHttpConnectOptions,
-    type McpStatelessHttpSession
+    connectMcpRelayHttp,
+    withMcpRelayHttpSession,
+    type McpRelayHttpConnectOptions,
+    type McpRelayHttpSession
 } from './mcp-http-smoke.js';
 export { asRecord, credentialWithOptionalJwt, restoreEnv } from './env-helpers.js';

@@ -16,12 +16,16 @@ export function checkListCustomerOrdersParameters(options: InvokeOptions, host: 
     };
 }
 
-function requireJwtInHostContext(host: CheckedHostContext): JwtPayload {
-    const jwt = host.jwt;
-    if (!jwt || typeof jwt !== 'object') {
-        throw new Error('listCustomerOrders requires a JWT in host context (--auth-env).');
+function requireClaimsInHostContext(host: CheckedHostContext): Record<string, unknown> {
+    const claims = host.sessionClaims;
+    if (!claims || typeof claims !== 'object') {
+        throw new Error('listCustomerOrders requires sessionClaims in host context.');
     }
-    return jwt;
+    return claims;
+}
+
+function requireJwtInHostContext(host: CheckedHostContext): Record<string, unknown> {
+    return requireClaimsInHostContext(host);
 }
 
 function requireCustomerIdClaim(jwt: JwtPayload): string {

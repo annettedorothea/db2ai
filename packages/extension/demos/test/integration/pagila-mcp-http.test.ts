@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { compileGeneratedForSmoke, withMcpStatelessHttpSession } from '../generated/index.js';
+import { compileGeneratedForSmoke, withMcpRelayHttpSession } from '../generated/index.js';
 import { copyLoggingAdapterStub } from '../support/copy-logging-adapter-stub.js';
 import { demosRoot, demosTmpRoot } from '../support/paths.js';
 import { ensurePagilaDocker } from '../support/pagila-docker.js';
@@ -24,7 +24,7 @@ async function findFreePort(): Promise<number> {
     });
 }
 
-describe('Pagila generated stateless-http-mcp-server (MCP HTTP)', () => {
+describe('Pagila generated passthrough-http-mcp-server (MCP HTTP)', () => {
     let connectionString = '';
     let runRoot = '';
 
@@ -46,23 +46,24 @@ describe('Pagila generated stateless-http-mcp-server (MCP HTTP)', () => {
         const generatedTsPath = path.join(runRoot, 'generated/tools/pagila-tools.ts');
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
+        await copyLoggingAdapterStub(runRoot);
+        await fs.mkdir(path.join(runRoot, 'src/auth/pagila-tools'), { recursive: true });
+        await fs.copyFile(
+            path.join(demosRoot, 'src/auth/pagila-tools/listActors.ts'),
+            path.join(runRoot, 'src/auth/pagila-tools/listActors.ts')
+        );
+        await fs.copyFile(
+            path.join(demosRoot, 'src/auth/pagila-tools/verifyCredential.ts'),
+            path.join(runRoot, 'src/auth/pagila-tools/verifyCredential.ts')
+        );
         compileGeneratedForSmoke(runRoot);
 
         const mcpUrl = `http://127.0.0.1:${port}/mcp`;
-        await withMcpStatelessHttpSession(
+        await withMcpRelayHttpSession(
             {
-                statelessHttpMcpServerPath: path.join(runRoot, 'generated/cli/stateless-http-mcp-server.js'),
+                relayHttpMcpServerPath: path.join(runRoot, 'generated/cli/passthrough-http-mcp-server.js'),
                 generatedModulePath: path.join(runRoot, 'generated/tools/pagila-tools.js'),
-                hostArgs: [
-                    '--port',
-                    String(port),
-                    '--path',
-                    '/mcp',
-                    '--credential-validation',
-                    'static',
-                    '--auth-expected-env',
-                    'MCP_AUTH_EXPECTED'
-                ],
+                hostArgs: ['--port', String(port), '--path', '/mcp'],
                 mcpUrl,
                 cwd: runRoot,
                 env: {
@@ -85,7 +86,7 @@ describe('Pagila generated stateless-http-mcp-server (MCP HTTP)', () => {
         );
     }, 180_000);
 
-    it('rejects listActors when x-api-token fails static validation', async () => {
+    it('rejects listActors when x-api-token fails checked validation', async () => {
         const port = await findFreePort();
         const rejectRoot = await fs.mkdtemp(path.join(demosTmpRoot, 'pagila-http-reject-'));
         const generateSourcePath = path.join(rejectRoot, 'pagila.db2ai');
@@ -94,24 +95,24 @@ describe('Pagila generated stateless-http-mcp-server (MCP HTTP)', () => {
         await fs.mkdir(path.dirname(generatedTsPath), { recursive: true });
         runDemoGenerate(generateSourcePath, generatedTsPath);
         await copyLoggingAdapterStub(rejectRoot);
+        await fs.mkdir(path.join(rejectRoot, 'src/auth/pagila-tools'), { recursive: true });
+        await fs.copyFile(
+            path.join(demosRoot, 'src/auth/pagila-tools/listActors.ts'),
+            path.join(rejectRoot, 'src/auth/pagila-tools/listActors.ts')
+        );
+        await fs.copyFile(
+            path.join(demosRoot, 'src/auth/pagila-tools/verifyCredential.ts'),
+            path.join(rejectRoot, 'src/auth/pagila-tools/verifyCredential.ts')
+        );
         compileGeneratedForSmoke(rejectRoot);
 
         const mcpUrl = `http://127.0.0.1:${port}/mcp`;
         try {
-            await withMcpStatelessHttpSession(
+            await withMcpRelayHttpSession(
                 {
-                    statelessHttpMcpServerPath: path.join(rejectRoot, 'generated/cli/stateless-http-mcp-server.js'),
+                    relayHttpMcpServerPath: path.join(rejectRoot, 'generated/cli/passthrough-http-mcp-server.js'),
                     generatedModulePath: path.join(rejectRoot, 'generated/tools/pagila-tools.js'),
-                    hostArgs: [
-                        '--port',
-                        String(port),
-                        '--path',
-                        '/mcp',
-                        '--credential-validation',
-                        'static',
-                        '--auth-expected-env',
-                        'MCP_AUTH_EXPECTED'
-                    ],
+                    hostArgs: ['--port', String(port), '--path', '/mcp'],
                     mcpUrl,
                     cwd: rejectRoot,
                     env: {

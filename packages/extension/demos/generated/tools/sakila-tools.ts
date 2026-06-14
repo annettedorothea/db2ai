@@ -2,12 +2,16 @@
  * Generated from: sakila.db2ai
  */
 import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { verifyCredential } from '../../src/auth/sakila-tools/verifyCredential.js';
 
 export const connectionEnv = 'SAKILA_DATABASE_URL';
 
 export const databaseDialect = 'mysql';
 
 export const requiresAuth = true;
+
+export { verifyCredential } from '../../src/auth/sakila-tools/verifyCredential.js';
+export type { VerifyCredentialInput, VerifyCredentialResult } from '../../src/auth/sakila-tools/verifyCredential.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -35,12 +39,12 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export type CheckedHostContext = {
     credential: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -363,10 +367,14 @@ export async function invokeTool(
     }
     const host = hostContext as DbHostContext;
     if (toolMeta.access !== 'public') {
-        if (!host.credential || !String(host.credential).trim()) {
+        const credential = host.credential;
+        if (!credential || !String(credential).trim()) {
             throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; stateless HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; relay HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
+        }
+        if (host.sessionClaims === undefined) {
+            await verifyCredential({ inboundCredential: String(credential).trim() });
         }
     }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));

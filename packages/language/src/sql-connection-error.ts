@@ -21,7 +21,17 @@ const UNREACHABLE_MESSAGE_PATTERNS = [
     /password authentication failed/i
 ];
 
-const UNREACHABLE_ORACLE_PATTERNS = [/ORA-12541/i, /ORA-12170/i, /ORA-12514/i, /ORA-01017/i, /NJS-503/i, /NJS-500/i];
+const UNREACHABLE_ORACLE_PATTERNS = [
+    /ORA-12541/i,
+    /ORA-12170/i,
+    /ORA-12514/i,
+    /ORA-01017/i,
+    /NJS-503/i,
+    /NJS-500/i,
+    /NJS-518/i,
+    /cannot connect to Oracle Database/i,
+    /not registered with the listener/i
+];
 
 const SQL_ERROR_ORACLE_PATTERNS = [/ORA-009\d/i, /ORA-00942/i];
 

@@ -2,12 +2,17 @@
  * Generated from: pagila.db2ai
  */
 import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { verifyCredential } from '../../src/auth/pagila-tools/verifyCredential.js';
+import { checkListActorsParameters } from '../../src/auth/pagila-tools/listActors.js';
 
 export const connectionEnv = 'PAGILA_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
 
 export const requiresAuth = true;
+
+export { verifyCredential } from '../../src/auth/pagila-tools/verifyCredential.js';
+export type { VerifyCredentialInput, VerifyCredentialResult } from '../../src/auth/pagila-tools/verifyCredential.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -35,12 +40,12 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export type CheckedHostContext = {
     credential: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -79,7 +84,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated actor rows',
         description:
             'List actors from Pagila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): \n                Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n             (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
-        access: 'protected',
+        access: 'checked',
         sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
         params: [
             {
@@ -405,6 +410,13 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'pagila-tools';
 export const mcpServerVersion = '0.2.1';
 
+const parameterCheckers: Record<
+    string,
+    (options: InvokeOptions, host: CheckedHostContext) => InvokeOptions | Promise<InvokeOptions>
+> = {
+    listActors: checkListActorsParameters
+};
+
 import * as z from 'zod/v4';
 
 export const inputZodByTool = {
@@ -525,12 +537,32 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    let credential = host.credential;
+    let sessionClaims = host.sessionClaims;
     if (toolMeta.access !== 'public') {
-        if (!host.credential || !String(host.credential).trim()) {
+        if (!credential || !String(credential).trim()) {
             throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; stateless HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; relay HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
         }
+        if (sessionClaims === undefined) {
+            const verified = await verifyCredential({ inboundCredential: String(credential).trim() });
+            credential = verified.upstreamCredential;
+            sessionClaims = verified.sessionClaims;
+        }
+    }
+    let optionsResolved = options;
+    if (toolMeta.access === 'checked') {
+        const check = parameterCheckers[toolName];
+        if (typeof check !== 'function') {
+            throw new Error('No parameter checker for checked tool: ' + toolName);
+        }
+        optionsResolved = await Promise.resolve(
+            check(options, {
+                credential: String(credential).trim(),
+                sessionClaims
+            })
+        );
     }
     const connectionString = resolveConnectionString(host);
     const client = new Client({ connectionString });
@@ -540,8 +572,8 @@ export async function invokeTool(
             case 'listFilms': {
                 const sqlText = 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2';
                 const sqlValues = [
-                    normalizePostgresNumericParamValue(options['limit']),
-                    normalizePostgresNumericParamValue(options['offset'])
+                    normalizePostgresNumericParamValue(optionsResolved['limit']),
+                    normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listFilms',
@@ -557,8 +589,8 @@ export async function invokeTool(
             case 'listActors': {
                 const sqlText = 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2';
                 const sqlValues = [
-                    normalizePostgresNumericParamValue(options['limit']),
-                    normalizePostgresNumericParamValue(options['offset'])
+                    normalizePostgresNumericParamValue(optionsResolved['limit']),
+                    normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listActors',
@@ -574,8 +606,8 @@ export async function invokeTool(
             case 'listCustomers': {
                 const sqlText = 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2';
                 const sqlValues = [
-                    normalizePostgresNumericParamValue(options['limit']),
-                    normalizePostgresNumericParamValue(options['offset'])
+                    normalizePostgresNumericParamValue(optionsResolved['limit']),
+                    normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listCustomers',
@@ -591,8 +623,8 @@ export async function invokeTool(
             case 'listCategories': {
                 const sqlText = 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2';
                 const sqlValues = [
-                    normalizePostgresNumericParamValue(options['limit']),
-                    normalizePostgresNumericParamValue(options['offset'])
+                    normalizePostgresNumericParamValue(optionsResolved['limit']),
+                    normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listCategories',
@@ -608,8 +640,8 @@ export async function invokeTool(
             case 'listCountries': {
                 const sqlText = 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2';
                 const sqlValues = [
-                    normalizePostgresNumericParamValue(options['limit']),
-                    normalizePostgresNumericParamValue(options['offset'])
+                    normalizePostgresNumericParamValue(optionsResolved['limit']),
+                    normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listCountries',
@@ -626,8 +658,8 @@ export async function invokeTool(
                 const sqlText =
                     '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 500)\n        OFFSET\n            $2\n    ';
                 const sqlValues = [
-                    normalizePostgresNumericParamValue(options['limit']),
-                    normalizePostgresNumericParamValue(options['offset'])
+                    normalizePostgresNumericParamValue(optionsResolved['limit']),
+                    normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listInventory',
@@ -644,8 +676,10 @@ export async function invokeTool(
                 const sqlText =
                     '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ';
                 const sqlValues = [
-                    options['rating'] !== undefined && options['rating'] !== null ? String(options['rating']) : null,
-                    normalizePostgresNumericParamValue(options['maxRows'])
+                    optionsResolved['rating'] !== undefined && optionsResolved['rating'] !== null
+                        ? String(optionsResolved['rating'])
+                        : null,
+                    normalizePostgresNumericParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'filmsByMpaaRating',
@@ -662,10 +696,10 @@ export async function invokeTool(
                 const sqlText =
                     "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ";
                 const sqlValues = [
-                    options['lastNamePrefix'] !== undefined && options['lastNamePrefix'] !== null
-                        ? String(options['lastNamePrefix'])
+                    optionsResolved['lastNamePrefix'] !== undefined && optionsResolved['lastNamePrefix'] !== null
+                        ? String(optionsResolved['lastNamePrefix'])
                         : null,
-                    normalizePostgresNumericParamValue(options['maxRows'])
+                    normalizePostgresNumericParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'filmsWithActorLastName',
@@ -682,10 +716,10 @@ export async function invokeTool(
                 const sqlText =
                     "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ";
                 const sqlValues = [
-                    options['searchText'] !== undefined && options['searchText'] !== null
-                        ? String(options['searchText'])
+                    optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
+                        ? String(optionsResolved['searchText'])
                         : null,
-                    normalizePostgresNumericParamValue(options['maxRows'])
+                    normalizePostgresNumericParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchFilms',
@@ -702,11 +736,11 @@ export async function invokeTool(
                 const sqlText =
                     'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW()) RETURNING actor_id, first_name, last_name, last_update';
                 const sqlValues = [
-                    options['firstName'] !== undefined && options['firstName'] !== null
-                        ? String(options['firstName'])
+                    optionsResolved['firstName'] !== undefined && optionsResolved['firstName'] !== null
+                        ? String(optionsResolved['firstName'])
                         : null,
-                    options['lastName'] !== undefined && options['lastName'] !== null
-                        ? String(options['lastName'])
+                    optionsResolved['lastName'] !== undefined && optionsResolved['lastName'] !== null
+                        ? String(optionsResolved['lastName'])
                         : null
                 ];
                 loggingAdapter.debug('executeSql', {
@@ -724,13 +758,13 @@ export async function invokeTool(
                 const sqlText =
                     'UPDATE actor SET first_name = $1, last_name = $2, last_update = NOW() WHERE actor_id = $3 RETURNING actor_id, first_name, last_name, last_update';
                 const sqlValues = [
-                    options['firstName'] !== undefined && options['firstName'] !== null
-                        ? String(options['firstName'])
+                    optionsResolved['firstName'] !== undefined && optionsResolved['firstName'] !== null
+                        ? String(optionsResolved['firstName'])
                         : null,
-                    options['lastName'] !== undefined && options['lastName'] !== null
-                        ? String(options['lastName'])
+                    optionsResolved['lastName'] !== undefined && optionsResolved['lastName'] !== null
+                        ? String(optionsResolved['lastName'])
                         : null,
-                    normalizePostgresNumericParamValue(options['actorId'])
+                    normalizePostgresNumericParamValue(optionsResolved['actorId'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'updateActor',
@@ -746,7 +780,7 @@ export async function invokeTool(
             case 'deleteActor': {
                 const sqlText =
                     'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update';
-                const sqlValues = [normalizePostgresNumericParamValue(options['actorId'])];
+                const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['actorId'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'deleteActor',
                     sql: compactSqlForLog(sqlText),

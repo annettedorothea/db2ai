@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Start demo database containers except Oracle (Pagila, Sakila, orders-postgres, animals-sqlserver).
+ * Start all demo database containers (Pagila, Sakila, orders-postgres, animals-sqlserver, plants-oracle).
  *
- * Oracle (plants-oracle) needs a separate registry login — use npm run start:oracle.
+ * plants-oracle may take several minutes on first pull; one-time: docker login container-registry.oracle.com
  *
  * Usage: node ./scripts/db-up-all.mjs  (npm run db:up:all)
  */
@@ -45,4 +45,9 @@ runDocker(['--profile', 'mssql', 'up', '-d', '--wait', 'pagila', 'sakila', 'orde
 console.log('[db:up:all] applying animals-sqlserver schema…');
 runNodeScript('./scripts/apply-animals-sqlserver-schema.mjs');
 
-console.log('[db:up:all] demo databases are up (Oracle excluded — npm run start:oracle when needed).');
+console.log(
+    '[db:up:all] starting plants-oracle (may take several minutes; one-time: docker login container-registry.oracle.com)…'
+);
+runNpm(['run', 'db:plants-oracle:up']);
+
+console.log('[db:up:all] all demo databases are up.');

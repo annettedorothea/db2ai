@@ -113,4 +113,32 @@ describe('validateSqlBlocksWithExamples connectivity', () => {
 
         querySpy.mockRestore();
     });
+
+    test('returns warnings when Oracle service is not registered (NJS-518)', async () => {
+        vi.spyOn(connectivity, 'probeDatabaseConnectivity').mockRejectedValue(
+            new Error(
+                'NJS-518: cannot connect to Oracle Database. Service "FREEPDB1" is not registered with the listener at host 127.0.0.1 port 55221.'
+            )
+        );
+
+        const documentUri = path.join(fixtureDir, 'sql-db-oracle-unreachable.db2ai');
+        const document = await parse(sampleDocument, { validation: false, documentUri });
+        const diags = await validateSqlBlocksWithExamples(document.parseResult.value, documentUri);
+
+        expect(diags.some((d) => d.severity === DiagnosticSeverity.Error)).toBe(false);
+        expect(
+            diags.some(
+                (d) =>
+                    d.severity === DiagnosticSeverity.Warning &&
+                    d.message.startsWith('DB validation skipped: cannot connect to database')
+            )
+        ).toBe(true);
+        expect(
+            diags.filter(
+                (d) =>
+                    d.severity === DiagnosticSeverity.Warning &&
+                    d.message === 'DB validation skipped: database unreachable.'
+            )
+        ).toHaveLength(2);
+    });
 });

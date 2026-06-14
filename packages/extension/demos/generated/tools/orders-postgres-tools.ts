@@ -2,6 +2,7 @@
  * Generated from: orders-postgres.db2ai
  */
 import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { verifyCredential } from '../../src/auth/orders-postgres-tools/verifyCredential.js';
 import { checkListCustomerOrdersParameters } from '../../src/auth/orders-postgres-tools/listCustomerOrders.js';
 import { checkCreateOrderParameters } from '../../src/auth/orders-postgres-tools/createOrder.js';
 import { checkCreateProductParameters } from '../../src/auth/orders-postgres-tools/createProduct.js';
@@ -13,6 +14,12 @@ export const connectionEnv = 'ORDERS_POSTGRES_DATABASE_URL';
 export const databaseDialect = 'postgres';
 
 export const requiresAuth = true;
+
+export { verifyCredential } from '../../src/auth/orders-postgres-tools/verifyCredential.js';
+export type {
+    VerifyCredentialInput,
+    VerifyCredentialResult
+} from '../../src/auth/orders-postgres-tools/verifyCredential.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -40,12 +47,12 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export type CheckedHostContext = {
     credential: string;
-    jwt?: Record<string, unknown>;
+    sessionClaims?: Record<string, unknown>;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -326,11 +333,18 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    let credential = host.credential;
+    let sessionClaims = host.sessionClaims;
     if (toolMeta.access !== 'public') {
-        if (!host.credential || !String(host.credential).trim()) {
+        if (!credential || !String(credential).trim()) {
             throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; stateless HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; relay HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
+        }
+        if (sessionClaims === undefined) {
+            const verified = await verifyCredential({ inboundCredential: String(credential).trim() });
+            credential = verified.upstreamCredential;
+            sessionClaims = verified.sessionClaims;
         }
     }
     let optionsResolved = options;
@@ -341,8 +355,8 @@ export async function invokeTool(
         }
         optionsResolved = await Promise.resolve(
             check(options, {
-                credential: String(host.credential).trim(),
-                jwt: host.jwt
+                credential: String(credential).trim(),
+                sessionClaims
             })
         );
     }

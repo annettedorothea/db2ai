@@ -1,18 +1,17 @@
 /**
- * Stateless HTTP MCP demo hosts (db2ai) — keys match .cursor/mcp.json server names.
+ * Relay HTTP MCP demo hosts (db2ai) — keys match .cursor/mcp.json server names.
  */
 import path from 'node:path';
 
 export const HTTP_DEMOS = {
     pagila: {
+        host: 'passthrough-http-mcp-server.js',
         tools: 'pagila-tools.js',
         connectionEnv: 'PAGILA_DATABASE_URL',
         defaultConnection: 'postgresql://postgres:postgres@localhost:55432/pagila',
         portEnv: 'PAGILA_HTTP_PORT',
         defaultPort: 4853,
-        prerequisite: 'Docker Pagila',
-        credentialValidation: 'static',
-        authExpectedEnv: 'MCP_AUTH_EXPECTED'
+        prerequisite: 'Docker Pagila'
     }
 };
 
@@ -53,17 +52,11 @@ export function buildHostLaunch(name, demosRoot, env) {
         );
     }
     const port = resolvePort(demo, env);
-    const hostJs = path.join(demosRoot, 'generated/cli/stateless-http-mcp-server.js');
+    const hostJs = path.join(demosRoot, 'generated/cli', demo.host);
     const toolsJs = path.join(demosRoot, 'generated/tools', demo.tools);
     const args = [hostJs, toolsJs, '--port', String(port), '--path', '/mcp'];
-    if (demo.credentialValidation) {
-        args.push('--credential-validation', demo.credentialValidation);
-        if (demo.authExpectedEnv) {
-            args.push('--auth-expected-env', demo.authExpectedEnv);
-        }
-    }
     const mcpUrl = `http://127.0.0.1:${port}/mcp`;
-    return { demo, port, args, mcpUrl, credentialValidation: demo.credentialValidation };
+    return { demo, port, args, mcpUrl };
 }
 
 export function listHttpPorts(env = process.env) {

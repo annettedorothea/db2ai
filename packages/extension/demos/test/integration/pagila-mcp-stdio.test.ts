@@ -12,14 +12,7 @@ import {
 
 /** stdio host codegen — pagila MCP matrix entry uses HTTP (`pagila`). */
 const authEnv = 'DB2AI_AUTH_TOKEN';
-const hostArgs = [
-    '--auth-env',
-    authEnv,
-    '--credential-validation',
-    'static',
-    '--auth-expected-env',
-    'MCP_AUTH_EXPECTED'
-];
+const hostArgs = ['--auth-env', authEnv];
 
 describe('Pagila generated stdio-mcp-server (MCP stdio)', () => {
     let connectionString = '';

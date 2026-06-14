@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
- * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated passthrough HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
  */
-import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -13,6 +12,10 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
 import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+
+type RelayHttpHostProfile = 'public' | 'passthrough';
+
+const RELAY_HTTP_HOST_PROFILE: RelayHttpHostProfile = 'passthrough';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -155,6 +158,13 @@ function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialec
         return connectionString.startsWith('oracle://');
     }
     return connectionString.startsWith('postgresql://') || connectionString.startsWith('postgres://');
+}
+
+function resolveRelayHostCredential(rawCredential: string | undefined): { credential?: string } {
+    if (!rawCredential?.trim()) {
+        return {};
+    }
+    return { credential: rawCredential.trim() };
 }
 
 function formatToolError(err: unknown): string {
@@ -322,51 +332,29 @@ function writeJsonRpcInternalError(res: ServerResponse): void {
     writeJsonRpcError(res, 500, -32_603, 'Internal server error');
 }
 
-type OAuthHttpHostRuntimeConfig = {
+function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
+    writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
+}
+
+type RelayHttpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
     envDirs: string[];
     listenHost: string;
     port: number;
     mcpPath: string;
-    oauthIdpUrl: string;
-    oauthScope: string;
 };
 
-type McpOAuthSession = {
-    sessionId: string;
-    upstreamCredential?: string;
-    sessionClaims?: Record<string, unknown>;
-    verifiedAt?: number;
-    createdAt: number;
-};
-
-function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHostRuntimeConfig {
+function parseRelayHttpHostArgv(argv: string[], envDirs: string[]): RelayHttpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let listenHost = '127.0.0.1';
     let port: number | undefined;
     let mcpPath = '/mcp';
-    let oauthIdpUrl: string | undefined;
-    let oauthScope = 'mcp';
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--base-url-env') {
             baseUrlEnv = argv[++i];
             if (!baseUrlEnv) {
                 throw new Error('Missing value after --base-url-env');
-            }
-            continue;
-        }
-        if (arg === '--oauth-idp-url') {
-            oauthIdpUrl = argv[++i];
-            if (!oauthIdpUrl) {
-                throw new Error('Missing value after --oauth-idp-url');
-            }
-            continue;
-        }
-        if (arg === '--oauth-scope') {
-            oauthScope = argv[++i];
-            if (!oauthScope?.trim()) {
-                throw new Error('Missing value after --oauth-scope');
             }
             continue;
         }
@@ -406,47 +394,37 @@ function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHos
     if (port === undefined) {
         throw new Error('Required: --port <number>');
     }
-    if (!oauthIdpUrl?.trim()) {
-        throw new Error('Required: --oauth-idp-url <url>');
-    }
     return {
         baseUrlEnvKey: baseUrlEnv,
         envDirs,
         listenHost,
         port,
-        mcpPath,
-        oauthIdpUrl: oauthIdpUrl.replace(/\/$/, ''),
-        oauthScope: oauthScope.trim()
+        mcpPath
     };
 }
 
-function readBearerFromHeaders(headers: Record<string, string | string[] | undefined>): string | undefined {
-    const raw = headers.authorization ?? headers.Authorization;
+const DEFAULT_MCP_AUTH_HEADER = 'x-api-token';
+
+function readAuthHeaderNameFromEnv(): string {
+    const configured = process.env.MCP_AUTH_HEADER?.trim();
+    return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
+}
+
+function readCredentialFromHttpHeaders(
+    headers: Record<string, string | string[] | undefined>,
+    headerName: string
+): string | undefined {
+    const normalized = headerName.trim().toLowerCase();
+    const raw = headers[normalized];
     const value = Array.isArray(raw) ? raw[0] : raw;
-    if (typeof value !== 'string') {
-        return undefined;
-    }
-    const match = /^Bearer\s+(.+)$/i.exec(value.trim());
-    return match?.[1]?.trim() || undefined;
+    const trimmed = typeof value === 'string' ? value.trim() : '';
+    return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function generatedHasPublicTool(generated: GeneratedHostModule): boolean {
-    return generated.generatedTools.some((t) => t.access === 'public');
-}
-
-function generatedHasProtectedOrCheckedTool(generated: GeneratedHostModule): boolean {
-    return generated.generatedTools.some((t) => t.access === 'protected' || t.access === 'checked');
-}
-
-async function validateOAuthHttpHostAtStartup(
-    httpHostConfig: OAuthHttpHostRuntimeConfig,
+function validateRelayHttpHostAtStartup(
+    httpHostConfig: RelayHttpHostRuntimeConfig,
     generated: GeneratedHostModule
-): Promise<void> {
-    if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
-        throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
-        );
-    }
+): void {
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -476,298 +454,79 @@ async function validateOAuthHttpHostAtStartup(
             );
         }
     }
+    if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
+        throw new Error(
+            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+        );
+    }
 }
 
-function resolveOAuthHostBaseUrl(httpHostConfig: OAuthHttpHostRuntimeConfig): string {
+async function resolveHostContextForHttpCall(
+    httpHostConfig: RelayHttpHostRuntimeConfig,
+    generated: GeneratedHostModule,
+    incomingHeaders: Record<string, string | string[] | undefined>
+): Promise<ApiLikeHostContext> {
+    const headerName = readAuthHeaderNameFromEnv();
+    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
+    const { credential: c } = resolveRelayHostCredential(credential);
+    if (generated.connectionEnv) {
+        const connectionString = process.env[generated.connectionEnv]?.trim();
+        if (!connectionString) {
+            throw new Error(
+                'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
+            );
+        }
+        const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
+        if (!isExpectedDatabaseUrl(connectionString, dialect)) {
+            throw new Error(
+                'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
+            );
+        }
+        return { connectionString, databaseDialect: dialect, credential: c };
+    }
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
-        throw new Error('Missing host base URL. Pass --base-url-env on oauth-http-mcp-server.js and set the variable.');
+        throw new Error('Missing host base URL. Pass --base-url-env on relay HTTP MCP host and set the variable.');
     }
-    return baseUrl;
+    return { baseUrl, credential: c };
 }
 
-function oauthHostContextBaseUrlFields(
-    httpHostConfig: OAuthHttpHostRuntimeConfig,
-    generated: GeneratedHostModule
-): Pick<ApiLikeHostContext, 'baseUrl'> {
-    if (generated.connectionEnv) {
-        return {};
-    }
-    return { baseUrl: resolveOAuthHostBaseUrl(httpHostConfig) };
-}
-
-function withDbConnectionHostContext(generated: GeneratedHostModule, context: ApiLikeHostContext): ApiLikeHostContext {
-    if (!generated.connectionEnv) {
-        return context;
-    }
-    const connectionString = process.env[generated.connectionEnv]?.trim();
-    if (!connectionString) {
-        throw new Error(
-            'Missing database URL. Set environment variable "' + generated.connectionEnv + '" (from .db2ai).'
-        );
-    }
-    const dialect: DatabaseDialect = generated.databaseDialect ?? 'postgres';
-    if (!isExpectedDatabaseUrl(connectionString, dialect)) {
-        throw new Error(
-            'Database URL from "' + generated.connectionEnv + '" does not match dialect "' + dialect + '".'
-        );
-    }
-    return { ...context, connectionString, databaseDialect: dialect };
-}
-
-async function verifyCredentialForGate(generated: GeneratedHostModule, bearer: string | undefined): Promise<boolean> {
-    const token = bearer?.trim();
-    if (!token) {
-        return false;
-    }
-    if (!generated.requiresAuth) {
-        return true;
-    }
-    const verify = generated.verifyCredential;
-    if (typeof verify !== 'function') {
-        return false;
-    }
-    try {
-        await verify({ inboundCredential: token });
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-async function resolveHostContextForOAuthSession(
-    httpHostConfig: OAuthHttpHostRuntimeConfig,
-    generated: GeneratedHostModule,
-    headers: Record<string, string | string[] | undefined>,
-    sessionStore: Map<string, McpOAuthSession>,
-    sessionId: string | undefined
-): Promise<ApiLikeHostContext> {
-    const apiFields = oauthHostContextBaseUrlFields(httpHostConfig, generated);
-    let session = sessionId ? sessionStore.get(sessionId) : undefined;
-    if (sessionId && !session) {
-        session = { sessionId, createdAt: Date.now() };
-        sessionStore.set(sessionId, session);
-    }
-
-    if (session?.verifiedAt && session.upstreamCredential) {
-        const sessionClaims =
-            session.sessionClaims && Object.keys(session.sessionClaims).length > 0 ? session.sessionClaims : undefined;
-        return withDbConnectionHostContext(generated, {
-            ...apiFields,
-            credential: session.upstreamCredential,
-            sessionClaims
-        });
-    }
-
-    const bearer = readBearerFromHeaders(headers);
-    const inbound = bearer?.trim();
-    if (!inbound) {
-        if (session?.upstreamCredential) {
-            return withDbConnectionHostContext(generated, {
-                ...apiFields,
-                credential: session.upstreamCredential,
-                sessionClaims: session.sessionClaims
-            });
-        }
-        return withDbConnectionHostContext(generated, { ...apiFields });
-    }
-
-    const verify = generated.verifyCredential;
-    if (typeof verify !== 'function') {
-        throw new Error('verifyCredential is not exported from generated tools.');
-    }
-    const verified = await verify({ inboundCredential: inbound });
-    const upstreamCredential = verified.upstreamCredential.trim();
-    if (upstreamCredential.length === 0) {
-        throw new Error('verifyCredential returned an empty upstream credential.');
-    }
-    const sessionClaims =
-        verified.sessionClaims && typeof verified.sessionClaims === 'object'
-            ? (verified.sessionClaims as Record<string, unknown>)
-            : undefined;
-    if (session) {
-        session.upstreamCredential = upstreamCredential;
-        session.sessionClaims = sessionClaims;
-        session.verifiedAt = Date.now();
-    }
-
-    return withDbConnectionHostContext(generated, {
-        ...apiFields,
-        credential: upstreamCredential,
-        sessionClaims
-    });
-}
-
-function oauthResourceMetadataDocument(httpHostConfig: OAuthHttpHostRuntimeConfig): Record<string, unknown> {
-    const resource = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
-    return {
-        resource,
-        authorization_servers: [httpHostConfig.oauthIdpUrl],
-        bearer_methods_supported: ['header'],
-        scopes_supported: [httpHostConfig.oauthScope]
-    };
-}
-
-function sendOAuthUnauthorized(res: ServerResponse, httpHostConfig: OAuthHttpHostRuntimeConfig): void {
-    const resource = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
-    const metadataUrl =
-        'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + '/.well-known/oauth-protected-resource';
-    res.writeHead(401, {
-        'content-type': 'application/json',
-        'www-authenticate':
-            'Bearer error="invalid_token", realm="mcp", resource_metadata="' +
-            metadataUrl +
-            '", resource="' +
-            resource +
-            '", scope="' +
-            httpHostConfig.oauthScope +
-            '"'
-    });
-    res.end(
-        JSON.stringify({
-            jsonrpc: '2.0',
-            error: { code: -32_001, message: 'Unauthorized' },
-            id: null
-        })
-    );
-}
-
-type SessionEntry = {
-    transport: StreamableHTTPServerTransport;
-    server: McpServer;
-    session: McpOAuthSession;
-};
-
-const sessionEntries = new Map<string, SessionEntry>();
-const sessionStore = new Map<string, McpOAuthSession>();
-const sessionHeaders = new Map<string, Record<string, string | string[] | undefined>>();
-
-function isInitializeRequestBody(body: unknown): boolean {
-    if (Array.isArray(body)) {
-        return body.some((item) => isInitializeRequestBody(item));
-    }
-    if (!body || typeof body !== 'object') {
-        return false;
-    }
-    const record = body as Record<string, unknown>;
-    return record.jsonrpc === '2.0' && record.method === 'initialize';
-}
-
-function mcpRequiresBearerOnInitialize(generated: GeneratedHostModule): boolean {
-    return generated.requiresAuth && generatedHasProtectedOrCheckedTool(generated);
-}
-
-function readSessionId(req: IncomingMessage): string | undefined {
-    const raw = req.headers['mcp-session-id'];
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-async function createMcpServerForSession(
-    generated: GeneratedHostModule,
-    httpHostConfig: OAuthHttpHostRuntimeConfig,
-    sessionId: string,
-    headers: Record<string, string | string[] | undefined>
-): Promise<SessionEntry> {
-    const { name, version } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version });
-    const session: McpOAuthSession = {
-        sessionId,
-        createdAt: Date.now()
-    };
-    sessionStore.set(sessionId, session);
-    await registerMcpTools(server, generated, {
-        envDirs: httpHostConfig.envDirs,
-        resolveContext: async () => {
-            const hdr = sessionHeaders.get(sessionId) ?? headers;
-            return await resolveHostContextForOAuthSession(httpHostConfig, generated, hdr, sessionStore, sessionId);
-        }
-    });
-    const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => sessionId,
-        onsessioninitialized: (sid) => {
-            session.sessionId = sid;
-        }
-    });
-    transport.onclose = () => {
-        sessionEntries.delete(sessionId);
-        sessionStore.delete(sessionId);
-        sessionHeaders.delete(sessionId);
-        void server.close();
-    };
-    await server.connect(transport);
-    return { transport, server, session };
-}
-
-async function handleOAuthMcpRequest(
+async function handleRelayHttpMcpPost(
     req: IncomingMessage,
     res: ServerResponse,
     generated: GeneratedHostModule,
-    httpHostConfig: OAuthHttpHostRuntimeConfig
+    httpHostConfig: RelayHttpHostRuntimeConfig
 ): Promise<void> {
-    const headers = req.headers as Record<string, string | string[] | undefined>;
-    const sessionIdHeader = readSessionId(req);
-    const parsedBody = req.method === 'POST' ? await readMcpHttpJsonBody(req) : undefined;
-
-    if (mcpRequiresBearerOnInitialize(generated)) {
-        const bearer = readBearerFromHeaders(headers);
-        const verified = await verifyCredentialForGate(generated, bearer);
-        if (!verified) {
-            if (!sessionIdHeader && isInitializeRequestBody(parsedBody)) {
-                sendOAuthUnauthorized(res, httpHostConfig);
-                return;
-            }
-            if (sessionIdHeader && !sessionEntries.has(sessionIdHeader)) {
-                sendOAuthUnauthorized(res, httpHostConfig);
-                return;
-            }
-        }
-    }
-
-    let entry: SessionEntry | undefined;
-    if (sessionIdHeader && sessionEntries.has(sessionIdHeader)) {
-        entry = sessionEntries.get(sessionIdHeader);
-    } else if (req.method === 'POST' && isInitializeRequestBody(parsedBody)) {
-        const newSessionId = randomUUID();
-        entry = await createMcpServerForSession(generated, httpHostConfig, newSessionId, headers);
-        sessionEntries.set(newSessionId, entry);
-    } else if (sessionIdHeader) {
-        writeJsonRpcError(res, 404, -32_001, 'Session not found');
-        return;
-    } else if (req.method === 'POST') {
-        writeJsonRpcError(res, 400, -32_000, 'Bad Request: Session ID required');
-        return;
-    } else {
-        res.writeHead(400).end('Missing session ID');
-        return;
-    }
-
-    if (!entry) {
-        writeJsonRpcInternalError(res);
-        return;
-    }
-
-    const activeSessionId = entry.session.sessionId;
-    sessionHeaders.set(activeSessionId, headers);
-
+    const incomingHeaders = req.headers as Record<string, string | string[] | undefined>;
+    const { name, version } = requireMcpServerIdentity(generated);
+    const server = new McpServer({ name, version });
+    await registerMcpTools(server, generated, {
+        envDirs: httpHostConfig.envDirs,
+        resolveContext: () => resolveHostContextForHttpCall(httpHostConfig, generated, incomingHeaders)
+    });
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     try {
-        await entry.transport.handleRequest(req, res, parsedBody);
-    } catch (err) {
-        loggingAdapter.error('[mcp] oauth HTTP request failed', {
-            error: err instanceof Error ? err.message : String(err)
+        await server.connect(transport);
+        const parsedBody = await readMcpHttpJsonBody(req);
+        res.on('close', () => {
+            void transport.close();
+            void server.close();
         });
+        await transport.handleRequest(req, res, parsedBody);
+    } catch (err) {
+        console.error('[mcp] passthrough HTTP request failed:', err);
         if (!res.headersSent) {
             writeJsonRpcInternalError(res);
         }
     }
 }
 
-async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
+async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node oauth-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --oauth-idp-url URL --port N [--oauth-scope SCOPE] [--host HOST] [--path /mcp]'
+            'Usage: node passthrough-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
@@ -777,46 +536,31 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
         throw new Error(`Generated module "${modulePath}" did not export an object.`);
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const httpHostConfig = parseOAuthHttpHostArgv(argv.slice(1), envDirs);
+    const httpHostConfig = parseRelayHttpHostArgv(argv.slice(1), envDirs);
     if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
         throw new Error(
             'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
         );
     }
-    await validateOAuthHttpHostAtStartup(httpHostConfig, generated);
-    const resourceUrl = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
-    loggingAdapter.info('[mcp] oauth HTTP listening', {
-        resourceUrl,
-        authorizationServer: httpHostConfig.oauthIdpUrl,
-        oauthOnInitialize: mcpRequiresBearerOnInitialize(generated)
-            ? 'Bearer required (protected/checked tools — Cursor login when enabling MCP' +
-              (generatedHasPublicTool(generated) ? '; public tools after login' : '') +
-              ')'
-            : 'no Bearer required (only public tools)'
+    validateRelayHttpHostAtStartup(httpHostConfig, generated);
+    loggingAdapter.info('[mcp] passthrough HTTP listening', {
+        url: 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath,
+        profile: RELAY_HTTP_HOST_PROFILE,
+        credentialHeader: RELAY_HTTP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
     });
 
     const httpServer = http.createServer(async (req, res) => {
         const url = new URL(req.url ?? '/', 'http://' + (req.headers.host ?? 'localhost'));
-        if (url.pathname === '/.well-known/oauth-protected-resource') {
-            res.writeHead(200, { 'content-type': 'application/json' });
-            res.end(JSON.stringify(oauthResourceMetadataDocument(httpHostConfig)));
-            return;
-        }
-        if (url.pathname === '/oauth/login') {
-            res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-            res.end(
-                '<!doctype html><html><body><h1>MCP OAuth</h1><p>Use Cursor MCP &quot;Needs login&quot; for PKCE OAuth, or open the IDP authorize URL from MCP logs.</p><p>IDP: ' +
-                    httpHostConfig.oauthIdpUrl +
-                    '/authorize</p></body></html>'
-            );
-            return;
-        }
         if (url.pathname !== httpHostConfig.mcpPath) {
             res.writeHead(404).end('Not found');
             return;
         }
-        if (req.method === 'POST' || req.method === 'GET' || req.method === 'DELETE') {
-            await handleOAuthMcpRequest(req, res, generated, httpHostConfig);
+        if (req.method === 'POST') {
+            await handleRelayHttpMcpPost(req, res, generated, httpHostConfig);
+            return;
+        }
+        if (req.method === 'GET' || req.method === 'DELETE') {
+            writeJsonRpcMethodNotAllowed(res);
             return;
         }
         res.writeHead(405).end('Method not allowed');
@@ -828,4 +572,4 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     });
 }
 
-await runOAuthHttpMcpStandaloneFromArgv(process.argv.slice(2));
+await runRelayHttpMcpStandaloneFromArgv(process.argv.slice(2));
