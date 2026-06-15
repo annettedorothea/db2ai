@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadDemoEnvLocal } from './load-env-local.mjs';
+import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
 import { buildOAuthHostLaunch, OAUTH_HTTP_DEMOS, OAUTH_HTTP_DEMO_NAMES } from './mcp-oauth-demos.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -18,7 +18,7 @@ function main() {
         process.exit(1);
     }
 
-    loadDemoEnvLocal();
+    loadProjectEnvLocal();
     process.env.LOG_SERVICE_PREFIX = process.env.LOG_SERVICE_PREFIX ?? `mcp-oauth:${name}`;
     const { demo, port, args, mcpUrl } = buildOAuthHostLaunch(name, demosRoot, process.env);
 

@@ -1,12 +1,11 @@
 import { ensureDockerDatabase, type DockerDatabaseRuntime } from './docker.js';
 
-function defaultPlantsPassword(): string {
-    return process.env.PLANTS_ORACLE_PASSWORD?.trim() || 'PlantsDemo123';
-}
-
 function buildPlantsOracleUrl(hostPort: string): string {
-    const password = encodeURIComponent(defaultPlantsPassword());
-    return `oracle://plants:${password}@127.0.0.1:${hostPort}/FREEPDB1`;
+    const configured = process.env.PLANTS_ORACLE_DATABASE_URL?.trim();
+    if (configured) {
+        return configured.replace(/localhost:\d+/, `127.0.0.1:${hostPort}`);
+    }
+    throw new Error('Missing PLANTS_ORACLE_DATABASE_URL for plants-oracle test fixture.');
 }
 
 export function ensurePlantsOracleDocker(demosRoot: string): Promise<DockerDatabaseRuntime> {
@@ -17,8 +16,9 @@ export function ensurePlantsOracleDocker(demosRoot: string): Promise<DockerDatab
         defaultHostPort: '55221',
         hostPortEnv: 'PLANTS_ORACLE_HOST_PORT',
         databaseUrlEnv: 'PLANTS_ORACLE_DATABASE_URL',
-        composeUpScript: 'db:plants-oracle:up',
-        readyWaitNpmScript: 'db:plants-oracle:wait',
+        composeDockerArgs: ['--profile', 'oracle', 'up', '-d', 'plants-oracle'],
+        readyWaitNodeScript: 'scripts/database/wait-plants-oracle.mjs',
+        postComposeNodeScripts: ['scripts/database/apply-plants-oracle-schema.mjs'],
         waitTimeoutMs: 600_000,
         buildConnectionString: buildPlantsOracleUrl
     });

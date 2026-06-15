@@ -12,7 +12,7 @@ export function ensureSakilaDocker(demosRoot: string): Promise<DockerDatabaseRun
         defaultHostPort: '53306',
         hostPortEnv: 'SAKILA_HOST_PORT',
         databaseUrlEnv: 'SAKILA_DATABASE_URL',
-        composeUpScript: 'db:sakila:up',
+        composeDockerArgs: ['up', '-d', '--wait', 'sakila'],
         waitTimeoutMs: 120_000,
         buildConnectionString: buildSakilaDatabaseUrl
     });

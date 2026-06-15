@@ -7,10 +7,12 @@ import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { requireEnv } from '../generated/require-env.mjs';
+
+const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const containerName = 'db2ai-animals-sqlserver';
 const initSqlPath = path.join(demosRoot, 'animals-sqlserver', 'init.sql');
-const saPassword = process.env.ANIMALS_SQLSERVER_SA_PASSWORD?.trim() || 'YourStrong!Passw0rd';
+const saPassword = requireEnv('ANIMALS_SQLSERVER_SA_PASSWORD');
 
 function sqlcmdArgs(extra) {
     return [

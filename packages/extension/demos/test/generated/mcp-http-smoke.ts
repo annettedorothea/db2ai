@@ -1,4 +1,4 @@
-// @generated from @core2ai/core — do not edit; regenerate via npm run generate:all in a demo workspace with demos-generate.config.json.
+// @generated from @core2ai/core — do not edit; regenerate via npm run generate:all in a workspace with project-generate.config.json.
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';

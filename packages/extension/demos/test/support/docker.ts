@@ -1,4 +1,5 @@
 import { spawn, type SpawnOptionsWithoutStdio } from 'node:child_process';
+import path from 'node:path';
 
 export type CommandResult = {
     stdout: string;
@@ -24,10 +25,12 @@ export type DockerDatabaseConfig = {
     defaultHostPort: string;
     hostPortEnv: string;
     databaseUrlEnv: string;
-    composeUpScript: string;
+    composeDockerArgs: string[];
+    /** Node scripts under demosRoot run after compose up (e.g. schema apply). */
+    postComposeNodeScripts?: string[];
     waitTimeoutMs?: number;
-    /** When set, used instead of Docker health=healthy (e.g. Oracle FREEPDB1 sqlplus probe). */
-    readyWaitNpmScript?: string;
+    /** When set, runs after compose (e.g. Oracle FREEPDB1 sqlplus probe). */
+    readyWaitNodeScript?: string;
     buildConnectionString: (hostPort: string) => string;
 };
 
@@ -137,11 +140,14 @@ export async function waitForHealthyDockerContainer(
 }
 
 async function waitForDatabaseReady(demosRoot: string, config: DockerDatabaseConfig): Promise<DockerContainerState> {
-    if (config.readyWaitNpmScript) {
-        await requireCommand('npm', ['--prefix', demosRoot, 'run', config.readyWaitNpmScript]);
+    if (config.readyWaitNodeScript) {
+        await requireCommand(process.execPath, [path.join(demosRoot, config.readyWaitNodeScript)], {
+            cwd: demosRoot,
+            env: process.env
+        });
         const current = await inspectDockerContainer(config.containerName, config.containerPort);
         if (!current.running) {
-            throw new Error(`${config.description} container is not running after ${config.readyWaitNpmScript}.`);
+            throw new Error(`${config.description} container is not running after ${config.readyWaitNodeScript}.`);
         }
         return current;
     }
@@ -194,7 +200,8 @@ export async function ensureDockerDatabase(
         };
     }
 
-    const composeResult = await runCommand('npm', ['--prefix', demosRoot, 'run', config.composeUpScript], {
+    const composeResult = await runCommand('docker', ['compose', ...config.composeDockerArgs], {
+        cwd: demosRoot,
         env: {
             ...process.env,
             [config.hostPortEnv]: startupHostPort
@@ -207,7 +214,7 @@ export async function ensureDockerDatabase(
         if (!raced || !afterRace.exists) {
             throw new Error(
                 [
-                    `Command failed (${composeResult.exitCode}): npm --prefix ${demosRoot} run ${config.composeUpScript}`,
+                    `Command failed (${composeResult.exitCode}): docker compose ${config.composeDockerArgs.join(' ')}`,
                     composeResult.stdout.trim(),
                     composeResult.stderr.trim()
                 ]
@@ -218,6 +225,13 @@ export async function ensureDockerDatabase(
         if (!afterRace.running) {
             await requireCommand('docker', ['start', config.containerName]);
         }
+    }
+
+    for (const scriptRelative of config.postComposeNodeScripts ?? []) {
+        await requireCommand(process.execPath, [path.join(demosRoot, scriptRelative)], {
+            cwd: demosRoot,
+            env: process.env
+        });
     }
 
     const ready = await waitForDatabaseReady(demosRoot, config);

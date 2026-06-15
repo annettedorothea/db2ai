@@ -1,8 +1,8 @@
 # OAuth IdP (db2ai demos)
 
-| npm script       | Port | env var                          | Signing | MCP server      |
-| ---------------- | ---- | -------------------------------- | ------- | --------------- |
-| `demo:oauth-idp` | 4863 | `ORDERS_POSTGRES_OAUTH_IDP_PORT` | RS256   | `orders` (oidc) |
+| Port | env var                          | Signing | MCP server      |
+| ---- | -------------------------------- | ------- | --------------- |
+| 4863 | `ORDERS_POSTGRES_OAUTH_IDP_PORT` | RS256   | `orders` (oidc) |
 
 Started automatically by `npm run start`.
 

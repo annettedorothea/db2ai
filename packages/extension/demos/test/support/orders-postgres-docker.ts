@@ -12,7 +12,7 @@ export function ensureOrdersPostgresDocker(demosRoot: string): Promise<DockerDat
         defaultHostPort: '55433',
         hostPortEnv: 'ORDERS_POSTGRES_HOST_PORT',
         databaseUrlEnv: 'ORDERS_POSTGRES_DATABASE_URL',
-        composeUpScript: 'db:orders-postgres:up',
+        composeDockerArgs: ['up', '-d', '--wait', 'orders-postgres'],
         buildConnectionString: buildOrdersPostgresUrl
     });
 }

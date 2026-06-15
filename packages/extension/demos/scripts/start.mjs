@@ -12,17 +12,18 @@ import { copyFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { loadDemoEnvLocal } from './load-env-local.mjs';
+import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
+import { requireEnvInt } from './generated/require-env.mjs';
 import { buildHostLaunch, HTTP_START_DEMO_NAMES } from './mcp-http-demos.mjs';
-import { buildOAuthHostLaunch, OAUTH_HTTP_DEMOS, OAUTH_HTTP_START_DEMO_NAMES } from './mcp-oauth-demos.mjs';
+import { buildOAuthHostLaunch, OAUTH_HTTP_START_DEMO_NAMES } from './mcp-oauth-demos.mjs';
 import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
+
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const foreground =
     process.env.START_FOREGROUND === '1' ||
     process.env.START_FOREGROUND === 'true' ||
     process.env.START_FOREGROUND === 'yes';
 
-/** Foreground children — stopped on Ctrl+C. */
 /** @type {import('node:child_process').ChildProcess[]} */
 const serviceChildren = [];
 
@@ -41,15 +42,14 @@ function ensureEnvFromExample(exampleName, targetName) {
         return false;
     }
     if (!existsSync(examplePath)) {
-        console.warn(`[start] ${exampleName} missing — skip env copy.`);
-        return false;
+        console.error(`[start] ${exampleName} missing — create ${targetName} with required variables.`);
+        process.exit(1);
     }
     copyFileSync(examplePath, targetPath);
     console.log(`[start] Created ${targetName} from ${exampleName} — edit database URLs and tokens as needed.`);
     return true;
 }
 
-/** Short log prefix — display labels may include URL in parentheses. */
 function logPrefix(label) {
     const m = label.match(/^(mcp-(?:http|oauth):[^\s(]+)/);
     if (m) {
@@ -67,31 +67,26 @@ function buildServiceEnv(label, extraEnv = {}) {
 }
 
 function startService(label, argv, extraEnv = {}, logPort) {
-    try {
-        const env = buildServiceEnv(label, extraEnv);
-        const portHint = logPort ? ` port ${logPort}` : '';
-        if (foreground) {
-            const child = spawn(process.execPath, argv, {
-                cwd: demosRoot,
-                stdio: 'inherit',
-                env
-            });
-            serviceChildren.push(child);
-            console.log(`[start] ${label} started in foreground${portHint}`);
-            return;
-        }
+    const env = buildServiceEnv(label, extraEnv);
+    const portHint = logPort ? ` port ${logPort}` : '';
+    if (foreground) {
         const child = spawn(process.execPath, argv, {
             cwd: demosRoot,
-            detached: true,
-            stdio: 'ignore',
+            stdio: 'inherit',
             env
         });
-        child.unref();
-        console.log(`[start] ${label} started in background${portHint}`);
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.warn(`[start] Could not start ${label}: ${message}`);
+        serviceChildren.push(child);
+        console.log(`[start] ${label} started in foreground${portHint}`);
+        return;
     }
+    const child = spawn(process.execPath, argv, {
+        cwd: demosRoot,
+        detached: true,
+        stdio: 'ignore',
+        env
+    });
+    child.unref();
+    console.log(`[start] ${label} started in background${portHint}`);
 }
 
 async function waitForHttpOk(url, { timeoutMs = 20_000, intervalMs = 200, label = url } = {}) {
@@ -112,7 +107,7 @@ async function waitForHttpOk(url, { timeoutMs = 20_000, intervalMs = 200, label 
     throw new Error(`Timed out waiting for ${label} (${lastError})`);
 }
 
-async function waitForTcpListen(port, { timeoutMs = 15_000, intervalMs = 200 } = {}) {
+async function waitForTcpListen(port, { timeoutMs = 15_000, intervalMs = 200, label = `port ${port}` } = {}) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         try {
@@ -125,23 +120,26 @@ async function waitForTcpListen(port, { timeoutMs = 15_000, intervalMs = 200 } =
         }
         await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
-    throw new Error(`Timed out waiting for TCP listener on port ${port}`);
+    throw new Error(`Timed out waiting for TCP listener on ${label}`);
+}
+
+async function waitForMcpHost(label, port, mcpUrl) {
+    await waitForTcpListen(port, { label: mcpUrl });
+    console.log(`[start] ${label} listening on port ${port}.`);
 }
 
 async function main() {
     console.log('[start] stopping previous demo processes…');
     runNpm(['run', 'demo:kill-all']);
 
-    loadDemoEnvLocal();
+    loadProjectEnvLocal();
     const createdEnv = ensureEnvFromExample('.env.example', '.env');
     if (createdEnv) {
-        loadDemoEnvLocal();
+        loadProjectEnvLocal();
     }
 
     runNpm(['install']);
-    console.log(
-        '[start] starting all demo databases (plants-oracle may take several minutes on first pull)…'
-    );
+    console.log('[start] starting all demo databases (plants-oracle may take several minutes on first pull)…');
     runNpm(['run', 'db:up:all']);
     runNpm(['run', 'generate:all']);
     runNpm(['run', 'build:generated']);
@@ -149,7 +147,7 @@ async function main() {
         console.log('[start] Foreground mode — LOG_LEVEL=debug for services, logs in this terminal.');
     }
 
-    const idpPort = Number(process.env.ORDERS_POSTGRES_OAUTH_IDP_PORT) || 4863;
+    const idpPort = requireEnvInt('ORDERS_POSTGRES_OAUTH_IDP_PORT');
     const idpBaseUrl = `http://127.0.0.1:${idpPort}`;
     startService(
         'oauth-idp',
@@ -159,39 +157,22 @@ async function main() {
     );
 
     console.log(`[start] waiting for oauth-idp at ${idpBaseUrl}…`);
-    try {
-        await waitForHttpOk(`${idpBaseUrl}/.well-known/openid-configuration`, {
-            label: 'oauth-idp openid-configuration'
-        });
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.warn(`[start] ${message} — OAuth MCP hosts may fail JWKS startup.`);
-    }
+    await waitForHttpOk(`${idpBaseUrl}/.well-known/openid-configuration`, {
+        label: 'oauth-idp openid-configuration'
+    });
 
     for (const name of HTTP_START_DEMO_NAMES) {
-        const { args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
-        startService(`mcp-http:${name} (${mcpUrl})`, args);
+        const { port, args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
+        const label = `mcp-http:${name} (${mcpUrl})`;
+        startService(label, args);
+        await waitForMcpHost(label, port, mcpUrl);
     }
 
     for (const name of OAUTH_HTTP_START_DEMO_NAMES) {
-        const demo = OAUTH_HTTP_DEMOS[name];
         const { port, args, mcpUrl } = buildOAuthHostLaunch(name, demosRoot, process.env);
-        const connectionEnv = demo.connectionEnv;
-        if (connectionEnv && !process.env[connectionEnv]?.trim()) {
-            console.warn(
-                `[start] ${connectionEnv} is missing — mcp-oauth:${name} will exit before listening. Copy .env.example → .env and set database URL.`
-            );
-        }
-        startService(`mcp-oauth:${name} (${mcpUrl})`, args);
-        try {
-            await waitForTcpListen(port, { timeoutMs: 15_000 });
-            console.log(`[start] mcp-oauth:${name} listening on port ${port}.`);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.warn(
-                `[start] ${message} (common: missing ${connectionEnv}, IdP not ready, or stale ${demo.tools})`
-            );
-        }
+        const label = `mcp-oauth:${name} (${mcpUrl})`;
+        startService(label, args);
+        await waitForMcpHost(label, port, mcpUrl);
     }
 
     if (foreground) {

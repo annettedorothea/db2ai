@@ -1,4 +1,4 @@
-// @generated from @core2ai/core — do not edit; regenerate via npm run generate:all in a demo workspace with demos-generate.config.json.
+// @generated from @core2ai/core — do not edit; regenerate via npm run generate:all in a workspace with project-generate.config.json.
 
 /** Minimal contract for generated *-tools.js modules (no @core2ai/core). */
 export type GeneratedToolDescriptor = {

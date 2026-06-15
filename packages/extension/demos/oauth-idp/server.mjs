@@ -98,7 +98,7 @@ function sendAuthorizeHelpPage(res) {
     sendHtml(
         res,
         renderAuthorizeHelpPage(
-            'Use <strong>Cursor MCP OAuth</strong> on <code>orders</code> (<code>npm run demo:oauth-idp</code>, orders-postgres Docker).'
+            'Use <strong>Cursor MCP OAuth</strong> on <code>orders</code> (<code>npm run start</code>).'
         )
     );
 }

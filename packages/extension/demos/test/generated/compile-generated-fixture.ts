@@ -1,4 +1,4 @@
-// @generated from @core2ai/core — do not edit; regenerate via npm run generate:all in a demo workspace with demos-generate.config.json.
+// @generated from @core2ai/core — do not edit; regenerate via npm run generate:all in a workspace with project-generate.config.json.
 
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -19,7 +19,7 @@ function findCompileWorkspaceRoot(startDir: string): CompileWorkspaceRoot {
     while (true) {
         if (
             fs.existsSync(path.join(dir, 'tsconfig.base.json')) &&
-            fs.existsSync(path.join(dir, 'demos-generate.config.json'))
+            fs.existsSync(path.join(dir, 'project-generate.config.json'))
         ) {
             demosCandidate = { root: dir, extendsConfig: 'tsconfig.generated.json' };
         }

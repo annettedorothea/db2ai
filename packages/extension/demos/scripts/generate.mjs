@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Run CLI generate for one demo DSL file (VSIX embed or env override).
+ * Run CLI generate for one DSL file (VSIX embed or env override).
  *
- * Usage: node ./scripts/generate.mjs <file.db2ai> <generated/tools/out.ts>
+ * Usage: node ./scripts/generate.mjs <file.dsl> <generated/tools/out.ts>
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -10,8 +10,8 @@ import os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const configPath = path.join(demosRoot, 'demos-generate.config.json');
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const configPath = path.join(projectRoot, 'project-generate.config.json');
 
 function loadConfig() {
     const raw = readFileSync(configPath, 'utf-8');
@@ -40,9 +40,8 @@ function resolveEmbedHome(cliPath, embedDirName) {
     return undefined;
 }
 
-/** Monorepo embed: demos folder → ../out/embed-…/cli.cjs (after extension build). */
 function findMonorepoEmbedCli(config) {
-    const candidate = path.join(demosRoot, '..', 'out', config.embedDirName, 'cli.cjs');
+    const candidate = path.join(projectRoot, '..', 'out', config.embedDirName, 'cli.cjs');
     return existsSync(candidate) ? candidate : undefined;
 }
 
@@ -104,17 +103,19 @@ function resolveCliSpawn(config) {
 function main() {
     const dslRelative = process.argv[2];
     const outRelative = process.argv[3];
+    const config = loadConfig();
 
     if (!dslRelative || !outRelative) {
-        console.error('Usage: node ./scripts/generate.mjs <file.db2ai> <generated/tools/out.ts>');
+        console.error(
+            `Usage: node ./scripts/generate.mjs <file${config.dslExtension}> <generated/tools/out.ts>`
+        );
         process.exit(1);
     }
 
-    const config = loadConfig();
     const { scriptPath, embedHome } = resolveCliSpawn(config);
-    const dslPath = path.isAbsolute(dslRelative) ? dslRelative : path.join(demosRoot, dslRelative);
-    const outPath = path.isAbsolute(outRelative) ? outRelative : path.join(demosRoot, outRelative);
-    const generateCwd = path.isAbsolute(dslRelative) ? path.dirname(dslPath) : demosRoot;
+    const dslPath = path.isAbsolute(dslRelative) ? dslRelative : path.join(projectRoot, dslRelative);
+    const outPath = path.isAbsolute(outRelative) ? outRelative : path.join(projectRoot, outRelative);
+    const generateCwd = path.isAbsolute(dslRelative) ? path.dirname(dslPath) : projectRoot;
     const env = embedHome ? { ...process.env, [config.embedHomeEnvVar]: embedHome } : process.env;
 
     execFileSync(process.execPath, [scriptPath, 'generate', dslPath, outPath], {

@@ -2,16 +2,14 @@
  * Relay HTTP MCP demo hosts (db2ai) — keys match .cursor/mcp.json server names.
  */
 import path from 'node:path';
+import { requireEnv, requireEnvInt } from './generated/require-env.mjs';
 
 export const HTTP_DEMOS = {
     pagila: {
         host: 'passthrough-http-mcp-server.js',
         tools: 'pagila-tools.js',
         connectionEnv: 'PAGILA_DATABASE_URL',
-        defaultConnection: 'postgresql://postgres:postgres@localhost:55432/pagila',
-        portEnv: 'PAGILA_HTTP_PORT',
-        defaultPort: 4853,
-        prerequisite: 'Docker Pagila'
+        portEnv: 'PAGILA_HTTP_PORT'
     }
 };
 
@@ -19,18 +17,6 @@ export const HTTP_DEMOS = {
 export const HTTP_START_DEMO_NAMES = ['pagila'];
 
 export const HTTP_DEMO_NAMES = Object.keys(HTTP_DEMOS);
-
-export function resolvePort(demo, env = process.env) {
-    const raw = env[demo.portEnv];
-    if (raw === undefined || raw.trim() === '') {
-        return demo.defaultPort;
-    }
-    const port = Number.parseInt(raw, 10);
-    if (!Number.isFinite(port) || port <= 0) {
-        throw new Error(`Invalid ${demo.portEnv}: ${raw}`);
-    }
-    return port;
-}
 
 /**
  * @param {string} name
@@ -42,16 +28,8 @@ export function buildHostLaunch(name, demosRoot, env) {
     if (!demo) {
         throw new Error(`Unknown http demo: ${name}`);
     }
-    if (demo.defaultConnection && !env[demo.connectionEnv]?.trim()) {
-        env[demo.connectionEnv] = demo.defaultConnection;
-    }
-    const connectionString = env[demo.connectionEnv]?.trim();
-    if (!connectionString) {
-        throw new Error(
-            `Missing ${demo.connectionEnv} for ${name}. ${demo.prerequisite ?? 'Set connection URL in .env'}.`
-        );
-    }
-    const port = resolvePort(demo, env);
+    requireEnv(demo.connectionEnv, env);
+    const port = requireEnvInt(demo.portEnv, env);
     const hostJs = path.join(demosRoot, 'generated/cli', demo.host);
     const toolsJs = path.join(demosRoot, 'generated/tools', demo.tools);
     const args = [hostJs, toolsJs, '--port', String(port), '--path', '/mcp'];
@@ -60,5 +38,5 @@ export function buildHostLaunch(name, demosRoot, env) {
 }
 
 export function listHttpPorts(env = process.env) {
-    return HTTP_DEMO_NAMES.map((name) => resolvePort(HTTP_DEMOS[name], env));
+    return HTTP_DEMO_NAMES.map((name) => requireEnvInt(HTTP_DEMOS[name].portEnv, env));
 }

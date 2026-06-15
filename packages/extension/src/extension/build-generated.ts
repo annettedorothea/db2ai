@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import * as vscode from 'vscode';
 
 const execFileAsync = promisify(execFile);
-const DEMO_GENERATE_CONFIG = 'demos-generate.config.json';
+const PROJECT_GENERATE_CONFIG = 'project-generate.config.json';
 const TSCONFIG_GENERATED = 'tsconfig.generated.json';
 
 export type BuildGeneratedResult =
@@ -19,7 +19,7 @@ export type BuildGeneratedResult =
 export function findDemoProjectRoot(sourcePath: string): string | undefined {
     let dir = path.dirname(path.resolve(sourcePath));
     while (true) {
-        if (existsSync(path.join(dir, DEMO_GENERATE_CONFIG))) {
+        if (existsSync(path.join(dir, PROJECT_GENERATE_CONFIG))) {
             return dir;
         }
         const parent = path.dirname(dir);

@@ -1,7 +1,7 @@
-#!/usr/bin/env node
+// @generated from @core2ai/core — do not edit; regenerated when running project generate.
+
 /**
  * Kill only TCP listeners on a port (not clients connected to that port).
- * Avoids killing Cursor/Electron when MCP previews hold connections to demo MCP URLs.
  */
 import { execSync } from 'node:child_process';
 
@@ -45,7 +45,7 @@ function isNodeListener(pid) {
 /**
  * @param {number} port
  * @param {{ logPrefix?: string, nodeOnly?: boolean }} [options]
- * @returns {{ killed: string[]; skipped: string[] }}
+ * @returns {{ killed: string[], skipped: string[] }}
  */
 export function killListenersOnPort(port, options = {}) {
     const logPrefix = options.logPrefix ?? 'kill';

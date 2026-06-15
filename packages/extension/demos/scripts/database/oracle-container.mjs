@@ -3,13 +3,22 @@
  * Shared helpers for the plants-oracle Docker demo (sqlplus via /nolog + CONNECT).
  */
 import { execFileSync } from 'node:child_process';
+import { requireEnv } from '../generated/require-env.mjs';
 
 export const PLANTS_ORACLE_CONTAINER = 'db2ai-plants-oracle';
 const CONNECT_HOST = '127.0.0.1';
 const CONNECT_SERVICE = 'FREEPDB1';
 
 export function plantsOracleSysPassword() {
-    return process.env.PLANTS_ORACLE_SYS_PASSWORD?.trim() || process.env.ORACLE_PWD?.trim() || 'OracleDemo123';
+    const fromPlants = process.env.PLANTS_ORACLE_SYS_PASSWORD?.trim();
+    if (fromPlants) {
+        return fromPlants;
+    }
+    const fromOraclePwd = process.env.ORACLE_PWD?.trim();
+    if (fromOraclePwd) {
+        return fromOraclePwd;
+    }
+    return requireEnv('PLANTS_ORACLE_SYS_PASSWORD');
 }
 
 export function plantsOracleConnectSql(password = plantsOracleSysPassword()) {

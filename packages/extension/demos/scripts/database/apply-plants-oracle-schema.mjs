@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runPlantsOracleSqlplus } from './oracle-container.mjs';
 
-const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const initSqlPath = path.join(demosRoot, 'plants-oracle', 'init.sql');
 
 function main() {

@@ -12,7 +12,7 @@ export function ensurePagilaDocker(demosRoot: string): Promise<DockerDatabaseRun
         defaultHostPort: '55432',
         hostPortEnv: 'PAGILA_HOST_PORT',
         databaseUrlEnv: 'PAGILA_DATABASE_URL',
-        composeUpScript: 'db:up',
+        composeDockerArgs: ['up', '-d', '--wait', 'pagila'],
         buildConnectionString: buildPagilaDatabaseUrl
     });
 }

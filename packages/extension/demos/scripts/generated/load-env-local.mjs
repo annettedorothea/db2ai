@@ -1,12 +1,14 @@
-#!/usr/bin/env node
+// @generated from @core2ai/core — do not edit; regenerated when running project generate.
+
 /**
- * Load `.env.local` then `.env` into process.env (demo workspace only).
+ * Load `.env` then `.env.local` into process.env.
+ * Does not override keys already set in the shell; `.env.local` overrides `.env`.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 function stripOptionalQuotes(value) {
     if (value.length < 2) {
@@ -56,8 +58,8 @@ function loadEnvFile(filePath, options) {
     return true;
 }
 
-/** @param {string} [root] defaults to demos package root */
-export function loadDemoEnvLocal(root = demosRoot) {
+/** @param {string} [root] defaults to project root (parent of scripts/) */
+export function loadProjectEnvLocal(root = defaultRoot) {
     loadEnvFile(path.join(root, '.env'));
     loadEnvFile(path.join(root, '.env.local'), { overrideExisting: true });
 }

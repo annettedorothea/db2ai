@@ -6,6 +6,7 @@ import {
     resolveBootstrapProjectRootFromSource,
     resolveGeneratedCliDir,
     writeGeneratedDemosTestSupport,
+    writeGeneratedScripts,
     type ProjectBootstrapConfig
 } from '@core2ai/core/codegen';
 import * as fs from 'node:fs';
@@ -99,6 +100,7 @@ export async function generateOutput(model: Model, source: string, destination: 
     renderBootstrap(projectRoot, bootstrapConfig);
     ensureLoggingAdapterStubFromSource(source);
     writeGeneratedDemosTestSupport(projectRoot);
+    writeGeneratedScripts(projectRoot);
 
     return {
         tsPath,

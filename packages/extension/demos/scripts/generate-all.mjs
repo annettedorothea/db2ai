@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generate tools for every DSL file in this demo workspace (top-level and subfolders).
+ * Generate tools for every DSL file in this workspace.
  *
  * Usage: node ./scripts/generate-all.mjs
  */
@@ -9,9 +9,9 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const generateScript = path.join(demosRoot, 'scripts', 'generate.mjs');
-const configPath = path.join(demosRoot, 'demos-generate.config.json');
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const generateScript = path.join(projectRoot, 'scripts', 'generate.mjs');
+const configPath = path.join(projectRoot, 'project-generate.config.json');
 const SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp', 'scripts', '.git', '.cursor']);
 
 function loadDslExtension() {
@@ -52,10 +52,10 @@ function main() {
     }
 
     const dslExtension = loadDslExtension();
-    const dslFiles = findDslFiles(demosRoot, dslExtension);
+    const dslFiles = findDslFiles(projectRoot, dslExtension);
 
     if (dslFiles.length === 0) {
-        console.error(`[generate-all] no *${dslExtension} files found under ${demosRoot}`);
+        console.error(`[generate-all] no *${dslExtension} files found under ${projectRoot}`);
         process.exit(1);
     }
 
@@ -65,7 +65,7 @@ function main() {
         console.log(`[generate-all] ${dslRelative} → ${outRelative}`);
         execFileSync(process.execPath, [generateScript, dslRelative, outRelative], {
             stdio: 'inherit',
-            cwd: demosRoot
+            cwd: projectRoot
         });
     }
 }
