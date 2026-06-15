@@ -46,18 +46,27 @@ function findCompileWorkspaceRoot(startDir: string): CompileWorkspaceRoot {
     }
 }
 
+function listShimFilesInDir(sourceDir: string): string[] {
+    try {
+        return fs.readdirSync(sourceDir).filter((entry) => entry.endsWith('-shim.d.ts'));
+    } catch {
+        return [];
+    }
+}
+
 /** Copy *-shim.d.ts from demos workspace into tmp fixture (shims must sit under rootDir). */
 function syncDemosModuleShims(projectRoot: string, workspace: CompileWorkspaceRoot): string[] {
     const includes: string[] = [];
-    try {
-        for (const entry of fs.readdirSync(workspace.root)) {
-            if (entry.endsWith('-shim.d.ts')) {
-                fs.copyFileSync(path.join(workspace.root, entry), path.join(projectRoot, entry));
-                includes.push(entry);
-            }
+    const shimDirs = ['', 'types'];
+    for (const subdir of shimDirs) {
+        const sourceDir = subdir ? path.join(workspace.root, subdir) : workspace.root;
+        for (const entry of listShimFilesInDir(sourceDir)) {
+            const relPath = subdir ? path.join(subdir, entry) : entry;
+            const destPath = path.join(projectRoot, relPath);
+            fs.mkdirSync(path.dirname(destPath), { recursive: true });
+            fs.copyFileSync(path.join(sourceDir, entry), destPath);
+            includes.push(relPath.split(path.sep).join('/'));
         }
-    } catch {
-        /* workspace root unreadable */
     }
     return includes;
 }

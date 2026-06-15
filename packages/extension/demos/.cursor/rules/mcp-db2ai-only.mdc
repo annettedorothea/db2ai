@@ -50,6 +50,7 @@ alwaysApply: true
   - erneute Aufrufe mit anderen Parametern, nur um denselben Fehler zu umgehen.
 - **Erlaubt** vor dem (oder beim) einen MCP-Versuch: MCP-Tool-Descriptor lesen (Schema), um den Aufruf korrekt zu formulieren — das ist keine Ersatz-Datenquelle.
 - **Genau ein** MCP-Tool-Aufruf pro geplanter Abfrage; scheitert er, Antwort mit kurzer Fehlermeldung, Hinweis fuer den Nutzer (z. B. Server in `mcp.json` aktivieren, `npm run start`, Pagila: `x-api-token` / `DB2AI_AUTH_TOKEN`, orders-postgres: OAuth) und **Audit** mit dem Fehler — **keine** Daten aus anderen Quellen liefern.
+- **Ausnahme — Bulk-Smoke-Test:** Bei `db2ai /test:all` (Skill `db2ai-test-all-mcp`) ein Aufruf **pro Tool** aller Server in `mcp.json`; Fehler pro Tool dokumentieren und mit den uebrigen Tools fortfahren.
 
 ## Quellen aus MCP-Antworten lesen
 

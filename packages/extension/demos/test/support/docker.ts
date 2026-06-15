@@ -227,6 +227,8 @@ export async function ensureDockerDatabase(
         }
     }
 
+    const ready = await waitForDatabaseReady(demosRoot, config);
+
     for (const scriptRelative of config.postComposeNodeScripts ?? []) {
         await requireCommand(process.execPath, [path.join(demosRoot, scriptRelative)], {
             cwd: demosRoot,
@@ -234,7 +236,6 @@ export async function ensureDockerDatabase(
         });
     }
 
-    const ready = await waitForDatabaseReady(demosRoot, config);
     if (!ready.hostPort) {
         throw new Error(`${config.description} container is ready, but its published host port could not be detected.`);
     }
