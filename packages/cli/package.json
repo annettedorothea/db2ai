@@ -1,7 +1,7 @@
 {
     "name": "db-2-ai-dsl-cli",
     "description": "CLI for db2ai DSL (parse / validate / generate)",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "type": "module",
     "engines": {
         "node": ">=20.10.0",
@@ -23,7 +23,7 @@
         "test": "vitest run"
     },
     "dependencies": {
-        "@core2ai/core": "0.2.0",
+        "@core2ai/core": "0.3.0",
         "@modelcontextprotocol/sdk": "^1.29.0",
         "chalk": "~5.6.2",
         "commander": "~15.0.0",

@@ -33,11 +33,9 @@ Open Cursor or VS Code and run:
 db2ai: Create demo workspace (MCP examples)
 ```
 
-### 3. Explore
+### 3. Test your first MCP server
 
-Open any `.db2ai` file, make a change, and save.
-
-db2ai automatically validates your SQL and generates MCP-compatible tools.
+Open **`README.md`** in the demo folder and follow **Quick start** (`npm run start:sakila`, then MCP server `sakila`). Requires Docker Desktop.
 
 No repository checkout required.
 

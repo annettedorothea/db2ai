@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
+import { prepareWorkspaceEnv } from './start-shared.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -19,7 +19,7 @@ function runNode(relativePath, args = []) {
     }
 }
 
-loadProjectEnvLocal();
+prepareWorkspaceEnv();
 console.log('[kill-all] stopping MCP hosts…');
 runNode('./scripts/kill-mcp-hosts.mjs');
 console.log('[kill-all] stopping OAuth IDP…');

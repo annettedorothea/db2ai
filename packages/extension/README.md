@@ -1,38 +1,34 @@
 # db2ai
 
-Editor support for the **`.db2ai` DSL**: syntax highlighting, validation, schema-aware completion, and **generate on save** (TypeScript tool modules + MCP host).
-
-The full project (DSL, CLI, demos) lives in the [db2ai](https://github.com/annettodorothea/db2ai) repository. Sibling: [api2ai](https://github.com/annettedorothea/api2ai) (OpenAPI to MCP).
+Language support and code generation for the **`.db2ai` DSL** (SQL → MCP tools): syntax highlighting, validation, schema-aware completion, and generate on save.
 
 ## Requirements
 
 - VS Code or Cursor **1.67+**
-- Node.js **20+** in demo/tool workspaces (for `@modelcontextprotocol/sdk`, `zod`, and DB drivers at runtime: `pg`, `mysql2`, `mssql`, `oracledb`)
+- Node.js **20+** in the demo workspace
 - **Docker Desktop** (running) for demo databases
 
-## Usage
+## Create demo workspace
 
-1. Open a workspace folder that contains `.db2ai` files.
-2. Edit `.db2ai` — on **save**, the extension writes **`generated/tools/*.ts`**, **`generated/cli/stdio-mcp-server.ts`**, and compiles **`.js`** for MCP (same as **`npm run build:generated`**). Run **`npm install`** once in the workspace so TypeScript is available.
-3. Command Palette: **Generate tool code (.ts + MCP host)** for manual generation of the focused `.db2ai` file.
+**Goal:** set up a local folder with example `.db2ai` files, Docker DB config, and MCP config.
 
-Set `database env "YOUR_VAR"` (or `database mysql env "YOUR_VAR"`) in the DSL and define **`YOUR_VAR`** in `.env` / MCP config — not in the DSL file itself.
+1. Command Palette → **`db2ai: Create demo workspace (MCP examples)`**
+2. Choose an **empty folder** (or confirm overwrite if retrying)
+3. Click **Open folder** when prompted
 
-## MCP demo workspace
+**Next:** open **`README.md`** in that demo folder — it walks you through testing your first MCP server.
 
-1. Install this extension (VSIX).
-2. Command Palette → **db2ai: Create demo workspace (MCP examples)** → choose an empty folder.
-3. In that folder run **`npm run start`** (requires Docker: creates `.env` from `.env.example` if missing, install, start all demo DBs including Oracle, generate all DSLs, compile). First **`plants-oracle`** pull may take several minutes; one-time `docker login container-registry.oracle.com`.
-4. Edit **`.env`** for database URLs and optional static token (`DB2AI_AUTH_TOKEN` for `sakila`).
-5. Open the demo folder as the workspace. In Cursor Settings → **Tools & MCP**, enable servers from `.cursor/mcp.json` (e.g. `sakila`, `pagila`, `orders`, `animals`, `plants`).
+## Your own `.db2ai` projects
 
-**Reload MCP** after changing `.db2ai`, running generate/build, or env vars that MCP reads at server startup (e.g. database URLs).
+Open any folder with `.db2ai` files. On **save**, the extension generates tool modules and MCP hosts (run **`npm install`** once). Set `database env "YOUR_VAR"` in the DSL; put the connection URL in `.env` / MCP config.
 
-Details, scripts, and example prompts: **`README.md`** in the demo folder.
+Command Palette: **Generate tool code (.ts + MCP host)** for manual generation of the focused file.
+
+Supported dialects: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle.
 
 ## License
 
-BUSL-1.1 - Copyright (c) 2026 Annette Pohl. Full license text is included in the VSIX (`LICENSE` file, copied from the db2ai repository root when you run `npm run vsix:build` from the monorepo root).
+BUSL-1.1 — Copyright (c) 2026 Annette Pohl. Full license text is in the VSIX (`LICENSE`).
 
 ---
 

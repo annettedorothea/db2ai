@@ -239,7 +239,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'orders-postgres-tools';
-export const mcpServerVersion = '0.2.1';
+export const mcpServerVersion = '0.3.0';
 
 const parameterCheckers: Record<
     string,
