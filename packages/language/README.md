@@ -1,6 +1,6 @@
 # db-2-ai-dsl-language
 
-Langium package for the **`.db2ai` DSL** (grammar, PostgreSQL schema validation, completion).
+Langium package for the **`.db2ai` DSL** (grammar, multi-dialect schema validation, SQL probes, completion).
 
 ## Key files
 
@@ -8,7 +8,7 @@ Langium package for the **`.db2ai` DSL** (grammar, PostgreSQL schema validation,
 - [`src/db-2-ai-dsl-validator.ts`](./src/db-2-ai-dsl-validator.ts) — document validation
 - [`src/db-2-ai-dsl-sql-validator.ts`](./src/db-2-ai-dsl-sql-validator.ts) — SQL block validation
 - [`src/db-2-ai-dsl-completion-provider.ts`](./src/db-2-ai-dsl-completion-provider.ts) — completion (tables, columns)
-- [`src/schema.ts`](./src/schema.ts) — PostgreSQL introspection
+- [`src/schema.ts`](./src/schema.ts) — database introspection (PostgreSQL, MySQL/MariaDB, Oracle)
 - [`syntaxes/db-2-ai-dsl.tmLanguage.json`](./syntaxes/db-2-ai-dsl.tmLanguage.json) — TextMate grammar (generated)
 - [`test/`](./test/) — parsing, validation, SQL tests
 

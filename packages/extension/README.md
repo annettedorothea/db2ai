@@ -7,7 +7,7 @@ The full project (DSL, CLI, demos) lives in the [db2ai](https://github.com/annet
 ## Requirements
 
 - VS Code or Cursor **1.67+**
-- Node.js **20+** in demo/tool workspaces (for `@modelcontextprotocol/sdk`, `zod`, `pg` / `mysql2` at runtime)
+- Node.js **20+** in demo/tool workspaces (for `@modelcontextprotocol/sdk`, `zod`, and DB drivers at runtime: `pg`, `mysql2`, `mssql`, `oracledb`)
 - **Docker Desktop** (running) for demo databases
 
 ## Usage
@@ -24,7 +24,7 @@ Set `database env "YOUR_VAR"` (or `database mysql env "YOUR_VAR"`) in the DSL an
 2. Command Palette → **db2ai: Create demo workspace (MCP examples)** → choose an empty folder.
 3. In that folder run **`npm run start`** (requires Docker: creates `.env` from `.env.example` if missing, install, start all demo DBs including Oracle, generate all DSLs, compile). First **`plants-oracle`** pull may take several minutes; one-time `docker login container-registry.oracle.com`.
 4. Edit **`.env`** for database URLs and optional static token (`DB2AI_AUTH_TOKEN` for `sakila`).
-5. Open the demo folder as the workspace. In Cursor Settings → **Tools & MCP**, enable servers from `.cursor/mcp.json` (`sakila`, `pagila`, `orders`).
+5. Open the demo folder as the workspace. In Cursor Settings → **Tools & MCP**, enable servers from `.cursor/mcp.json` (e.g. `sakila`, `pagila`, `orders`, `animals`, `plants`).
 
 **Reload MCP** after changing `.db2ai`, running generate/build, or env vars that MCP reads at server startup (e.g. database URLs).
 

@@ -18,12 +18,12 @@ From the **db2ai workspace root**, when any of:
 - `packages/cli/src/generator/**` changed
 - Demo DSL changed (`packages/extension/demos/*.db2ai`)
 - After `@core2ai/core` pin refresh affecting codegen or MCP host — see [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc)
-- `core2ai/src/test-fixtures/render-*.ts` changed (rewrites `packages/extension/demos/test/generated/**/*.ts` via `writeGeneratedDemosTestSupport`)
+- `core2ai/src/codegen/**` changed (MCP host templates; run `npm run test` in core2ai after pin refresh)
 - `core2ai/src/scripts/**` changed (rewrites `packages/extension/demos/scripts/generated/**/*.mjs` utility modules via `writeGeneratedScripts` on the next generate run)
 
 Always run `build:generated` afterward (below).
 
-`test/generated/**/*.ts` is emitted on `generate:all` (not hand-edited). `scripts/generated/*.mjs` holds utility modules only; `scripts/generate.mjs` and `scripts/generate-all.mjs` are hand-maintained.
+`scripts/generated/*.mjs` holds utility modules only; `scripts/generate.mjs` and `scripts/generate-all.mjs` are hand-maintained.
 
 ## When to run `build:generated` only
 
@@ -39,7 +39,7 @@ After:
 
 ## Commit
 
-Include regenerated **`generated/**/*.ts`** (and `test/generated/**/*.ts` or `scripts/generated/**/*.mjs` when utility templates change). Do not hand-edit `.js`.
+Include regenerated **`generated/**/*.ts`** (and `scripts/generated/**/*.mjs` when utility templates change). Do not hand-edit `.js`.
 
 ## Verify
 

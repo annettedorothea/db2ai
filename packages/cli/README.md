@@ -23,7 +23,7 @@ The env **name** is in the DSL; the URL lives in `.env` / `mcp.json` `env`.
 
 - [`src/main.ts`](./src/main.ts) — Commander
 - [`src/generator/`](./src/generator/) — codegen
-- [`test/`](./test/) — unit tests (integration tests: [`../extension/demos/test/`](../extension/demos/test/))
+- [`test/`](./test/) — unit tests
 
 ---
 

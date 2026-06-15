@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Mint a demo JWT for tests/direct-invoke: node get-token.mjs alice
+ * Mint a demo JWT: node get-token.mjs alice
  */
 import { mintCustomerToken } from '../oauth-idp/jwt.mjs';
 

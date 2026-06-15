@@ -10,7 +10,7 @@
  *  4. generate:all (+ format via demos package.json)
  *  5. build:generated (demos .js for local MCP; not committed)
  *  6. check (format, typecheck, lint)
- *  7. test (language, cli, demos — build not re-run)
+ *  7. test (language + cli + demos compile check)
  *
  * Does not package the VSIX — run `npm run vsix:build` after this passes.
  * Optional: rebuild core2ai first if codegen changed (`npm run build` in sibling core2ai).
@@ -36,8 +36,6 @@ run('install:demos', 'npm', ['run', 'install:demos']);
 run('generate:all', 'npm', ['run', 'generate:all']);
 run('build:generated (demos)', 'npm', ['run', 'build:generated', '--prefix', 'packages/extension/demos']);
 run('check', 'npm', ['run', 'check']);
-run('test (language)', 'npm', ['run', 'test', '--workspace', 'packages/language']);
-run('test (cli)', 'npm', ['run', 'test', '--workspace', 'packages/cli']);
-run('test (demos)', 'npm', ['run', 'test', '--prefix', 'packages/extension/demos']);
+run('test', 'npm', ['run', 'test']);
 
 console.log('\n[vsix:prepare] done — run npm run vsix:build to package the VSIX.\n');
