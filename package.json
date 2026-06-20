@@ -2,7 +2,7 @@
     "name": "db-2-ai-dsl-workspace",
     "description": "Langium workspace for db2ai — relational DB to MCP tools",
     "version": "0.3.0",
-    "license": "BUSL-1.1",
+    "license": "MIT",
     "type": "module",
     "private": true,
     "scripts": {

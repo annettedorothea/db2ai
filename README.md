@@ -161,7 +161,9 @@ Overview: [core2ai docs](https://github.com/annettedorothea/core2ai/tree/main/do
 
 ## License
 
-BUSL-1.1
+MIT — see [LICENSE](./LICENSE).
+
+Integration, consulting, and support: open a [GitHub Discussion](https://github.com/annettedorothea/db2ai/discussions) or issue.
 
 ---
 

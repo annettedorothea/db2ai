@@ -28,7 +28,7 @@ Supported dialects: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle.
 
 ## License
 
-BUSL-1.1 — Copyright (c) 2026 Annette Pohl. Full license text is in the VSIX (`LICENSE`).
+MIT — Copyright (c) 2026 Annette Pohl. Full license text is in the VSIX (`LICENSE`).
 
 ---
 
