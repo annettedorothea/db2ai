@@ -16,6 +16,7 @@ SqlQuery:
         ('query' ':' query=DslText)?
         ('summary' ':' summary=DslText)?
         ('params' ':' params=SqlParamMap)?
+        ('response' ':' response=DslText)?
     '}';
 
 Access:

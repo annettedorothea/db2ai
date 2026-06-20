@@ -123,6 +123,32 @@ describe('Parsing tests', () => {
         }
     });
 
+    test('parses response on SQL block', async () => {
+        document = await parse(`
+            database postgres env "PAGILA_DATABASE_URL"
+
+            SQL {
+                toolName: listFilms
+                access: public
+                intent: "list films"
+                query: "SELECT * FROM film LIMIT :limit"
+                params: {
+                    limit: { description: "max" example: "10" type: integer }
+                }
+                response: '''
+                    Object with rows (film columns) and rowCount.
+                '''
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        const entry = document.parseResult.value.entries[0];
+        expect(isSqlQuery(entry)).toBe(true);
+        if (isSqlQuery(entry)) {
+            expect(entry.response).toContain('rowCount');
+        }
+    });
+
     test('parses auth keyword and checked access', async () => {
         document = await parse(`
             database postgres env "ORDERS_POSTGRES_DATABASE_URL"

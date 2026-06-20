@@ -83,6 +83,10 @@ function buildSqlDescription(query: SqlQuery, params: ResolvedSqlParam[]): strin
     if (exampleCall) {
         lines.push('', exampleCall);
     }
+    const responseText = query.response?.trim();
+    if (responseText) {
+        lines.push('', `Response:\n${responseText}`);
+    }
     return lines.join('\n');
 }
 

@@ -12,6 +12,10 @@ SQL {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
     }
+    response: '''
+        Object with rows (film table columns from SELECT *) and rowCount.
+        Use rowCount for pagination; limit is capped at 500 in SQL.
+    '''
 }
 
 SQL {
@@ -33,6 +37,11 @@ SQL {
         }
         offset: { description: "rows to skip" example: "0" type: integer }
     }
+    response: '''
+        Object with rows (actor table columns from SELECT *) and rowCount.
+        Use rowCount for pagination; limit is capped at 500 in SQL.
+        Checked access: requires DB2AI_AUTH_TOKEN at MCP startup.
+    '''
 }
 
 SQL {
@@ -45,6 +54,10 @@ SQL {
         limit: { description: "max rows per page" example: "10" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
     }
+    response: '''
+        Object with rows (customer table columns from SELECT *) and rowCount.
+        Use rowCount for pagination; limit is capped at 500 in SQL.
+    '''
 }
 
 SQL {
@@ -57,6 +70,10 @@ SQL {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
     }
+    response: '''
+        Object with rows (category_id, name, last_update) and rowCount.
+        Use rowCount for pagination; limit is capped at 500 in SQL.
+    '''
 }
 
 SQL {
@@ -69,6 +86,10 @@ SQL {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
     }
+    response: '''
+        Object with rows (country_id, country, last_update) and rowCount.
+        Use rowCount for pagination; limit is capped at 500 in SQL.
+    '''
 }
 
 SQL {
@@ -90,6 +111,10 @@ SQL {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
     }
+    response: '''
+        Object with rows (inventory table columns from SELECT *) and rowCount.
+        Use rowCount for pagination; limit is capped at 500 in SQL.
+    '''
 }
 
 SQL {
@@ -122,6 +147,10 @@ SQL {
             example: "20"
             type: integer }
     }
+    response: '''
+        Object with rows { film_id, title, rating } and rowCount.
+        Ordered by title; rowCount 0 when no films match the given MPAA rating.
+    '''
 }
 
 SQL {
@@ -158,6 +187,10 @@ SQL {
             example: "25"
             type: integer }
     }
+    response: '''
+        Object with rows { first_name, last_name, title } and rowCount.
+        One row per actor–film pair; ordered by last name, then title.
+    '''
 }
 
 SQL {
@@ -192,6 +225,10 @@ SQL {
             example: "15"
             type: integer }
     }
+    response: '''
+        Object with rows { film_id, title, rating, description_preview } and rowCount.
+        description_preview is the first 120 characters of description; case-insensitive match in title or description.
+    '''
 }
 
 SQL {
@@ -211,6 +248,10 @@ SQL {
             example: "SMITH"
             type: string }
     }
+    response: '''
+        Object with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1.
+        actor_id is the new primary key assigned by the database.
+    '''
 }
 
 SQL {
@@ -233,6 +274,10 @@ SQL {
             example: "JONES"
             type: string }
     }
+    response: '''
+        Object with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when actor_id exists.
+        rowCount 0 when no row matched actor_id.
+    '''
 }
 
 SQL {
@@ -249,4 +294,9 @@ SQL {
             example: "999"
             type: integer }
     }
+    response: '''
+        Object with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when deleted.
+        rowCount 0 when actor_id was not found.
+        Fails if the actor is referenced by film_actor (foreign key constraint).
+    '''
 }

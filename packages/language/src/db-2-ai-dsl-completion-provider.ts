@@ -16,7 +16,7 @@ import {
 } from './generated/ast.js';
 import { usedSqlParamSpecFieldKinds } from './sql-param-spec.js';
 
-const SQL_BLOCK_KEYS = ['toolName', 'access', 'intent', 'query', 'summary', 'params'] as const;
+const SQL_BLOCK_KEYS = ['toolName', 'access', 'intent', 'query', 'summary', 'params', 'response'] as const;
 type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
 const SQL_PARAM_SPEC_KEYS = ['description', 'example', 'type'] as const;
 const ACCESS_KINDS = ['public', 'protected', 'checked'] as const;
@@ -30,7 +30,8 @@ const SQL_KEYWORD_SORT: Record<SqlBlockKey, string> = {
     intent: '0102',
     query: '0103',
     summary: '0104',
-    params: '0107'
+    params: '0105',
+    response: '0106'
 };
 
 const ACCESS_KIND_SORT: Record<AccessKindKeyword, string> = {
@@ -65,6 +66,7 @@ const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     intent: 'intent: "$1"$0',
     query: "query: '''\n$1\n'''$0",
     summary: 'summary: "$1"$0',
+    response: 'response: "$1"$0',
     params: 'params: {\n    limit: {\n        description: "$1"\n        example: "$2"\n        type: $3\n    }\n}$0'
 };
 
@@ -116,6 +118,9 @@ function usedSqlBlockKeys(query: SqlQuery): Set<string> {
     }
     if (query.summary !== undefined) {
         used.add('summary');
+    }
+    if (query.response !== undefined) {
+        used.add('response');
     }
     if (query.query !== undefined) {
         used.add('query');
