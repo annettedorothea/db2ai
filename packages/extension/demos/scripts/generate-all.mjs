@@ -14,12 +14,15 @@ const generateScript = path.join(projectRoot, 'scripts', 'generate.mjs');
 const configPath = path.join(projectRoot, 'project-generate.config.json');
 const SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp', 'scripts', '.git', '.cursor']);
 
-function loadDslExtension() {
+function loadConfig() {
     const config = JSON.parse(readFileSync(configPath, 'utf-8'));
     if (typeof config.dslExtension !== 'string' || config.dslExtension.trim().length === 0) {
         throw new Error(`[generate-all] ${path.basename(configPath)} missing "dslExtension"`);
     }
-    return config.dslExtension;
+    if (typeof config.productName !== 'string' || config.productName.trim().length === 0) {
+        throw new Error(`[generate-all] ${path.basename(configPath)} missing "productName"`);
+    }
+    return config;
 }
 
 function findDslFiles(root, dslExtension) {
@@ -51,17 +54,17 @@ function main() {
         process.exit(1);
     }
 
-    const dslExtension = loadDslExtension();
-    const dslFiles = findDslFiles(projectRoot, dslExtension);
+    const config = loadConfig();
+    const dslFiles = findDslFiles(projectRoot, config.dslExtension);
 
     if (dslFiles.length === 0) {
-        console.error(`[generate-all] no *${dslExtension} files found under ${projectRoot}`);
+        console.error(`[generate-all] no *${config.dslExtension} files found under ${projectRoot}`);
         process.exit(1);
     }
 
     for (const dslRelative of dslFiles) {
-        const baseName = path.basename(dslRelative, dslExtension);
-        const outRelative = path.join('generated', 'tools', `${baseName}-tools.ts`);
+        const baseName = path.basename(dslRelative, config.dslExtension);
+        const outRelative = path.join('generated', config.productName, 'tools', `${baseName}-tools.ts`);
         console.log(`[generate-all] ${dslRelative} → ${outRelative}`);
         execFileSync(process.execPath, [generateScript, dslRelative, outRelative], {
             stdio: 'inherit',

@@ -15,8 +15,8 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 ## Transport (stdio vs. HTTP vs. OAuth, siehe `mcp.json`)
 
-- **`sakila` (stdio):** `DB2AI_AUTH_TOKEN` in `.env` (gleicher Wert wie `MCP_AUTH_EXPECTED`); Validierung in `src/auth/sakila-tools/verifyCredential.ts`.
-- **`pagila` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung in `src/auth/pagila-tools/verifyCredential.ts` gegen `MCP_AUTH_EXPECTED`.
+- **`sakila` (stdio):** `DB2AI_AUTH_TOKEN` in `.env` (gleicher Wert wie `MCP_AUTH_EXPECTED`); Validierung in `src/auth/db2ai/sakila-tools/verifyCredential.ts`.
+- **`pagila` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung in `src/auth/db2ai/pagila-tools/verifyCredential.ts` gegen `MCP_AUTH_EXPECTED`.
 - **`orders` (HTTP (oauth)):** Cursor OAuth Sign-in; Validierung in `verifyCredential` — kein Token in Env schreiben.
 
 Auth-Logik liegt in `src/auth/**/verifyCredential.ts` (OAuth-Gate und stdio/relay) — nicht mehr als Host-CLI-Flags.

@@ -1,6 +1,6 @@
 import { writeGeneratedOAuthHttpMcpHost, type ProjectBootstrapConfig } from '@core2ai/core/codegen';
 
-/** Writes `generated/cli/oauth-http-mcp-server.ts`. */
-export function renderOAuthHttpMcpHost(cliDir: string, config: ProjectBootstrapConfig): string {
-    return writeGeneratedOAuthHttpMcpHost(cliDir, config);
+/** Writes `generated/{product}/cli/oauth-http-mcp-server.ts`. */
+export function renderOAuthHttpMcpHost(cliDir: string, config: ProjectBootstrapConfig, projectRoot: string): string {
+    return writeGeneratedOAuthHttpMcpHost(cliDir, config, projectRoot);
 }

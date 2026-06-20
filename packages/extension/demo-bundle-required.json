@@ -32,7 +32,7 @@
     "scripts/start-mcp-http-all.mjs",
     "scripts/start-mcp-http.mjs",
     "scripts/start-mcp-oauth.mjs",
-    "src/auth/orders-postgres-tools/listCustomerOrders.ts",
+    "src/auth/db2ai/orders-postgres-tools/listCustomerOrders.ts",
     "tsconfig.generated.json",
     "tsconfig.json"
 ]

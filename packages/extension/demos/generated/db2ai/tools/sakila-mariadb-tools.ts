@@ -1,7 +1,7 @@
 /**
  * Generated from: sakila-mariadb.db2ai
  */
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 export const connectionEnv = 'SAKILA_MARIADB_DATABASE_URL';
 

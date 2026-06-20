@@ -2,7 +2,7 @@
 /**
  * Run CLI generate for one DSL file (VSIX embed or env override).
  *
- * Usage: node ./scripts/generate.mjs <file.dsl> <generated/tools/out.ts>
+ * Usage: node ./scripts/generate.mjs <file.dsl> <generated/{product}/tools/out.ts>
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -107,7 +107,7 @@ function main() {
 
     if (!dslRelative || !outRelative) {
         console.error(
-            `Usage: node ./scripts/generate.mjs <file${config.dslExtension}> <generated/tools/out.ts>`
+            `Usage: node ./scripts/generate.mjs <file${config.dslExtension}> <generated/${config.productName}/tools/out.ts>`
         );
         process.exit(1);
     }

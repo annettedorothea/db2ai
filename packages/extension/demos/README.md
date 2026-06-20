@@ -14,10 +14,10 @@
 2. Terminal in this folder:
 
 ```bash
-npm run start:sakila
+npm install && npm run start:sakila
 ```
 
-(install, Sakila container, generate, compile — does not start other databases)
+(`start:sakila` also runs `npm install` if you skip the line above — then Sakila container, generate, compile; does not start other databases)
 
 3. Cursor → **Settings → Tools & MCP** → enable only **`sakila`** → **Reload MCP**
 4. Chat (copy-paste — prefix **`db2ai`** activates the demo MCP rule):
@@ -54,14 +54,14 @@ Database URLs in **`.env`** (see `.env.example`). Protected/checked tools: `src/
 
 ## Scripts
 
-| Command                    | Purpose                                             |
-| -------------------------- | --------------------------------------------------- |
-| `npm run start:sakila`     | Sakila DB only + generate + compile (quick start)   |
-| `npm run start:<demo>`     | One demo: `pagila`, `orders`, `animals`, `plants`   |
-| `npm run start:all`        | All DBs + all MCP/IDP hosts (`npm run start` alias) |
-| `npm run start:foreground` | `start:all` with logs in this terminal              |
-| `npm run demo:kill-all`    | Stop MCP, IDP, and all Docker demo DBs              |
-| `npm run db:down`          | Stop Docker containers only                         |
+| Command                    | Purpose                                                      |
+| -------------------------- | ------------------------------------------------------------ |
+| `npm run start:sakila`     | `npm install` + Sakila DB + generate + compile (quick start) |
+| `npm run start:<demo>`     | One demo: `pagila`, `orders`, `animals`, `plants`            |
+| `npm run start:all`        | All DBs + all MCP/IDP hosts (`npm run start` alias)          |
+| `npm run start:foreground` | `start:all` with logs in this terminal                       |
+| `npm run demo:kill-all`    | Stop MCP, IDP, and all Docker demo DBs                       |
+| `npm run db:down`          | Stop Docker containers only                                  |
 
 Reload MCP after `.db2ai`, `mcp.json`, or `.env` changes.
 

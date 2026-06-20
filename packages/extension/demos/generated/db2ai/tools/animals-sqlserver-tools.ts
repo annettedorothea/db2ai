@@ -1,7 +1,7 @@
 /**
  * Generated from: animals-sqlserver.db2ai
  */
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 export const connectionEnv = 'ANIMALS_SQLSERVER_DATABASE_URL';
 

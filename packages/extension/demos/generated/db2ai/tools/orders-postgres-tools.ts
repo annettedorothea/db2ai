@@ -1,13 +1,13 @@
 /**
  * Generated from: orders-postgres.db2ai
  */
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
-import { verifyCredential } from '../../src/auth/orders-postgres-tools/verifyCredential.js';
-import { checkListCustomerOrdersParameters } from '../../src/auth/orders-postgres-tools/listCustomerOrders.js';
-import { checkCreateOrderParameters } from '../../src/auth/orders-postgres-tools/createOrder.js';
-import { checkCreateProductParameters } from '../../src/auth/orders-postgres-tools/createProduct.js';
-import { checkUpdateProductParameters } from '../../src/auth/orders-postgres-tools/updateProduct.js';
-import { checkDeleteProductParameters } from '../../src/auth/orders-postgres-tools/deleteProduct.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { verifyCredential } from '../../../src/auth/db2ai/orders-postgres-tools/verifyCredential.js';
+import { checkListCustomerOrdersParameters } from '../../../src/auth/db2ai/orders-postgres-tools/listCustomerOrders.js';
+import { checkCreateOrderParameters } from '../../../src/auth/db2ai/orders-postgres-tools/createOrder.js';
+import { checkCreateProductParameters } from '../../../src/auth/db2ai/orders-postgres-tools/createProduct.js';
+import { checkUpdateProductParameters } from '../../../src/auth/db2ai/orders-postgres-tools/updateProduct.js';
+import { checkDeleteProductParameters } from '../../../src/auth/db2ai/orders-postgres-tools/deleteProduct.js';
 
 export const connectionEnv = 'ORDERS_POSTGRES_DATABASE_URL';
 
@@ -15,11 +15,11 @@ export const databaseDialect = 'postgres';
 
 export const requiresAuth = true;
 
-export { verifyCredential } from '../../src/auth/orders-postgres-tools/verifyCredential.js';
+export { verifyCredential } from '../../../src/auth/db2ai/orders-postgres-tools/verifyCredential.js';
 export type {
     VerifyCredentialInput,
     VerifyCredentialResult
-} from '../../src/auth/orders-postgres-tools/verifyCredential.js';
+} from '../../../src/auth/db2ai/orders-postgres-tools/verifyCredential.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;

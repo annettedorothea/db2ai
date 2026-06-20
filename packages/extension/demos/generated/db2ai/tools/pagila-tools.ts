@@ -1,9 +1,9 @@
 /**
  * Generated from: pagila.db2ai
  */
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
-import { verifyCredential } from '../../src/auth/pagila-tools/verifyCredential.js';
-import { checkListActorsParameters } from '../../src/auth/pagila-tools/listActors.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { verifyCredential } from '../../../src/auth/db2ai/pagila-tools/verifyCredential.js';
+import { checkListActorsParameters } from '../../../src/auth/db2ai/pagila-tools/listActors.js';
 
 export const connectionEnv = 'PAGILA_DATABASE_URL';
 
@@ -11,8 +11,11 @@ export const databaseDialect = 'postgres';
 
 export const requiresAuth = true;
 
-export { verifyCredential } from '../../src/auth/pagila-tools/verifyCredential.js';
-export type { VerifyCredentialInput, VerifyCredentialResult } from '../../src/auth/pagila-tools/verifyCredential.js';
+export { verifyCredential } from '../../../src/auth/db2ai/pagila-tools/verifyCredential.js';
+export type {
+    VerifyCredentialInput,
+    VerifyCredentialResult
+} from '../../../src/auth/db2ai/pagila-tools/verifyCredential.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;

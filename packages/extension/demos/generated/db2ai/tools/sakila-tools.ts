@@ -1,8 +1,8 @@
 /**
  * Generated from: sakila.db2ai
  */
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
-import { verifyCredential } from '../../src/auth/sakila-tools/verifyCredential.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { verifyCredential } from '../../../src/auth/db2ai/sakila-tools/verifyCredential.js';
 
 export const connectionEnv = 'SAKILA_DATABASE_URL';
 
@@ -10,8 +10,11 @@ export const databaseDialect = 'mysql';
 
 export const requiresAuth = true;
 
-export { verifyCredential } from '../../src/auth/sakila-tools/verifyCredential.js';
-export type { VerifyCredentialInput, VerifyCredentialResult } from '../../src/auth/sakila-tools/verifyCredential.js';
+export { verifyCredential } from '../../../src/auth/db2ai/sakila-tools/verifyCredential.js';
+export type {
+    VerifyCredentialInput,
+    VerifyCredentialResult
+} from '../../../src/auth/db2ai/sakila-tools/verifyCredential.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;

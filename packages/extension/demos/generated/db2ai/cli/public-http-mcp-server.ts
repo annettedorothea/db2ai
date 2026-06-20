@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generated passthrough HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated public HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
  */
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -11,11 +11,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 type RelayHttpHostProfile = 'public' | 'passthrough';
 
-const RELAY_HTTP_HOST_PROFILE: RelayHttpHostProfile = 'passthrough';
+const RELAY_HTTP_HOST_PROFILE: RelayHttpHostProfile = 'public';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -410,17 +410,6 @@ function readAuthHeaderNameFromEnv(): string {
     return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
 }
 
-function readCredentialFromHttpHeaders(
-    headers: Record<string, string | string[] | undefined>,
-    headerName: string
-): string | undefined {
-    const normalized = headerName.trim().toLowerCase();
-    const raw = headers[normalized];
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    const trimmed = typeof value === 'string' ? value.trim() : '';
-    return trimmed.length > 0 ? trimmed : undefined;
-}
-
 function validateRelayHttpHostAtStartup(
     httpHostConfig: RelayHttpHostRuntimeConfig,
     generated: GeneratedHostModule
@@ -464,10 +453,9 @@ function validateRelayHttpHostAtStartup(
 async function resolveHostContextForHttpCall(
     httpHostConfig: RelayHttpHostRuntimeConfig,
     generated: GeneratedHostModule,
-    incomingHeaders: Record<string, string | string[] | undefined>
+    _incomingHeaders: Record<string, string | string[] | undefined>
 ): Promise<ApiLikeHostContext> {
-    const headerName = readAuthHeaderNameFromEnv();
-    const credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
+    const credential = undefined;
     const { credential: c } = resolveRelayHostCredential(credential);
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -515,7 +503,7 @@ async function handleRelayHttpMcpPost(
         });
         await transport.handleRequest(req, res, parsedBody);
     } catch (err) {
-        console.error('[mcp] passthrough HTTP request failed:', err);
+        console.error('[mcp] public HTTP request failed:', err);
         if (!res.headersSent) {
             writeJsonRpcInternalError(res);
         }
@@ -526,7 +514,7 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
-            'Usage: node passthrough-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
+            'Usage: node public-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
         );
     }
     const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
@@ -543,7 +531,7 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
         );
     }
     validateRelayHttpHostAtStartup(httpHostConfig, generated);
-    loggingAdapter.info('[mcp] passthrough HTTP listening', {
+    loggingAdapter.info('[mcp] public HTTP listening', {
         url: 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath,
         profile: RELAY_HTTP_HOST_PROFILE,
         credentialHeader: RELAY_HTTP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()

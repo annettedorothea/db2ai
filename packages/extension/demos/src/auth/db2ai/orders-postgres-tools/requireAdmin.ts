@@ -1,4 +1,4 @@
-import type { CheckedHostContext } from '../../../generated/tools/orders-postgres-tools.js';
+import type { CheckedHostContext } from '../../../../generated/db2ai/tools/orders-postgres-tools.js';
 
 export function requireAdmin(host: CheckedHostContext): void {
     const claims = host.sessionClaims;

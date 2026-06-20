@@ -1,7 +1,7 @@
 /**
  * Generated from: plants-oracle.db2ai
  */
-import { loggingAdapter } from '../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 export const connectionEnv = 'PLANTS_ORACLE_DATABASE_URL';
 

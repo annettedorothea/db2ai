@@ -1,4 +1,4 @@
-import type { CheckedHostContext, InvokeOptions } from '../../../generated/tools/orders-postgres-tools.js';
+import type { CheckedHostContext, InvokeOptions } from '../../../../generated/db2ai/tools/orders-postgres-tools.js';
 import { requireAdmin } from './requireAdmin.js';
 
 export function checkUpdateProductParameters(options: InvokeOptions, host: CheckedHostContext): InvokeOptions {

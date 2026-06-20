@@ -4,8 +4,8 @@
             "command": "node",
             "envFile": ".env",
             "args": [
-                "./generated/cli/stdio-mcp-server.js",
-                "./generated/tools/sakila-tools.js",
+                "./generated/db2ai/cli/stdio-mcp-server.js",
+                "./generated/db2ai/tools/sakila-tools.js",
                 "--auth-env",
                 "DB2AI_AUTH_TOKEN"
             ],
@@ -16,7 +16,7 @@
         "sakila-mariadb": {
             "command": "node",
             "envFile": ".env",
-            "args": ["./generated/cli/stdio-mcp-server.js", "./generated/tools/sakila-mariadb-tools.js"],
+            "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/sakila-mariadb-tools.js"],
             "env": {
                 "SAKILA_MARIADB_DATABASE_URL": "mariadb://sakila:p_ssW0rd@localhost:53306/sakila"
             }
@@ -36,7 +36,7 @@
         "animals": {
             "command": "node",
             "envFile": ".env",
-            "args": ["./generated/cli/stdio-mcp-server.js", "./generated/tools/animals-sqlserver-tools.js"],
+            "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/animals-sqlserver-tools.js"],
             "env": {
                 "ANIMALS_SQLSERVER_DATABASE_URL": "sqlserver://sa:YourStrong!Passw0rd@localhost:55434/animals?encrypt=true&trustServerCertificate=true"
             }
@@ -44,7 +44,7 @@
         "plants": {
             "command": "node",
             "envFile": ".env",
-            "args": ["./generated/cli/stdio-mcp-server.js", "./generated/tools/plants-oracle-tools.js"],
+            "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/plants-oracle-tools.js"],
             "env": {
                 "PLANTS_ORACLE_DATABASE_URL": "oracle://plants:PlantsDemo123@localhost:55221/FREEPDB1"
             }

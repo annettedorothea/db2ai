@@ -9,6 +9,7 @@ import demoBundleRequired from '../../demo-bundle-required.json' with { type: 'j
 import { runBuildGenerated } from './build-generated.js';
 
 const PRODUCT_LABEL = 'db2ai';
+const HOST_PRODUCT = 'db2ai' as const;
 
 let client: LanguageClient;
 const generateByFileQueue = new Map<string, Promise<void>>();
@@ -264,10 +265,12 @@ async function generateForSourceFile(
     }
 
     const parsed = path.parse(sourcePath);
-    const destinationPath = path.join(parsed.dir, 'generated', 'tools', `${parsed.name}-tools.ts`);
+    const destinationPath = path.join(parsed.dir, 'generated', HOST_PRODUCT, 'tools', `${parsed.name}-tools.ts`);
     const spawn = resolveCliSpawn(context);
     if (!spawn) {
-        void vscode.window.showWarningMessage('db2ai: CLI entry not found, skipped generate.');
+        void vscode.window.showWarningMessage(
+            'db2ai: CLI not found — run npm run build in the db2ai repo (embed under packages/extension/out), install the VSIX, or set DB2AI_CLI.'
+        );
         return;
     }
     const env = spawn.embedHome?.length ? { ...process.env, DB2AI_EMBED_HOME: spawn.embedHome } : process.env;
@@ -300,20 +303,10 @@ async function generateForSourceFile(
 }
 
 function resolveCliSpawn(context: vscode.ExtensionContext): CliSpawn | undefined {
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (workspaceFolder) {
-        const monorepoNested = path.resolve(workspaceFolder, 'packages', 'cli', 'bin', 'cli.js');
-        if (existsSync(monorepoNested)) {
-            return { scriptPath: monorepoNested };
-        }
-        const parentPackages = path.resolve(workspaceFolder, '..', 'packages', 'cli', 'bin', 'cli.js');
-        if (existsSync(parentPackages)) {
-            return { scriptPath: parentPackages };
-        }
-        const demosMonorepoCli = path.resolve(workspaceFolder, '../../cli/bin/cli.js');
-        if (existsSync(demosMonorepoCli)) {
-            return { scriptPath: demosMonorepoCli };
-        }
+    const envCli = process.env.DB2AI_CLI;
+    if (envCli && existsSync(envCli)) {
+        const embedHome = path.basename(path.dirname(envCli)) === 'embed-db2ai' ? path.dirname(envCli) : undefined;
+        return { scriptPath: envCli, embedHome };
     }
 
     const bundledCliPath = context.asAbsolutePath(path.join('out', 'embed-db2ai', 'cli.cjs'));
@@ -324,9 +317,5 @@ function resolveCliSpawn(context: vscode.ExtensionContext): CliSpawn | undefined
         };
     }
 
-    const extensionRelativeCandidate = path.resolve(context.extensionPath, '..', 'cli', 'bin', 'cli.js');
-    if (existsSync(extensionRelativeCandidate)) {
-        return { scriptPath: extensionRelativeCandidate };
-    }
     return undefined;
 }

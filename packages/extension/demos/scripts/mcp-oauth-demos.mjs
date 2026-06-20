@@ -2,7 +2,13 @@
  * OAuth HTTP MCP demo hosts (db2ai) — keys match .cursor/mcp.json server names.
  */
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { requireEnv, requireEnvInt } from './generated/require-env.mjs';
+
+function loadProductName(demosRoot) {
+    const config = JSON.parse(readFileSync(path.join(demosRoot, 'project-generate.config.json'), 'utf-8'));
+    return config.productName;
+}
 
 export const OAUTH_HTTP_DEMOS = {
     orders: {
@@ -33,8 +39,9 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
     requireEnv(demo.connectionEnv, env);
     const oauthIdpUrl = requireEnv(demo.oauthIdpUrlEnv, env);
     const port = requireEnvInt(demo.portEnv, env);
-    const hostJs = path.join(demosRoot, 'generated/cli/oauth-http-mcp-server.js');
-    const toolsJs = path.join(demosRoot, 'generated/tools', demo.tools);
+    const product = loadProductName(demosRoot);
+    const hostJs = path.join(demosRoot, 'generated', product, 'cli', 'oauth-http-mcp-server.js');
+    const toolsJs = path.join(demosRoot, 'generated', product, 'tools', demo.tools);
     const oauthScope = demo.oauthScope ?? name;
     const args = [
         hostJs,

@@ -9,8 +9,10 @@ import {
 import {
     buildInputZodBlock,
     ensureVerifyCredentialStubFromSource,
+    relativeImportToLoggingAdapter,
     renderVerifyCredentialImport,
     renderVerifyCredentialReExport,
+    resolveBootstrapProjectRootFromSource,
     resolveMcpServerIdentityFromDestination,
     type ProjectBootstrapConfig
 } from '@core2ai/core/codegen';
@@ -85,8 +87,14 @@ function requiresAuthLiteral(model: Model): string {
     return needsCredential ? 'true' : 'false';
 }
 
-function renderGeneratedImports(parameterCheckerImports: string, verifyCredentialImport: string): string {
-    const loggingImport = "import { loggingAdapter } from '../../src/utils/logging-adapter.js';";
+function renderGeneratedImports(
+    destinationTsPath: string,
+    projectRoot: string,
+    parameterCheckerImports: string,
+    verifyCredentialImport: string
+): string {
+    const loggingSpec = relativeImportToLoggingAdapter(destinationTsPath, projectRoot);
+    const loggingImport = `import { loggingAdapter } from '${loggingSpec}';`;
     const parts = [loggingImport];
     if (verifyCredentialImport.length > 0) {
         parts.push(verifyCredentialImport);
@@ -135,12 +143,15 @@ function assembleToolsModuleSource(
     model: Model,
     source: string,
     destinationTsPath: string,
+    projectRoot: string,
     parameterCheckerImports: string,
     verifyStubPath: string | undefined
 ): string {
     const toolsLiteral = serializeToolsForModule(tools);
     const sourceRef = renderSourceReference(source);
     const importPrefix = renderGeneratedImports(
+        destinationTsPath,
+        projectRoot,
         parameterCheckerImports,
         verifyStubPath !== undefined ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath) : ''
     );
@@ -196,7 +207,7 @@ ${toolRuntimeBlock}
 `;
 }
 
-/** Renders `generated/tools/*-tools.ts` source text. */
+/** Renders `generated/{product}/tools/*-tools.ts` source text. */
 export async function renderToolsModule(input: RenderToolsModuleInput): Promise<string> {
     const { model, source, destinationTsPath, stubPaths, bootstrapConfig, databaseDialect } = input;
     const envName = String(model.env).trim();
@@ -220,6 +231,7 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const verifyStubPath = modelRequiresAuth(model)
         ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
         : undefined;
+    const projectRoot = resolveBootstrapProjectRootFromSource(source);
 
     return assembleToolsModuleSource(
         tools,
@@ -230,6 +242,7 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
         model,
         source,
         destinationTsPath,
+        projectRoot,
         parameterCheckerImports,
         verifyStubPath
     );
