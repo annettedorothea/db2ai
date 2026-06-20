@@ -49,7 +49,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows (example: 20)\n\nExample call: limit=20',
+            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
         sqlText: 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ?',
         params: [
@@ -69,7 +69,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Title search in Sakila',
         description:
-            'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText (:searchText): matched in film title (example: love)\n- maxRows (:maxRows): max rows (example: 10)\n\nExample call: searchText=love, maxRows=10',
+            'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=love, maxRows=10',
         access: 'public',
         sqlText:
             "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?",
@@ -102,11 +102,11 @@ export const mcpServerVersion = '0.3.0';
 import * as z from 'zod/v4';
 
 export const inputZodByTool = {
-    listFilms: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
+    listFilms: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
     searchFilms: z
         .object({
-            searchText: z.string().describe('matched in film title (SQL :searchText)'),
-            maxRows: z.number().describe('max rows (SQL :maxRows)')
+            searchText: z.string().describe('matched in film title (SQL :searchText) (example: love)'),
+            maxRows: z.number().describe('max rows (SQL :maxRows) (example: 10)')
         })
         .strict()
 };

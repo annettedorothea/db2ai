@@ -49,7 +49,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listPlants',
         title: 'Paginated plant catalog',
         description:
-            'list plants with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows (example: 20)\n\nExample call: limit=20',
+            'list plants with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
         sqlText:
             '\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        ORDER BY common_name\n        FETCH FIRST :limit ROWS ONLY\n    ',
@@ -70,7 +70,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchPlants',
         title: 'Name search in the plant catalog',
         description:
-            'search plants by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText (:searchText): text matched in common or Latin name (example: oak)\n- maxRows (:maxRows): max rows to return (example: 10)\n\nExample call: searchText=oak, maxRows=10',
+            'search plants by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=oak, maxRows=10',
         access: 'public',
         sqlText:
             "\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        WHERE\n            common_name LIKE '%' || :searchText || '%'\n            OR latin_name LIKE '%' || :searchText || '%'\n        ORDER BY common_name\n        FETCH FIRST :maxRows ROWS ONLY\n    ",
@@ -100,7 +100,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createPlant',
         title: 'Add one plant to the catalog',
         description:
-            'insert a new plant row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName (:commonName): English common name (example: Mint)\n- latinName (:latinName): Latin species name (example: Mentha spicata)\n- aboutText (:aboutText): short English description (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
+            'insert a new plant row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
         access: 'public',
         sqlText:
             '\n        INSERT INTO plants (common_name, latin_name, description)\n        VALUES (:commonName, :latinName, :aboutText)\n        RETURNING plant_id, common_name, latin_name, description\n    ',
@@ -139,7 +139,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updatePlant',
         title: 'Update one plant by id',
         description:
-            'update an existing plant row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName (:commonName): English common name (example: Mint)\n- latinName (:latinName): Latin species name (example: Mentha spicata)\n- aboutText (:aboutText): short English description (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)\n- plantId (:plantId): plant id to update (example: 1)\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
+            'update an existing plant row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
         access: 'public',
         sqlText:
             '\n        UPDATE plants\n        SET\n            common_name = :commonName,\n            latin_name = :latinName,\n            description = :aboutText\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
@@ -187,7 +187,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'deletePlant',
         title: 'Remove one plant by id',
         description:
-            'delete a plant row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- plantId (:plantId): plant id to delete (example: 999)\n\nExample call: plantId=999',
+            'delete a plant row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: plantId=999',
         access: 'public',
         sqlText:
             '\n        DELETE FROM plants\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
@@ -211,29 +211,37 @@ export const mcpServerVersion = '0.3.0';
 import * as z from 'zod/v4';
 
 export const inputZodByTool = {
-    listPlants: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
+    listPlants: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
     searchPlants: z
         .object({
-            searchText: z.string().describe('text matched in common or Latin name (SQL :searchText)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
+            searchText: z.string().describe('text matched in common or Latin name (SQL :searchText) (example: oak)'),
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 10)')
         })
         .strict(),
     createPlant: z
         .object({
-            commonName: z.string().describe('English common name (SQL :commonName)'),
-            latinName: z.string().describe('Latin species name (SQL :latinName)'),
-            aboutText: z.string().describe('short English description (SQL :aboutText)')
+            commonName: z.string().describe('English common name (SQL :commonName) (example: Mint)'),
+            latinName: z.string().describe('Latin species name (SQL :latinName) (example: Mentha spicata)'),
+            aboutText: z
+                .string()
+                .describe(
+                    'short English description (SQL :aboutText) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)'
+                )
         })
         .strict(),
     updatePlant: z
         .object({
-            commonName: z.string().describe('English common name (SQL :commonName)'),
-            latinName: z.string().describe('Latin species name (SQL :latinName)'),
-            aboutText: z.string().describe('short English description (SQL :aboutText)'),
-            plantId: z.number().describe('plant id to update (SQL :plantId)')
+            commonName: z.string().describe('English common name (SQL :commonName) (example: Mint)'),
+            latinName: z.string().describe('Latin species name (SQL :latinName) (example: Mentha spicata)'),
+            aboutText: z
+                .string()
+                .describe(
+                    'short English description (SQL :aboutText) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)'
+                ),
+            plantId: z.number().describe('plant id to update (SQL :plantId) (example: 1)')
         })
         .strict(),
-    deletePlant: z.object({ plantId: z.number().describe('plant id to delete (SQL :plantId)') }).strict()
+    deletePlant: z.object({ plantId: z.number().describe('plant id to delete (SQL :plantId) (example: 999)') }).strict()
 };
 
 import oracledb from 'oracledb';

@@ -31,5 +31,6 @@ describe('buildSqlDescription via resolveToolsFromModel', () => {
 
         const tools = resolveToolsFromModel(document.parseResult.value);
         expect(tools[0]?.description).toContain('Response:\nObject with rows and rowCount.');
+        expect(tools[0]?.description).not.toContain('Parameters:');
     });
 });

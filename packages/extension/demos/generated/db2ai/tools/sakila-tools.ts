@@ -56,7 +56,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated Sakila film rows',
         description:
-            'list films from Sakila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'list films from Sakila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'public',
         sqlText: 'SELECT * FROM film LIMIT ? OFFSET ?',
         params: [
@@ -85,7 +85,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated Sakila actor rows',
         description:
-            'List actors from Sakila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'List actors from Sakila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'protected',
         sqlText: 'SELECT * FROM actor LIMIT ? OFFSET ?',
         params: [
@@ -114,7 +114,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCategories',
         title: 'Paginated Sakila category rows',
         description:
-            'list film categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0',
+            'list film categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'public',
         sqlText: 'SELECT * FROM category LIMIT ? OFFSET ?',
         params: [
@@ -143,7 +143,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsByRating',
         title: 'Films by rating (G, PG, PG-13, R, NC-17)',
         description:
-            'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating (:rating): rating (G, PG, PG-13, R, or NC-17) (example: PG)\n- maxRows (:maxRows): max rows to return (example: 20)\n\nExample call: rating=PG, maxRows=20',
+            'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG, maxRows=20',
         access: 'public',
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ',
@@ -173,7 +173,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsWithActorLastName',
         title: 'Actor-film cast via film_actor join',
         description:
-            'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix (:lastNamePrefix): actor last name prefix (e.g. GAR, BER, HOP) (example: GAR)\n- maxRows (:maxRows): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
+            'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         access: 'public',
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ",
@@ -203,7 +203,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Film search across title and description',
         description:
-            'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText (:searchText): \n                Search text matched in title or description.\n                Example: cat, dog, academy.\n             (example: cat)\n- maxRows (:maxRows): max rows to return (example: 15)\n\nExample call: searchText=cat, maxRows=15',
+            'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=cat, maxRows=15',
         access: 'public',
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ",
@@ -234,7 +234,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'insertActor',
         title: 'Insert actor with first and last name',
         description:
-            'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName (:firstName): actor first name (example: MARY)\n- lastName (:lastName): actor last name (example: SMITH)\n\nExample call: firstName=MARY, lastName=SMITH',
+            'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH',
         access: 'public',
         sqlText: 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())',
         params: [
@@ -268,32 +268,34 @@ import * as z from 'zod/v4';
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listActors: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCategories: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     filmsByRating: z
         .object({
-            rating: z.string().describe('rating (G, PG, PG-13, R, or NC-17) (SQL :rating)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
+            rating: z.string().describe('rating (G, PG, PG-13, R, or NC-17) (SQL :rating) (example: PG)'),
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 20)')
         })
         .strict(),
     filmsWithActorLastName: z
         .object({
-            lastNamePrefix: z.string().describe('actor last name prefix (e.g. GAR, BER, HOP) (SQL :lastNamePrefix)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
+            lastNamePrefix: z
+                .string()
+                .describe('actor last name prefix (e.g. GAR, BER, HOP) (SQL :lastNamePrefix) (example: GAR)'),
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 25)')
         })
         .strict(),
     searchFilms: z
@@ -301,15 +303,15 @@ export const inputZodByTool = {
             searchText: z
                 .string()
                 .describe(
-                    'Search text matched in title or description.\n                Example: cat, dog, academy.\n             (SQL :searchText)'
+                    'Search text matched in title or description.\n                Example: cat, dog, academy.\n             (SQL :searchText) (example: cat)'
                 ),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 15)')
         })
         .strict(),
     insertActor: z
         .object({
-            firstName: z.string().describe('actor first name (SQL :firstName)'),
-            lastName: z.string().describe('actor last name (SQL :lastName)')
+            firstName: z.string().describe('actor first name (SQL :firstName) (example: MARY)'),
+            lastName: z.string().describe('actor last name (SQL :lastName) (example: SMITH)')
         })
         .strict()
 };

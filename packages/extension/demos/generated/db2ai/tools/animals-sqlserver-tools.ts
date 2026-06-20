@@ -49,7 +49,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listAnimals',
         title: 'Paginated animal catalog',
         description:
-            'list animals with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows (example: 20)\n\nExample call: limit=20',
+            'list animals with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
         sqlText:
             '\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ',
@@ -70,7 +70,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchAnimals',
         title: 'Name search in the animal catalog',
         description:
-            'search animals by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- maxRows (:maxRows): max rows to return (example: 10)\n- searchText (:searchText): text matched in common or Latin name (example: fox)\n\nExample call: maxRows=10, searchText=fox',
+            'search animals by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: maxRows=10, searchText=fox',
         access: 'public',
         sqlText:
             "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ",
@@ -100,7 +100,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createAnimal',
         title: 'Add one animal to the catalog',
         description:
-            'insert a new animal row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName (:commonName): English common name (example: European hedgehog)\n- latinName (:latinName): Latin species name (example: Erinaceus europaeus)\n- aboutText (:aboutText): short English description (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.',
+            'insert a new animal row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.',
         access: 'public',
         sqlText:
             '\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ',
@@ -139,7 +139,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updateAnimal',
         title: 'Update one animal by id',
         description:
-            'update an existing animal row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName (:commonName): English common name (example: European hedgehog)\n- latinName (:latinName): Latin species name (example: Erinaceus europaeus)\n- aboutText (:aboutText): short English description (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)\n- animalId (:animalId): animal id to update (example: 1)\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows., animalId=1',
+            'update an existing animal row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows., animalId=1',
         access: 'public',
         sqlText:
             '\n        UPDATE animals\n        SET\n            common_name = @commonName,\n            latin_name = @latinName,\n            description = @aboutText\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        WHERE animal_id = @animalId\n    ',
@@ -187,7 +187,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'deleteAnimal',
         title: 'Remove one animal by id',
         description:
-            'delete an animal row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- animalId (:animalId): animal id to delete (example: 999)\n\nExample call: animalId=999',
+            'delete an animal row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: animalId=999',
         access: 'public',
         sqlText:
             '\n        DELETE FROM animals\n        OUTPUT DELETED.animal_id, DELETED.common_name, DELETED.latin_name, DELETED.description\n        WHERE animal_id = @animalId\n    ',
@@ -211,29 +211,39 @@ export const mcpServerVersion = '0.3.0';
 import * as z from 'zod/v4';
 
 export const inputZodByTool = {
-    listAnimals: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
+    listAnimals: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
     searchAnimals: z
         .object({
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)'),
-            searchText: z.string().describe('text matched in common or Latin name (SQL :searchText)')
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 10)'),
+            searchText: z.string().describe('text matched in common or Latin name (SQL :searchText) (example: fox)')
         })
         .strict(),
     createAnimal: z
         .object({
-            commonName: z.string().describe('English common name (SQL :commonName)'),
-            latinName: z.string().describe('Latin species name (SQL :latinName)'),
-            aboutText: z.string().describe('short English description (SQL :aboutText)')
+            commonName: z.string().describe('English common name (SQL :commonName) (example: European hedgehog)'),
+            latinName: z.string().describe('Latin species name (SQL :latinName) (example: Erinaceus europaeus)'),
+            aboutText: z
+                .string()
+                .describe(
+                    'short English description (SQL :aboutText) (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)'
+                )
         })
         .strict(),
     updateAnimal: z
         .object({
-            commonName: z.string().describe('English common name (SQL :commonName)'),
-            latinName: z.string().describe('Latin species name (SQL :latinName)'),
-            aboutText: z.string().describe('short English description (SQL :aboutText)'),
-            animalId: z.number().describe('animal id to update (SQL :animalId)')
+            commonName: z.string().describe('English common name (SQL :commonName) (example: European hedgehog)'),
+            latinName: z.string().describe('Latin species name (SQL :latinName) (example: Erinaceus europaeus)'),
+            aboutText: z
+                .string()
+                .describe(
+                    'short English description (SQL :aboutText) (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)'
+                ),
+            animalId: z.number().describe('animal id to update (SQL :animalId) (example: 1)')
         })
         .strict(),
-    deleteAnimal: z.object({ animalId: z.number().describe('animal id to delete (SQL :animalId)') }).strict()
+    deleteAnimal: z
+        .object({ animalId: z.number().describe('animal id to delete (SQL :animalId) (example: 999)') })
+        .strict()
 };
 
 import sql from 'mssql';

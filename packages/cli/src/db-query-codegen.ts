@@ -46,21 +46,6 @@ function buildSqlTitle(query: SqlQuery): string {
     return requireToolName(query.toolName, 'SQL tool');
 }
 
-function buildSqlParamDescriptionLines(params: ResolvedSqlParam[]): string[] {
-    if (params.length === 0) {
-        return [];
-    }
-    const lines = ['', 'Parameters:'];
-    for (const p of params) {
-        let line = `- ${p.propertyName} (${p.placeholder}): ${p.description}`;
-        if (p.example !== undefined && p.example.trim().length > 0) {
-            line += ` (example: ${p.example.trim()})`;
-        }
-        lines.push(line);
-    }
-    return lines;
-}
-
 function buildSqlExampleCallLine(params: ResolvedSqlParam[]): string | undefined {
     const parts = params
         .filter((p) => p.example !== undefined && p.example.trim().length > 0)
@@ -73,12 +58,7 @@ function buildSqlExampleCallLine(params: ResolvedSqlParam[]): string | undefined
 
 function buildSqlDescription(query: SqlQuery, params: ResolvedSqlParam[]): string {
     const intent = requireIntent(query.intent, 'SQL tool');
-    const lines = [
-        intent,
-        '',
-        'Runs a prepared SQL statement. Pass parameter values by name (see input schema).',
-        ...buildSqlParamDescriptionLines(params)
-    ];
+    const lines = [intent, '', 'Runs a prepared SQL statement. Pass parameter values by name (see input schema).'];
     const exampleCall = buildSqlExampleCallLine(params);
     if (exampleCall) {
         lines.push('', exampleCall);

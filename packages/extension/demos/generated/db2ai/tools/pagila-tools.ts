@@ -57,7 +57,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (film table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (film table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
         access: 'public',
         sqlText: 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2',
         params: [
@@ -86,7 +86,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated actor rows',
         description:
-            'List actors from Pagila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): \n                Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n             (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (actor table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.\n        Checked access: requires DB2AI_AUTH_TOKEN at MCP startup.',
+            'List actors from Pagila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (actor table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.\n        Checked access: requires DB2AI_AUTH_TOKEN at MCP startup.',
         access: 'checked',
         sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
         params: [
@@ -116,7 +116,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCustomers',
         title: 'Paginated customer rows',
         description:
-            'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 10)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=10, offset=0\n\nResponse:\nObject with rows (customer table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=10, offset=0\n\nResponse:\nObject with rows (customer table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
         access: 'public',
         sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2',
         params: [
@@ -145,7 +145,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCategories',
         title: 'Paginated category rows',
         description:
-            'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (category_id, name, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (category_id, name, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
         access: 'public',
         sqlText: 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2',
         params: [
@@ -174,7 +174,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCountries',
         title: 'Paginated country rows',
         description:
-            'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (country_id, country, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (country_id, country, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
         access: 'public',
         sqlText: 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2',
         params: [
@@ -203,7 +203,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listInventory',
         title: 'Paginated inventory rows',
         description:
-            'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows per page (example: 100)\n- offset (:offset): rows to skip (example: 0)\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (inventory table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (inventory table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
         access: 'public',
         sqlText:
             '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 500)\n        OFFSET\n            $2\n    ',
@@ -233,7 +233,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsByMpaaRating',
         title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
         description:
-            'List films with a given MPAA age rating.\n        Valid ratings: G, PG, PG-13, R, NC-17.\n        Results ordered by title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating (:rating): MPAA rating (G, PG, PG-13, R, or NC-17) (example: PG-13)\n- maxRows (:maxRows): max rows to return (example: 20)\n\nExample call: rating=PG-13, maxRows=20\n\nResponse:\nObject with rows { film_id, title, rating } and rowCount.\n        Ordered by title; rowCount 0 when no films match the given MPAA rating.',
+            'List films with a given MPAA age rating.\n        Valid ratings: G, PG, PG-13, R, NC-17.\n        Results ordered by title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG-13, maxRows=20\n\nResponse:\nObject with rows { film_id, title, rating } and rowCount.\n        Ordered by title; rowCount 0 when no films match the given MPAA rating.',
         access: 'public',
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ',
@@ -263,7 +263,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsWithActorLastName',
         title: 'Actor–film cast via film_actor join',
         description:
-            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix (:lastNamePrefix): \n                Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (example: GAR)\n- maxRows (:maxRows): max rows to return (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25\n\nResponse:\nObject with rows { first_name, last_name, title } and rowCount.\n        One row per actor–film pair; ordered by last name, then title.',
+            'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25\n\nResponse:\nObject with rows { first_name, last_name, title } and rowCount.\n        One row per actor–film pair; ordered by last name, then title.',
         access: 'public',
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ",
@@ -294,7 +294,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Film full-text style search (title and description)',
         description:
-            'Search films by free text in title or description.\n        Case-insensitive substring match (PostgreSQL ILIKE).\n        Useful for demo queries such as dog, cat, or grace.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText (:searchText): search text (matched in title or description) (example: dog)\n- maxRows (:maxRows): max rows to return (example: 15)\n\nExample call: searchText=dog, maxRows=15\n\nResponse:\nObject with rows { film_id, title, rating, description_preview } and rowCount.\n        description_preview is the first 120 characters of description; case-insensitive match in title or description.',
+            'Search films by free text in title or description.\n        Case-insensitive substring match (PostgreSQL ILIKE).\n        Useful for demo queries such as dog, cat, or grace.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=dog, maxRows=15\n\nResponse:\nObject with rows { film_id, title, rating, description_preview } and rowCount.\n        description_preview is the first 120 characters of description; case-insensitive match in title or description.',
         access: 'public',
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ",
@@ -324,7 +324,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createActor',
         title: 'Create actor with first and last name',
         description:
-            'Insert a new actor into Pagila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName (:firstName): actor first name (example: MARY)\n- lastName (:lastName): actor last name (example: SMITH)\n\nExample call: firstName=MARY, lastName=SMITH\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1.\n        actor_id is the new primary key assigned by the database.',
+            'Insert a new actor into Pagila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1.\n        actor_id is the new primary key assigned by the database.',
         access: 'public',
         sqlText:
             'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW()) RETURNING actor_id, first_name, last_name, last_update',
@@ -354,7 +354,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updateActor',
         title: 'Update actor by id',
         description:
-            "Update an actor's first and last name.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName (:firstName): new first name (example: MARY)\n- lastName (:lastName): new last name (example: JONES)\n- actorId (:actorId): actor id to update (example: 1)\n\nExample call: firstName=MARY, lastName=JONES, actorId=1\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when actor_id exists.\n        rowCount 0 when no row matched actor_id.",
+            "Update an actor's first and last name.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=JONES, actorId=1\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when actor_id exists.\n        rowCount 0 when no row matched actor_id.",
         access: 'public',
         sqlText:
             'UPDATE actor SET first_name = $1, last_name = $2, last_update = NOW() WHERE actor_id = $3 RETURNING actor_id, first_name, last_name, last_update',
@@ -393,7 +393,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'deleteActor',
         title: 'Delete actor by id',
         description:
-            'Delete an actor by id.\n        Fails if the actor is referenced by film_actor (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- actorId (:actorId): actor id to delete (example: 999)\n\nExample call: actorId=999\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when deleted.\n        rowCount 0 when actor_id was not found.\n        Fails if the actor is referenced by film_actor (foreign key constraint).',
+            'Delete an actor by id.\n        Fails if the actor is referenced by film_actor (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: actorId=999\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when deleted.\n        rowCount 0 when actor_id was not found.\n        Fails if the actor is referenced by film_actor (foreign key constraint).',
         access: 'public',
         sqlText: 'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update',
         params: [
@@ -425,8 +425,8 @@ import * as z from 'zod/v4';
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listActors: z
@@ -434,39 +434,39 @@ export const inputZodByTool = {
             limit: z
                 .number()
                 .describe(
-                    'Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n             (SQL :limit)'
+                    'Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n             (SQL :limit) (example: 100)'
                 ),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCustomers: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 10)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCategories: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCountries: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listInventory: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit)'),
-            offset: z.number().describe('rows to skip (SQL :offset)')
+            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     filmsByMpaaRating: z
         .object({
-            rating: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL :rating)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
+            rating: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL :rating) (example: PG-13)'),
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 20)')
         })
         .strict(),
     filmsWithActorLastName: z
@@ -474,31 +474,33 @@ export const inputZodByTool = {
             lastNamePrefix: z
                 .string()
                 .describe(
-                    'Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (SQL :lastNamePrefix)'
+                    'Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (SQL :lastNamePrefix) (example: GAR)'
                 ),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 25)')
         })
         .strict(),
     searchFilms: z
         .object({
-            searchText: z.string().describe('search text (matched in title or description) (SQL :searchText)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows)')
+            searchText: z
+                .string()
+                .describe('search text (matched in title or description) (SQL :searchText) (example: dog)'),
+            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 15)')
         })
         .strict(),
     createActor: z
         .object({
-            firstName: z.string().describe('actor first name (SQL :firstName)'),
-            lastName: z.string().describe('actor last name (SQL :lastName)')
+            firstName: z.string().describe('actor first name (SQL :firstName) (example: MARY)'),
+            lastName: z.string().describe('actor last name (SQL :lastName) (example: SMITH)')
         })
         .strict(),
     updateActor: z
         .object({
-            firstName: z.string().describe('new first name (SQL :firstName)'),
-            lastName: z.string().describe('new last name (SQL :lastName)'),
-            actorId: z.number().describe('actor id to update (SQL :actorId)')
+            firstName: z.string().describe('new first name (SQL :firstName) (example: MARY)'),
+            lastName: z.string().describe('new last name (SQL :lastName) (example: JONES)'),
+            actorId: z.number().describe('actor id to update (SQL :actorId) (example: 1)')
         })
         .strict(),
-    deleteActor: z.object({ actorId: z.number().describe('actor id to delete (SQL :actorId)') }).strict()
+    deleteActor: z.object({ actorId: z.number().describe('actor id to delete (SQL :actorId) (example: 999)') }).strict()
 };
 
 import { Client } from 'pg';

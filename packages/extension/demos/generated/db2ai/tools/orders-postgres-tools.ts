@@ -61,7 +61,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCustomerOrders',
         title: 'Customer order rows',
         description:
-            'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId (:customerId): Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools. (example: alice)\n\nExample call: customerId=alice',
+            'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: customerId=alice',
         access: 'checked',
         sqlText:
             '\n        SELECT\n            order_id,\n            customer_id,\n            product_id,\n            quantity\n        FROM\n            orders\n        WHERE\n            customer_id = $1\n        ORDER BY\n            order_id\n    ',
@@ -82,7 +82,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listProducts',
         title: 'Product catalog rows',
         description:
-            'list products in the orders-postgres catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows (example: 50)\n\nExample call: limit=50',
+            'list products in the orders-postgres catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
         access: 'public',
         sqlText: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
         params: [
@@ -102,7 +102,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listProductsWithReviews',
         title: 'Products with reviews (requires credential).\n        Join products and reviews; cap 200 rows in SQL.',
         description:
-            'List products that have at least one review, with review details.\n        Protected: requires host credential (MCP header or ORDERS_POSTGRES_TOKEN in .env).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit (:limit): max rows (example: 50)\n\nExample call: limit=50',
+            'List products that have at least one review, with review details.\n        Protected: requires host credential (MCP header or ORDERS_POSTGRES_TOKEN in .env).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
         access: 'protected',
         sqlText:
             '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ',
@@ -123,7 +123,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createOrder',
         title: 'Create order for customer and product',
         description:
-            'Insert a new order row (quantity defaults to 1).\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId (:customerId): \n                Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (example: alice)\n- productId (:productId): Product id from the catalog (example: 1)\n\nExample call: customerId=alice, productId=1',
+            'Insert a new order row (quantity defaults to 1).\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: customerId=alice, productId=1',
         access: 'checked',
         sqlText:
             'INSERT INTO orders (customer_id, product_id, quantity) VALUES ($1, $2, 1) RETURNING order_id, customer_id, product_id, quantity',
@@ -154,7 +154,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createProduct',
         title: 'Create product (admin only)',
         description:
-            'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productName (:productName): Product name (example: Widget Pro)\n- price (:price): Unit price (example: 10.99)\n\nExample call: productName=Widget Pro, price=10.99',
+            'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productName=Widget Pro, price=10.99',
         access: 'checked',
         sqlText: 'INSERT INTO products (name, price) VALUES ($1, $2) RETURNING product_id, name, price',
         params: [
@@ -183,7 +183,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updateProduct',
         title: 'Update product (admin only)',
         description:
-            'Update name and price of an existing product.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productName (:productName): New product name (example: Widget Pro)\n- price (:price): New unit price (example: 12.99)\n- productId (:productId): Product id to update (example: 1)\n\nExample call: productName=Widget Pro, price=12.99, productId=1',
+            'Update name and price of an existing product.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productName=Widget Pro, price=12.99, productId=1',
         access: 'checked',
         sqlText: 'UPDATE products SET name = $1, price = $2 WHERE product_id = $3 RETURNING product_id, name, price',
         params: [
@@ -221,7 +221,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'deleteProduct',
         title: 'Delete product (admin only)',
         description:
-            'Delete a product by id.\n        Checked access: admin role required (JWT role claim).\n        Fails if the product is referenced by orders or reviews (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productId (:productId): Product id to delete (example: 999)\n\nExample call: productId=999',
+            'Delete a product by id.\n        Checked access: admin role required (JWT role claim).\n        Fails if the product is referenced by orders or reviews (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productId=999',
         access: 'checked',
         sqlText: 'DELETE FROM products WHERE product_id = $1 RETURNING product_id, name, price',
         params: [
@@ -260,38 +260,40 @@ export const inputZodByTool = {
             customerId: z
                 .string()
                 .describe(
-                    'Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools. (SQL :customerId)'
+                    'Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools. (SQL :customerId) (example: alice)'
                 )
                 .optional()
         })
         .strict(),
-    listProducts: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
-    listProductsWithReviews: z.object({ limit: z.number().describe('max rows (SQL :limit)') }).strict(),
+    listProducts: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 50)') }).strict(),
+    listProductsWithReviews: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 50)') }).strict(),
     createOrder: z
         .object({
             customerId: z
                 .string()
                 .describe(
-                    'Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (SQL :customerId)'
+                    'Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (SQL :customerId) (example: alice)'
                 )
                 .optional(),
-            productId: z.number().describe('Product id from the catalog (SQL :productId)')
+            productId: z.number().describe('Product id from the catalog (SQL :productId) (example: 1)')
         })
         .strict(),
     createProduct: z
         .object({
-            productName: z.string().describe('Product name (SQL :productName)'),
-            price: z.number().describe('Unit price (SQL :price)')
+            productName: z.string().describe('Product name (SQL :productName) (example: Widget Pro)'),
+            price: z.number().describe('Unit price (SQL :price) (example: 10.99)')
         })
         .strict(),
     updateProduct: z
         .object({
-            productName: z.string().describe('New product name (SQL :productName)'),
-            price: z.number().describe('New unit price (SQL :price)'),
-            productId: z.number().describe('Product id to update (SQL :productId)')
+            productName: z.string().describe('New product name (SQL :productName) (example: Widget Pro)'),
+            price: z.number().describe('New unit price (SQL :price) (example: 12.99)'),
+            productId: z.number().describe('Product id to update (SQL :productId) (example: 1)')
         })
         .strict(),
-    deleteProduct: z.object({ productId: z.number().describe('Product id to delete (SQL :productId)') }).strict()
+    deleteProduct: z
+        .object({ productId: z.number().describe('Product id to delete (SQL :productId) (example: 999)') })
+        .strict()
 };
 
 import { Client } from 'pg';
