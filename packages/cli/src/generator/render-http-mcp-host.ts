@@ -1,7 +1,7 @@
-import { writeGeneratedRelayHttpMcpHosts, type ProjectBootstrapConfig } from '@core2ai/core/codegen';
+import { writeGeneratedHttpMcpHosts, type ProjectBootstrapConfig } from '@core2ai/core/codegen';
 
 /** Writes `generated/{product}/cli/public-http-mcp-server.ts` and `passthrough-http-mcp-server.ts`. */
-export function renderRelayHttpMcpHosts(
+export function renderHttpMcpHosts(
     cliDir: string,
     config: ProjectBootstrapConfig,
     projectRoot: string
@@ -9,5 +9,5 @@ export function renderRelayHttpMcpHosts(
     publicHttpMcpHostPath: string;
     passthroughHttpMcpHostPath: string;
 } {
-    return writeGeneratedRelayHttpMcpHosts(cliDir, config, projectRoot);
+    return writeGeneratedHttpMcpHosts(cliDir, config, projectRoot);
 }

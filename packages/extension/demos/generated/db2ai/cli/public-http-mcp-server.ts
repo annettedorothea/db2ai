@@ -13,9 +13,9 @@ import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextproto
 import * as z from 'zod/v4';
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
-type RelayHttpHostProfile = 'public' | 'passthrough';
+type HttpMcpHostProfile = 'public' | 'passthrough';
 
-const RELAY_HTTP_HOST_PROFILE: RelayHttpHostProfile = 'public';
+const HTTP_MCP_HOST_PROFILE: HttpMcpHostProfile = 'public';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
@@ -336,7 +336,7 @@ function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
     writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
 }
 
-type RelayHttpHostRuntimeConfig = {
+type HttpMcpHostRuntimeConfig = {
     baseUrlEnvKey?: string;
     envDirs: string[];
     listenHost: string;
@@ -344,7 +344,7 @@ type RelayHttpHostRuntimeConfig = {
     mcpPath: string;
 };
 
-function parseRelayHttpHostArgv(argv: string[], envDirs: string[]): RelayHttpHostRuntimeConfig {
+function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
     let listenHost = '127.0.0.1';
     let port: number | undefined;
@@ -410,10 +410,7 @@ function readAuthHeaderNameFromEnv(): string {
     return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
 }
 
-function validateRelayHttpHostAtStartup(
-    httpHostConfig: RelayHttpHostRuntimeConfig,
-    generated: GeneratedHostModule
-): void {
+function validateHttpMcpHostAtStartup(httpHostConfig: HttpMcpHostRuntimeConfig, generated: GeneratedHostModule): void {
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -445,13 +442,13 @@ function validateRelayHttpHostAtStartup(
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verifyCredential in src/auth/db2ai/<module>/verifyCredential.ts and re-export from generated tools.'
         );
     }
 }
 
 async function resolveHostContextForHttpCall(
-    httpHostConfig: RelayHttpHostRuntimeConfig,
+    httpHostConfig: HttpMcpHostRuntimeConfig,
     generated: GeneratedHostModule,
     _incomingHeaders: Record<string, string | string[] | undefined>
 ): Promise<ApiLikeHostContext> {
@@ -475,16 +472,16 @@ async function resolveHostContextForHttpCall(
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
-        throw new Error('Missing host base URL. Pass --base-url-env on relay HTTP MCP host and set the variable.');
+        throw new Error('Missing host base URL. Pass --base-url-env on HTTP MCP host and set the variable.');
     }
     return { baseUrl, credential: c };
 }
 
-async function handleRelayHttpMcpPost(
+async function handleHttpMcpPost(
     req: IncomingMessage,
     res: ServerResponse,
     generated: GeneratedHostModule,
-    httpHostConfig: RelayHttpHostRuntimeConfig
+    httpHostConfig: HttpMcpHostRuntimeConfig
 ): Promise<void> {
     const incomingHeaders = req.headers as Record<string, string | string[] | undefined>;
     const { name, version } = requireMcpServerIdentity(generated);
@@ -510,7 +507,7 @@ async function handleRelayHttpMcpPost(
     }
 }
 
-async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
+async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     const modulePath = argv[0];
     if (!modulePath) {
         throw new Error(
@@ -524,17 +521,17 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
         throw new Error(`Generated module "${modulePath}" did not export an object.`);
     }
     const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const httpHostConfig = parseRelayHttpHostArgv(argv.slice(1), envDirs);
+    const httpHostConfig = parseHttpMcpHostArgv(argv.slice(1), envDirs);
     if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
         throw new Error(
             'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
         );
     }
-    validateRelayHttpHostAtStartup(httpHostConfig, generated);
+    validateHttpMcpHostAtStartup(httpHostConfig, generated);
     loggingAdapter.info('[mcp] public HTTP listening', {
         url: 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath,
-        profile: RELAY_HTTP_HOST_PROFILE,
-        credentialHeader: RELAY_HTTP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
+        profile: HTTP_MCP_HOST_PROFILE,
+        credentialHeader: HTTP_MCP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
     });
 
     const httpServer = http.createServer(async (req, res) => {
@@ -544,7 +541,7 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
             return;
         }
         if (req.method === 'POST') {
-            await handleRelayHttpMcpPost(req, res, generated, httpHostConfig);
+            await handleHttpMcpPost(req, res, generated, httpHostConfig);
             return;
         }
         if (req.method === 'GET' || req.method === 'DELETE') {
@@ -560,4 +557,4 @@ async function runRelayHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     });
 }
 
-await runRelayHttpMcpStandaloneFromArgv(process.argv.slice(2));
+await runHttpMcpStandaloneFromArgv(process.argv.slice(2));

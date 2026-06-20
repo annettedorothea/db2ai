@@ -545,7 +545,7 @@ export async function invokeTool(
     if (toolMeta.access !== 'public') {
         if (!credential || !String(credential).trim()) {
             throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; relay HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
         }
         if (sessionClaims === undefined) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Start one relay HTTP MCP host (foreground).
+ * Start one HTTP MCP host (foreground).
  * Usage: node scripts/start-mcp-http.mjs <pagila>
  */
 import { spawnSync } from 'node:child_process';

@@ -16,7 +16,7 @@ import * as url from 'node:url';
 import { renderBootstrap } from './generator/render-bootstrap.js';
 import { renderCheckStubs } from './generator/render-check-stubs.js';
 import { renderOAuthHttpMcpHost } from './generator/render-oauth-http-mcp-host.js';
-import { renderRelayHttpMcpHosts } from './generator/render-relay-http-mcp-host.js';
+import { renderHttpMcpHosts } from './generator/render-http-mcp-host.js';
 import { renderStdioMcpHost } from './generator/render-stdio-mcp-host.js';
 import { renderToolsModule } from './generator/render-tools-module.js';
 
@@ -101,7 +101,7 @@ export async function generateOutput(model: Model, source: string, destination: 
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
     const cliDir = resolveGeneratedCliDir(tsPath);
     const stdioMcpHostPath = renderStdioMcpHost(cliDir, bootstrapConfig, projectRoot);
-    const relayHttpMcpHostPaths = renderRelayHttpMcpHosts(cliDir, bootstrapConfig, projectRoot);
+    const httpMcpHostPaths = renderHttpMcpHosts(cliDir, bootstrapConfig, projectRoot);
     const oauthHttpMcpHostPath = renderOAuthHttpMcpHost(cliDir, bootstrapConfig, projectRoot);
     renderBootstrap(projectRoot, bootstrapConfig);
     ensureLoggingAdapterStubFromSource(source);
@@ -111,8 +111,8 @@ export async function generateOutput(model: Model, source: string, destination: 
     return {
         tsPath,
         stdioMcpHostPath,
-        publicHttpMcpHostPath: relayHttpMcpHostPaths.publicHttpMcpHostPath,
-        passthroughHttpMcpHostPath: relayHttpMcpHostPaths.passthroughHttpMcpHostPath,
+        publicHttpMcpHostPath: httpMcpHostPaths.publicHttpMcpHostPath,
+        passthroughHttpMcpHostPath: httpMcpHostPaths.passthroughHttpMcpHostPath,
         oauthHttpMcpHostPath
     };
 }
