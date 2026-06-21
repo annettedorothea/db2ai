@@ -19,8 +19,8 @@ beforeAll(async () => {
 
 beforeEach(() => {
     clearSchemaCache();
-    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
-    process.env.SAKILA_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
+    process.env.PAGILA_POSTGRESQL_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+    process.env.SAKILA_MYSQL_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
 });
 
 function parseValidated(input: string) {
@@ -37,7 +37,7 @@ function errorMessages(doc: LangiumDocument<Model>): string[] {
 describe('Validating', () => {
     test('accepts SQL tool with valid env', async () => {
         document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -56,7 +56,7 @@ describe('Validating', () => {
 
     test('requires toolName, intent, and query', async () => {
         document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 summary: "x"
@@ -85,9 +85,9 @@ describe('Validating', () => {
     });
 
     test('rejects mysql URL for postgres dialect', async () => {
-        process.env.PAGILA_DATABASE_URL = 'mysql://localhost/db';
+        process.env.PAGILA_POSTGRESQL_DATABASE_URL = 'mysql://localhost/db';
         document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: t
@@ -102,7 +102,7 @@ describe('Validating', () => {
 
     test('accepts mysql URL for explicit mysql dialect', async () => {
         document = await parseValidated(`
-            database mysql env "SAKILA_DATABASE_URL"
+            database mysql env "SAKILA_MYSQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -120,9 +120,9 @@ describe('Validating', () => {
     });
 
     test('rejects postgres URL for explicit mysql dialect', async () => {
-        process.env.SAKILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+        process.env.SAKILA_MYSQL_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
         document = await parseValidated(`
-            database mysql env "SAKILA_DATABASE_URL"
+            database mysql env "SAKILA_MYSQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -136,9 +136,9 @@ describe('Validating', () => {
     });
 
     test('accepts mariadb URL for explicit mariadb dialect', async () => {
-        process.env.SAKILA_DATABASE_URL = 'mariadb://sakila:p_ssW0rd@localhost:53306/sakila';
+        process.env.SAKILA_MARIADB_DATABASE_URL = 'mariadb://sakila:p_ssW0rd@localhost:53306/sakila';
         document = await parseValidated(`
-            database mariadb env "SAKILA_DATABASE_URL"
+            database mariadb env "SAKILA_MARIADB_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -156,9 +156,9 @@ describe('Validating', () => {
     });
 
     test('rejects mysql URL for explicit mariadb dialect', async () => {
-        process.env.SAKILA_DATABASE_URL = 'mysql://sakila:p_ssW0rd@localhost:53306/sakila';
+        process.env.SAKILA_MARIADB_DATABASE_URL = 'mysql://sakila:p_ssW0rd@localhost:53306/sakila';
         document = await parseValidated(`
-            database mariadb env "SAKILA_DATABASE_URL"
+            database mariadb env "SAKILA_MARIADB_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -173,7 +173,7 @@ describe('Validating', () => {
 
     test('rejects duplicate tool names', async () => {
         document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: dup

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Start all demo database containers (Pagila, Sakila, orders-postgres, animals-sqlserver, plants-oracle).
+ * Start all demo database containers (Pagila, Sakila, orders-postgresql, animals-sqlserver, plants-oracle).
  *
  * plants-oracle may take several minutes on first pull; one-time: docker login container-registry.oracle.com
  *
@@ -37,8 +37,8 @@ function runNodeScript(scriptName, extraArgs = []) {
 console.log('[db:up:all] clearing previous demo DB containers…');
 runNodeScript('kill-demo-databases.mjs', ['all']);
 
-console.log('[db:up:all] starting Pagila, Sakila, orders-postgres, animals-sqlserver…');
-runDocker(['--profile', 'mssql', 'up', '-d', '--wait', 'pagila', 'sakila', 'orders-postgres', 'animals-sqlserver']);
+console.log('[db:up:all] starting Pagila, Sakila, orders-postgresql, animals-sqlserver…');
+runDocker(['--profile', 'mssql', 'up', '-d', '--wait', '--remove-orphans', 'pagila', 'sakila', 'orders-postgresql', 'animals-sqlserver']);
 
 console.log('[db:up:all] applying animals-sqlserver schema…');
 runNodeScript('apply-animals-sqlserver-schema.mjs');

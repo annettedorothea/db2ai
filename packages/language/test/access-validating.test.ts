@@ -2,7 +2,7 @@ import path from 'node:path';
 import { EmptyFileSystem } from 'langium';
 import { parseHelper, type ParseHelperOptions } from 'langium/test';
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
-import { getAccessKind, getOptionalParams } from '../src/query-access.js';
+import { getAccessKind, getOptionalParams, isToolValidateEnabled } from '../src/query-access.js';
 import { isSqlQuery } from '../src/generated/ast.js';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
 import type { Model } from '../src/generated/ast.js';
@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-    process.env.ORDERS_POSTGRES_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55433/orders_postgres';
+    process.env.ORDERS_POSTGRESQL_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55433/orders_postgres';
 });
 
 function parseValidated(input: string) {
@@ -31,7 +31,7 @@ function parseValidated(input: string) {
 describe('Access validating', () => {
     test('reports protected without auth keyword', async () => {
         const document = await parseValidated(`
-            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listActors
@@ -42,18 +42,36 @@ describe('Access validating', () => {
         `);
 
         const diagnostics = document.diagnostics ?? [];
-        expect(diagnostics.some((d) => d.message.includes('require `auth` on the model'))).toBe(true);
+        expect(diagnostics.some((d) => d.message.includes('requires `auth` on the model'))).toBe(true);
     });
 
-    test('accepts checked access with optionalParams for known SQL param', async () => {
+    test('reports authorize on public access', async () => {
         const document = await parseValidated(`
-            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
+
+            SQL {
+                toolName: listCustomerOrders
+                access: public
+                authorize: true
+                intent: "orders"
+                query: "SELECT 1"
+            }
+        `);
+
+        const diagnostics = document.diagnostics ?? [];
+        expect(diagnostics.some((d) => d.message.includes('authorize: true requires access `protected`'))).toBe(true);
+    });
+
+    test('accepts protected with validate optionalParams for known SQL param', async () => {
+        const document = await parseValidated(`
+            database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
             auth
 
             SQL {
                 toolName: listCustomerOrders
-                access: checked {
+                access: protected
+                validate: {
                     optionalParams: [customerId]
                 }
                 intent: "orders"
@@ -68,20 +86,22 @@ describe('Access validating', () => {
         const entry = document.parseResult.value.entries[0];
         expect(isSqlQuery(entry)).toBe(true);
         if (isSqlQuery(entry)) {
-            expect(getAccessKind(entry)).toBe('checked');
+            expect(getAccessKind(entry)).toBe('protected');
+            expect(isToolValidateEnabled(entry)).toBe(true);
             expect(getOptionalParams(entry)).toEqual(['customerId']);
         }
     });
 
     test('reports unresolved optionalParams reference', async () => {
         const document = await parseValidated(`
-            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
             auth
 
             SQL {
                 toolName: listCustomerOrders
-                access: checked {
+                access: protected
+                validate: {
                     optionalParams: [missingParam]
                 }
                 intent: "orders"

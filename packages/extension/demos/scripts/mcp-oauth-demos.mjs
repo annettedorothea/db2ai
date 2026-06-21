@@ -11,18 +11,17 @@ function loadProductName(demosRoot) {
 }
 
 export const OAUTH_HTTP_DEMOS = {
-    orders: {
-        tools: 'orders-postgres-tools.js',
-        connectionEnv: 'ORDERS_POSTGRES_DATABASE_URL',
-        oauthIdpUrlEnv: 'ORDERS_POSTGRES_OAUTH_IDP_URL',
-        portEnv: 'ORDERS_POSTGRES_OAUTH_HTTP_PORT',
-        oauthScope: 'orders-postgres',
-        mcpServerName: 'orders'
+    'orders-postgresql': {
+        tools: 'orders-postgresql-tools.js',
+        connectionEnv: 'ORDERS_POSTGRESQL_DATABASE_URL',
+        oauthIdpUrlEnv: 'ORDERS_POSTGRESQL_OAUTH_IDP_URL',
+        portEnv: 'ORDERS_POSTGRESQL_OAUTH_HTTP_PORT',
+        oauthScope: 'orders-postgresql'
     }
 };
 
 /** OAuth MCP hosts started by `npm run start`. */
-export const OAUTH_HTTP_START_DEMO_NAMES = ['orders'];
+export const OAUTH_HTTP_START_DEMO_NAMES = ['orders-postgresql'];
 
 export const OAUTH_HTTP_DEMO_NAMES = Object.keys(OAUTH_HTTP_DEMOS);
 

@@ -1,10 +1,8 @@
 import type { Reference } from 'langium';
 import type { SqlParamEntry, SqlQuery } from './generated/ast.js';
-import { isCheckedAccess, isProtectedAccess, isPublicAccess } from './generated/ast.js';
+import { isAuthorizeTrue, isProtectedAccess, isPublicAccess, isValidateBody, isValidateTrue } from './generated/ast.js';
 
-export type AccessKind = 'public' | 'protected' | 'checked';
-
-export function getAccessKind(query: SqlQuery): AccessKind {
+export function getAccessKind(query: SqlQuery): 'public' | 'protected' {
     const access = query.access;
     if (!access) {
         throw new Error('SqlQuery is missing access.');
@@ -15,10 +13,23 @@ export function getAccessKind(query: SqlQuery): AccessKind {
     if (isProtectedAccess(access)) {
         return 'protected';
     }
-    if (isCheckedAccess(access)) {
-        return 'checked';
-    }
     throw new Error('SqlQuery is missing access.');
+}
+
+export function isToolAuthorizeEnabled(query: SqlQuery): boolean {
+    const authorize = query.authorize;
+    if (!authorize) {
+        return false;
+    }
+    return isAuthorizeTrue(authorize);
+}
+
+export function isToolValidateEnabled(query: SqlQuery): boolean {
+    const validate = query.validate;
+    if (!validate) {
+        return false;
+    }
+    return isValidateTrue(validate) || isValidateBody(validate);
 }
 
 export function resolveOptionalParamRef(ref: Reference<SqlParamEntry>): string {
@@ -30,9 +41,9 @@ export function resolveOptionalParamRef(ref: Reference<SqlParamEntry>): string {
 }
 
 export function getOptionalParams(query: SqlQuery): readonly string[] {
-    const access = query.access;
-    if (isCheckedAccess(access) && access.checkedBody?.optionalParams) {
-        return access.checkedBody.optionalParams
+    const validate = query.validate;
+    if (isValidateBody(validate) && validate.optionalParams) {
+        return validate.optionalParams
             .map((ref) => resolveOptionalParamRef(ref).trim())
             .filter((name) => name.length > 0);
     }
@@ -43,6 +54,5 @@ export function accessRequiresAuth(query: SqlQuery): boolean {
     if (!query.access) {
         return false;
     }
-    const kind = getAccessKind(query);
-    return kind === 'protected' || kind === 'checked';
+    return getAccessKind(query) === 'protected';
 }

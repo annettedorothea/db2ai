@@ -8,6 +8,7 @@ import {
 } from 'db-2-ai-dsl-language';
 import {
     buildInputZodBlock,
+    emitGeneratedZodPreamble,
     ensureVerifyCredentialStubFromSource,
     relativeImportToLoggingAdapter,
     renderVerifyCredentialImport,
@@ -24,7 +25,16 @@ import {
     type ResolvedDbToolCodegen
 } from '../db-query-codegen.js';
 import { renderInvokeBlockTs } from './invoke-render.js';
-import { renderParameterCheckerImports, renderParameterCheckersMap } from './render-check-stubs.js';
+import {
+    listAuthorizeToolNames,
+    listValidateToolNames,
+    modelHasAuthPipeline,
+    renderAuthorizerImports,
+    renderAuthorizersMap,
+    renderValidatorImports,
+    renderValidatorsMap,
+    resolveAuthPipelineTier
+} from './render-check-stubs.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -41,7 +51,9 @@ export type GeneratedToolModule = {
     title: string;
     description: string;
     kind: 'sql';
-    access: 'public' | 'protected' | 'checked';
+    access: 'public' | 'protected';
+    hasAuthorize: boolean;
+    hasValidate: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -74,33 +86,36 @@ function toGeneratedToolModule(tool: ResolvedDbToolCodegen): GeneratedToolModule
         title: tool.title,
         description: tool.description,
         access: tool.access,
+        hasAuthorize: tool.hasAuthorize,
+        hasValidate: tool.hasValidate,
         sqlText: tool.sqlText,
         params: tool.params.map(serializeSqlParam)
     };
 }
 
 function requiresAuthLiteral(model: Model): string {
-    if (!model.auth) {
-        return 'false';
-    }
-    const needsCredential = model.entries.some((entry) => isSqlQuery(entry) && getAccessKind(entry) !== 'public');
-    return needsCredential ? 'true' : 'false';
+    const needsProtected = model.entries.some((entry) => isSqlQuery(entry) && getAccessKind(entry) === 'protected');
+    return needsProtected && model.auth ? 'true' : 'false';
 }
 
 function renderGeneratedImports(
     destinationTsPath: string,
     projectRoot: string,
-    parameterCheckerImports: string,
-    verifyCredentialImport: string
+    authStubImports: string,
+    verifyCredentialImport: string,
+    hasZodSchemas: boolean
 ): string {
     const loggingSpec = relativeImportToLoggingAdapter(destinationTsPath, projectRoot);
     const loggingImport = `import { loggingAdapter } from '${loggingSpec}';`;
     const parts = [loggingImport];
+    if (hasZodSchemas) {
+        parts.push(emitGeneratedZodPreamble().trimEnd());
+    }
     if (verifyCredentialImport.length > 0) {
         parts.push(verifyCredentialImport);
     }
-    if (parameterCheckerImports.length > 0) {
-        parts.push(parameterCheckerImports);
+    if (authStubImports.length > 0) {
+        parts.push(authStubImports);
     }
     return `${parts.join('\n')}\n\n`;
 }
@@ -127,13 +142,6 @@ function authRuntimeKind(model: Model): 'none' | 'credential' {
     return model.auth ? 'credential' : 'none';
 }
 
-function modelRequiresAuth(model: Model): boolean {
-    if (!model.auth) {
-        return false;
-    }
-    return model.entries.some((entry) => isSqlQuery(entry) && getAccessKind(entry) !== 'public');
-}
-
 function assembleToolsModuleSource(
     tools: ResolvedDbToolCodegen[],
     connectionEnv: string,
@@ -144,16 +152,19 @@ function assembleToolsModuleSource(
     source: string,
     destinationTsPath: string,
     projectRoot: string,
-    parameterCheckerImports: string,
-    verifyStubPath: string | undefined
+    authStubImports: string,
+    verifyStubPath: string | undefined,
+    verifyCredentialImport: string,
+    hasZodSchemas: boolean
 ): string {
     const toolsLiteral = serializeToolsForModule(tools);
     const sourceRef = renderSourceReference(source);
     const importPrefix = renderGeneratedImports(
         destinationTsPath,
         projectRoot,
-        parameterCheckerImports,
-        verifyStubPath !== undefined ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath) : ''
+        authStubImports,
+        verifyCredentialImport,
+        hasZodSchemas
     );
     const verifyExportBlock =
         verifyStubPath !== undefined ? `\n${renderVerifyCredentialReExport(destinationTsPath, verifyStubPath)}\n` : '';
@@ -181,7 +192,9 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
-    access: 'public' | 'protected' | 'checked';
+    access: 'public' | 'protected';
+    hasAuthorize: boolean;
+    hasValidate: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -192,12 +205,8 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
-};
-
-export type CheckedHostContext = {
-    credential: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = ${toolsLiteral};
@@ -215,35 +224,67 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const inputSchemaByTool = buildInputSchemaByTool(model, tools) as Record<string, JsonSchemaDict>;
     const authKind = authRuntimeKind(model);
     const hasAuth = authKind === 'credential';
-    const hasChecked = stubPaths.size > 0;
-    const parameterCheckerImports = hasChecked ? renderParameterCheckerImports(destinationTsPath, stubPaths) : '';
-    const parameterCheckersMap = hasChecked ? renderParameterCheckersMap(stubPaths) : '';
+    const hasAuthPipeline = modelHasAuthPipeline(model);
+    const authorizeToolNames = listAuthorizeToolNames(model);
+    const validateToolNames = listValidateToolNames(model);
+    const authPipelineTier = resolveAuthPipelineTier(hasAuthPipeline, authorizeToolNames, validateToolNames);
+    const authorizerImports =
+        authorizeToolNames.length > 0 ? renderAuthorizerImports(destinationTsPath, stubPaths, authorizeToolNames) : '';
+    const validatorImports = validateToolNames.length > 0 ? renderValidatorImports(destinationTsPath, stubPaths) : '';
+    const authStubImports = [authorizerImports, validatorImports].filter((s) => s.length > 0).join('\n');
+    const authMapBlocks: string[] = [];
+    if (authPipelineTier === 'full') {
+        if (authorizeToolNames.length > 0) {
+            authMapBlocks.push(renderAuthorizersMap(authorizeToolNames));
+        }
+        if (validateToolNames.length > 0) {
+            authMapBlocks.push(renderValidatorsMap(validateToolNames));
+        }
+    }
+    const authRuntimePrefixBlock = authMapBlocks.length > 0 ? `${authMapBlocks.join('\n\n')}\n\n` : '';
 
     const { name: mcpServerName, version: mcpServerVersion } = resolveMcpServerIdentityFromDestination(
         destinationTsPath,
         bootstrapConfig
     );
     const mcpServerIdentityBlock = renderMcpServerIdentityExports(mcpServerName, mcpServerVersion);
-    const authRuntimePrefix = parameterCheckersMap.length > 0 ? `${parameterCheckersMap}\n\n` : '';
     const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
-    const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, hasChecked);
+    const stubMaps = {
+        authorizers: authorizeToolNames.length > 0,
+        validators: validateToolNames.length > 0
+    };
+    const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, authPipelineTier, stubMaps);
 
-    const verifyStubPath = modelRequiresAuth(model)
-        ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
-        : undefined;
+    const hasValidateTools = validateToolNames.length > 0;
+    const needsVerifyCredential = hasAuth;
+    const verifyStubPath =
+        needsVerifyCredential || hasValidateTools
+            ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
+            : undefined;
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
+    const verifyCredentialImport =
+        verifyStubPath !== undefined
+            ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath, {
+                  includeVerify: needsVerifyCredential,
+                  includeModuleCredentials: authPipelineTier === 'full' || !needsVerifyCredential
+              })
+            : '';
+
+    const hasZodSchemas = Object.keys(inputSchemaByTool).length > 0;
 
     return assembleToolsModuleSource(
         tools,
         envName,
         databaseDialect,
         mcpServerIdentityBlock,
-        `${authRuntimePrefix}${inputZodBlock}\n${invokeBlockTs}`,
+        `${authRuntimePrefixBlock}${inputZodBlock}\n${invokeBlockTs}`,
         model,
         source,
         destinationTsPath,
         projectRoot,
-        parameterCheckerImports,
-        verifyStubPath
+        authStubImports,
+        verifyStubPath,
+        verifyCredentialImport,
+        hasZodSchemas
     );
 }

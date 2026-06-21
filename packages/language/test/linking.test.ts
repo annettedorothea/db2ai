@@ -2,7 +2,7 @@ import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
-import { isCheckedAccess, isSqlParamEntry, isSqlQuery } from '../src/generated/ast.js';
+import { isSqlParamEntry, isSqlQuery, isValidateBody } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
 
 let parse: ReturnType<typeof parseHelper<Model>>;
@@ -13,14 +13,15 @@ beforeAll(async () => {
     parse = parseHelper<Model>(services.Db2AiDsl);
 });
 
-const checkedSqlWithOptionalParam = `
-database postgres env "ORDERS_POSTGRES_DATABASE_URL"
+const validateSqlWithOptionalParam = `
+database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
 auth
 
 SQL {
     toolName: listCustomerOrders
-    access: checked {
+    access: protected
+    validate: {
         optionalParams: [customerId]
     }
     intent: "orders"
@@ -33,15 +34,15 @@ SQL {
 
 describe('Cross-reference linking', () => {
     test('links optionalParams to SqlParamEntry in params', async () => {
-        const document = await parse(checkedSqlWithOptionalParam, { validation: true });
+        const document = await parse(validateSqlWithOptionalParam, { validation: true });
 
         const entry = document.parseResult.value.entries[0];
         expect(isSqlQuery(entry)).toBe(true);
-        if (!isSqlQuery(entry) || !isCheckedAccess(entry.access)) {
+        if (!isSqlQuery(entry) || !isValidateBody(entry.validate)) {
             return;
         }
 
-        const ref = entry.access.checkedBody?.optionalParams?.[0];
+        const ref = entry.validate.optionalParams?.[0];
         expect(ref).toBeDefined();
         expect(ref?.$refText).toBe('customerId');
         expect(ref?.ref?.key).toBe('customerId');
@@ -53,7 +54,7 @@ describe('Cross-reference linking', () => {
     });
 
     test('definition provider finds SqlParamEntry from optionalParams usage', async () => {
-        const document = await parse(checkedSqlWithOptionalParam, { validation: true });
+        const document = await parse(validateSqlWithOptionalParam, { validation: true });
         const text = document.textDocument.getText();
         const optionalParamsUsageOffset = text.indexOf('[customerId]') + 1;
 
@@ -72,7 +73,7 @@ describe('Cross-reference linking', () => {
     });
 
     test('reference completion via default provider lists SqlParamEntry targets', async () => {
-        const document = await parse(checkedSqlWithOptionalParam, { validation: true });
+        const document = await parse(validateSqlWithOptionalParam, { validation: true });
         const text = document.textDocument.getText();
         const emptySlotOffset = text.indexOf('[customerId]') + 1;
 

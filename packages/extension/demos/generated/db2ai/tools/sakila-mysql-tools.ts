@@ -1,20 +1,36 @@
 /**
- * Generated from: sakila.db2ai
+ * Generated from: sakila-mysql.db2ai
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
-import { verifyCredential } from '../../../src/auth/db2ai/sakila-tools/verifyCredential.js';
+import * as z from 'zod/v4';
+import {
+    verifyCredential,
+    toModuleCredentials,
+    type ModuleCredentials
+} from '../../../src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
+import { validateListFilmsInput } from '../../../src/auth/db2ai/sakila-mysql-tools/listFilms.js';
+import { validateListActorsInput } from '../../../src/auth/db2ai/sakila-mysql-tools/listActors.js';
+import { validateListCategoriesInput } from '../../../src/auth/db2ai/sakila-mysql-tools/listCategories.js';
+import { validateFilmsByRatingInput } from '../../../src/auth/db2ai/sakila-mysql-tools/filmsByRating.js';
+import { validateFilmsWithActorLastNameInput } from '../../../src/auth/db2ai/sakila-mysql-tools/filmsWithActorLastName.js';
+import { validateSearchFilmsInput } from '../../../src/auth/db2ai/sakila-mysql-tools/searchFilms.js';
 
-export const connectionEnv = 'SAKILA_DATABASE_URL';
+export const connectionEnv = 'SAKILA_MYSQL_DATABASE_URL';
 
 export const databaseDialect = 'mysql';
 
 export const requiresAuth = true;
 
-export { verifyCredential } from '../../../src/auth/db2ai/sakila-tools/verifyCredential.js';
+export {
+    verifyCredential,
+    toModuleCredentials
+} from '../../../src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
 export type {
     VerifyCredentialInput,
-    VerifyCredentialResult
-} from '../../../src/auth/db2ai/sakila-tools/verifyCredential.js';
+    VerifyCredentialResult,
+    ModuleCredentials,
+    SakilaMysqlCredentials
+} from '../../../src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -31,7 +47,9 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
-    access: 'public' | 'protected' | 'checked';
+    access: 'public' | 'protected';
+    hasAuthorize: boolean;
+    hasValidate: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -42,12 +60,8 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
-};
-
-export type CheckedHostContext = {
-    credential: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -58,6 +72,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list films from Sakila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText: 'SELECT * FROM film LIMIT ? OFFSET ?',
         params: [
             {
@@ -87,6 +103,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'List actors from Sakila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'protected',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText: 'SELECT * FROM actor LIMIT ? OFFSET ?',
         params: [
             {
@@ -116,6 +134,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list film categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText: 'SELECT * FROM category LIMIT ? OFFSET ?',
         params: [
             {
@@ -145,6 +165,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG, maxRows=20',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ',
         params: [
@@ -175,6 +197,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ",
         params: [
@@ -205,6 +229,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=cat, maxRows=15',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ",
         params: [
@@ -236,6 +262,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: false,
         sqlText: 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())',
         params: [
             {
@@ -260,10 +288,20 @@ export const generatedTools: GeneratedTool[] = [
     }
 ];
 
-export const mcpServerName = 'sakila-tools';
+export const mcpServerName = 'sakila-mysql-tools';
 export const mcpServerVersion = '0.3.0';
 
-import * as z from 'zod/v4';
+const validators: Record<
+    string,
+    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
+> = {
+    listFilms: validateListFilmsInput,
+    listActors: validateListActorsInput,
+    listCategories: validateListCategoriesInput,
+    filmsByRating: validateFilmsByRatingInput,
+    filmsWithActorLastName: validateFilmsWithActorLastNameInput,
+    searchFilms: validateSearchFilmsInput
+};
 
 export const inputZodByTool = {
     listFilms: z
@@ -371,16 +409,37 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
-    if (toolMeta.access !== 'public') {
-        const credential = host.credential;
-        if (!credential || !String(credential).trim()) {
+    const credentialsPlain = host.credentials;
+    let credentialsForStubs: ModuleCredentials | undefined =
+        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
+    let optionsResolved = options;
+
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
             throw new Error(
                 'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
         }
-        if (host.sessionClaims === undefined) {
-            await verifyCredential({ inboundCredential: String(credential).trim() });
+        if (credentialsForStubs === undefined) {
+            const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
+            credentialsForStubs = verified.credentials;
         }
+    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
+        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
+    }
+    if (toolMeta.hasValidate) {
+        const validate = validators[toolName];
+        if (typeof validate !== 'function') {
+            throw new Error('No validator for tool: ' + toolName);
+        }
+        if (credentialsForStubs === undefined) {
+            if (toolMeta.access === 'protected') {
+                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+            }
+            credentialsForStubs = toModuleCredentials({});
+        }
+        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
     }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);
@@ -389,8 +448,8 @@ export async function invokeTool(
             case 'listFilms': {
                 const sqlText = 'SELECT * FROM film LIMIT ? OFFSET ?';
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['limit']),
-                    normalizeMysqlParamValue(options['offset'])
+                    normalizeMysqlParamValue(optionsResolved['limit']),
+                    normalizeMysqlParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listFilms',
@@ -407,8 +466,8 @@ export async function invokeTool(
             case 'listActors': {
                 const sqlText = 'SELECT * FROM actor LIMIT ? OFFSET ?';
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['limit']),
-                    normalizeMysqlParamValue(options['offset'])
+                    normalizeMysqlParamValue(optionsResolved['limit']),
+                    normalizeMysqlParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listActors',
@@ -425,8 +484,8 @@ export async function invokeTool(
             case 'listCategories': {
                 const sqlText = 'SELECT * FROM category LIMIT ? OFFSET ?';
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['limit']),
-                    normalizeMysqlParamValue(options['offset'])
+                    normalizeMysqlParamValue(optionsResolved['limit']),
+                    normalizeMysqlParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listCategories',
@@ -444,8 +503,8 @@ export async function invokeTool(
                 const sqlText =
                     '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ';
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['rating']),
-                    normalizeMysqlParamValue(options['maxRows'])
+                    normalizeMysqlParamValue(optionsResolved['rating']),
+                    normalizeMysqlParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'filmsByRating',
@@ -463,8 +522,8 @@ export async function invokeTool(
                 const sqlText =
                     "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ";
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['lastNamePrefix']),
-                    normalizeMysqlParamValue(options['maxRows'])
+                    normalizeMysqlParamValue(optionsResolved['lastNamePrefix']),
+                    normalizeMysqlParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'filmsWithActorLastName',
@@ -482,9 +541,9 @@ export async function invokeTool(
                 const sqlText =
                     "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ";
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['searchText']),
-                    normalizeMysqlParamValue(options['searchText']),
-                    normalizeMysqlParamValue(options['maxRows'])
+                    normalizeMysqlParamValue(optionsResolved['searchText']),
+                    normalizeMysqlParamValue(optionsResolved['searchText']),
+                    normalizeMysqlParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchFilms',
@@ -501,8 +560,8 @@ export async function invokeTool(
             case 'insertActor': {
                 const sqlText = 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())';
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['firstName']),
-                    normalizeMysqlParamValue(options['lastName'])
+                    normalizeMysqlParamValue(optionsResolved['firstName']),
+                    normalizeMysqlParamValue(optionsResolved['lastName'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'insertActor',

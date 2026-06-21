@@ -29,8 +29,8 @@ beforeAll(async () => {
 
 beforeEach(() => {
     clearSchemaCache();
-    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
-    process.env.SAKILA_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
+    process.env.PAGILA_POSTGRESQL_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+    process.env.SAKILA_MYSQL_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
 });
 
 function parseValidated(input: string) {
@@ -46,7 +46,7 @@ function errorMessages(doc: LangiumDocument<Model>): string[] {
 describe('SQL tool validation', () => {
     test('accepts matching query placeholders and params', async () => {
         const document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: filmsByRating
@@ -61,9 +61,9 @@ describe('SQL tool validation', () => {
     });
 
     test('accepts named placeholders for mysql dialect', async () => {
-        delete process.env.SAKILA_DATABASE_URL;
+        delete process.env.SAKILA_MYSQL_DATABASE_URL;
         const document = await parseValidated(`
-            database mysql env "SAKILA_DATABASE_URL"
+            database mysql env "SAKILA_MYSQL_DATABASE_URL"
 
             SQL {
                 toolName: filmsByRating
@@ -79,7 +79,7 @@ describe('SQL tool validation', () => {
 
     test('rejects missing params entry for placeholder in query', async () => {
         const document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: x
@@ -95,7 +95,7 @@ describe('SQL tool validation', () => {
 
     test('rejects unused param key', async () => {
         const document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: x
@@ -115,7 +115,7 @@ describe('SQL tool validation', () => {
 
     test('rejects duplicate param keys', async () => {
         const document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: x
@@ -138,7 +138,7 @@ describe('SQL tool validation', () => {
 
     test('rejects missing description', async () => {
         const document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: x
@@ -159,7 +159,7 @@ describe('SQL tool validation', () => {
 
     test('rejects invalid example for integer type', async () => {
         const document = await parseValidated(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: x

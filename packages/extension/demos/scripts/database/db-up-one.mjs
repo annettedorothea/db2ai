@@ -3,7 +3,7 @@
  * Start one demo database container (idempotent — does not stop other demo DBs).
  *
  * Usage: node ./scripts/database/db-up-one.mjs <demoName>
- *   demoName: sakila | pagila | orders | animals | plants
+ *   demoName: sakila-mysql | pagila-postgresql | orders-postgresql | animals-sqlserver | plants-oracle
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -17,7 +17,7 @@ const databaseDir = path.dirname(fileURLToPath(import.meta.url));
 const demoName = process.argv[2]?.trim();
 const spec = demoName ? DEMO_LAUNCH_REGISTRY[demoName] : undefined;
 if (!spec) {
-    console.error(`[db:up] unknown demo "${demoName}" — use: sakila, pagila, orders, animals, plants`);
+    console.error(`[db:up] unknown demo "${demoName}" — use: ${Object.keys(DEMO_LAUNCH_REGISTRY).join(', ')}`);
     process.exit(1);
 }
 
@@ -46,7 +46,7 @@ for (const db of spec.docker) {
     const profileArgs = profiles.flatMap((p) => ['--profile', p]);
     const services = db.service;
     console.log(`[db:up] starting ${services}${profiles.length ? ` (profiles: ${profiles.join(', ')})` : ''}…`);
-    runDocker([...profileArgs, 'up', '-d', '--wait', services]);
+    runDocker([...profileArgs, 'up', '-d', '--wait', '--remove-orphans', services]);
     for (const script of db.postScripts ?? []) {
         console.log(`[db:up] running ${script}…`);
         runNodeScript(script);

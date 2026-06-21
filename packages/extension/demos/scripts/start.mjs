@@ -37,12 +37,12 @@ async function main() {
         console.log('[start:all] foreground mode — LOG_LEVEL=debug for services, logs in this terminal.');
     }
 
-    const idpPort = requireEnvInt('ORDERS_POSTGRES_OAUTH_IDP_PORT');
+    const idpPort = requireEnvInt('ORDERS_POSTGRESQL_OAUTH_IDP_PORT');
     const idpBaseUrl = `http://127.0.0.1:${idpPort}`;
     startService(
         'oauth-idp',
         [path.join(demosRoot, 'oauth-idp', 'server.mjs')],
-        { ORDERS_POSTGRES_OAUTH_IDP_PORT: String(idpPort), OAUTH_IDP_SIGN_ALG: 'RS256' },
+        { ORDERS_POSTGRESQL_OAUTH_IDP_PORT: String(idpPort), OAUTH_IDP_SIGN_ALG: 'RS256' },
         idpPort
     );
 

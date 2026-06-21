@@ -13,20 +13,18 @@ import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextproto
 import * as z from 'zod/v4';
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
-type HttpMcpHostProfile = 'public' | 'passthrough';
-
-const HTTP_MCP_HOST_PROFILE: HttpMcpHostProfile = 'public';
-
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
 type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
 
+/** Host context inside MCP server templates. Tool modules use DbHostContext; this wider shape is shared across stdio/HTTP hosts. */
 type ApiLikeHostContext = {
     baseUrl?: string;
     connectionString?: string;
     databaseDialect?: DatabaseDialect;
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 type VerifyCredentialInput = {
@@ -35,7 +33,7 @@ type VerifyCredentialInput = {
 
 type VerifyCredentialResult = {
     upstreamCredential: string;
-    sessionClaims?: Record<string, unknown>;
+    credentials: unknown;
 };
 
 type VerifyCredentialFn = (input: VerifyCredentialInput) => Promise<VerifyCredentialResult>;
@@ -403,13 +401,6 @@ function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRun
     };
 }
 
-const DEFAULT_MCP_AUTH_HEADER = 'x-api-token';
-
-function readAuthHeaderNameFromEnv(): string {
-    const configured = process.env.MCP_AUTH_HEADER?.trim();
-    return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
-}
-
 function validateHttpMcpHostAtStartup(httpHostConfig: HttpMcpHostRuntimeConfig, generated: GeneratedHostModule): void {
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -442,7 +433,7 @@ function validateHttpMcpHostAtStartup(httpHostConfig: HttpMcpHostRuntimeConfig, 
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/db2ai/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verify*Credentials in src/auth/db2ai/<module>/ and re-export from generated tools.'
         );
     }
 }
@@ -530,8 +521,8 @@ async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     validateHttpMcpHostAtStartup(httpHostConfig, generated);
     loggingAdapter.info('[mcp] public HTTP listening', {
         url: 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath,
-        profile: HTTP_MCP_HOST_PROFILE,
-        credentialHeader: HTTP_MCP_HOST_PROFILE === 'public' ? undefined : readAuthHeaderNameFromEnv()
+        profile: 'public',
+        credentialHeader: undefined
     });
 
     const httpServer = http.createServer(async (req, res) => {

@@ -1,15 +1,12 @@
-import type { CheckedHostContext, InvokeOptions } from '../../../../generated/db2ai/tools/orders-postgres-tools.js';
+import type { ModuleCredentials } from './verifyOrdersPostgresqlCredentials.js';
+import type { InvokeOptions } from '../../../../generated/db2ai/tools/orders-postgresql-tools.js';
 
-export function checkCreateOrderParameters(options: InvokeOptions, host: CheckedHostContext): InvokeOptions {
-    const claims = host.sessionClaims;
-    if (!claims || typeof claims !== 'object') {
-        throw new Error('createOrder requires sessionClaims in host context.');
-    }
-    const jwtCustomer = String(claims.customerId ?? '').trim();
+export function validateCreateOrderInput(options: InvokeOptions, credentials: ModuleCredentials): InvokeOptions {
+    const jwtCustomer = String(credentials.customerId ?? '').trim();
     if (jwtCustomer.length === 0) {
         throw new Error('JWT payload missing customerId claim.');
     }
-    const role = String(claims.role ?? '').trim();
+    const role = String(credentials.role ?? '').trim();
     if (role.length === 0) {
         throw new Error('JWT payload missing role claim.');
     }

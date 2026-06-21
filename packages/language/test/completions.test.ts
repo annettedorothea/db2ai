@@ -17,8 +17,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
-    process.env.SAKILA_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
+    process.env.PAGILA_POSTGRESQL_DATABASE_URL = 'postgresql://postgres:postgres@localhost:55432/pagila';
+    process.env.SAKILA_MYSQL_DATABASE_URL = 'mysql://root:root@localhost:53306/sakila';
 });
 
 function blockKeywordLabels(items: Array<{ detail?: unknown; label: unknown }>): string[] {
@@ -45,17 +45,27 @@ async function completionAt(content: string, offset: number, parseOptions: Parse
 
 describe('Completion for SQL block keywords', () => {
     test('lists SQL block keywords inside empty SQL block', async () => {
-        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    `;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);
 
         const labels = sortedBlockKeywordLabels(list?.items ?? []);
-        expect(labels).toEqual(['toolName', 'access', 'intent', 'query', 'summary', 'params', 'response']);
+        expect(labels).toEqual([
+            'toolName',
+            'access',
+            'authorize',
+            'validate',
+            'intent',
+            'query',
+            'summary',
+            'params',
+            'response'
+        ]);
     });
 
     test('does not suggest already used block keywords', async () => {
-        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listFilms\n    access: public\n    intent: "list films"\n    `;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listFilms\n    access: public\n    intent: "list films"\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);
@@ -67,8 +77,8 @@ describe('Completion for SQL block keywords', () => {
     });
 
     test('lists block keywords without database env value', async () => {
-        delete process.env.PAGILA_DATABASE_URL;
-        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    `;
+        delete process.env.PAGILA_POSTGRESQL_DATABASE_URL;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    `;
         const offset = header.length;
 
         const list = await completionAt(header, offset);
@@ -78,10 +88,10 @@ describe('Completion for SQL block keywords', () => {
     });
 });
 
-describe('Completion for checked access optionalParams', () => {
-    test('suggests optionalParams keyword inside checked access block', async () => {
+describe('Completion for validate optionalParams', () => {
+    test('suggests optionalParams keyword inside validate block', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    validate: {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker));
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('optionalParams');
@@ -89,7 +99,7 @@ describe('Completion for checked access optionalParams', () => {
 
     test('suggests SQL param names inside optionalParams list', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    validate: {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');
@@ -97,7 +107,7 @@ describe('Completion for checked access optionalParams', () => {
 
     test('suggests SQL param names when editing optionalParams prefix', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: checked {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    validate: {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');

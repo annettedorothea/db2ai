@@ -2,7 +2,7 @@ import { EmptyFileSystem, type LangiumDocument } from 'langium';
 import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
-import { getAccessKind } from '../src/query-access.js';
+import { getAccessKind, isToolValidateEnabled } from '../src/query-access.js';
 import { parseSqlParamSpec } from '../src/sql-param-spec.js';
 import { isSqlQuery } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
@@ -18,7 +18,7 @@ beforeAll(async () => {
 describe('Parsing tests', () => {
     test('parses database dialect, env, and one SQL tool', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -29,7 +29,7 @@ describe('Parsing tests', () => {
         `);
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
-        expect(document.parseResult.value.env).toBe('PAGILA_DATABASE_URL');
+        expect(document.parseResult.value.env).toBe('PAGILA_POSTGRESQL_DATABASE_URL');
         expect(document.parseResult.value.dialect).toBe('postgres');
         expect(document.parseResult.value.entries).toHaveLength(1);
         const entry = document.parseResult.value.entries[0];
@@ -59,7 +59,7 @@ describe('Parsing tests', () => {
 
     test('parses multiline intent and param description', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -96,7 +96,7 @@ describe('Parsing tests', () => {
 
     test('parses multiline query with triple quotes', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -125,7 +125,7 @@ describe('Parsing tests', () => {
 
     test('parses response on SQL block', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -149,15 +149,16 @@ describe('Parsing tests', () => {
         }
     });
 
-    test('parses auth keyword and checked access', async () => {
+    test('parses auth keyword and validate with optionalParams', async () => {
         document = await parse(`
-            database postgres env "ORDERS_POSTGRES_DATABASE_URL"
+            database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
             auth
 
             SQL {
                 toolName: listCustomerOrders
-                access: checked {
+                access: protected
+                validate: {
                     optionalParams: [customerId]
                 }
                 intent: "orders"
@@ -169,13 +170,14 @@ describe('Parsing tests', () => {
         expect(document.parseResult.value.auth).toBeDefined();
         const entry = document.parseResult.value.entries[0];
         if (isSqlQuery(entry)) {
-            expect(getAccessKind(entry)).toBe('checked');
+            expect(getAccessKind(entry)).toBe('protected');
+            expect(isToolValidateEnabled(entry)).toBe(true);
         }
     });
 
     test('parses explicit postgres dialect', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -187,12 +189,12 @@ describe('Parsing tests', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
         expect(document.parseResult.value.dialect).toBe('postgres');
-        expect(document.parseResult.value.env).toBe('PAGILA_DATABASE_URL');
+        expect(document.parseResult.value.env).toBe('PAGILA_POSTGRESQL_DATABASE_URL');
     });
 
     test('parses explicit mysql dialect', async () => {
         document = await parse(`
-            database mysql env "SAKILA_DATABASE_URL"
+            database mysql env "SAKILA_MYSQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -204,12 +206,12 @@ describe('Parsing tests', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
         expect(document.parseResult.value.dialect).toBe('mysql');
-        expect(document.parseResult.value.env).toBe('SAKILA_DATABASE_URL');
+        expect(document.parseResult.value.env).toBe('SAKILA_MYSQL_DATABASE_URL');
     });
 
     test('parses explicit mariadb dialect', async () => {
         document = await parse(`
-            database mariadb env "SAKILA_DATABASE_URL"
+            database mariadb env "SAKILA_MARIADB_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
@@ -221,7 +223,7 @@ describe('Parsing tests', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
         expect(document.parseResult.value.dialect).toBe('mariadb');
-        expect(document.parseResult.value.env).toBe('SAKILA_DATABASE_URL');
+        expect(document.parseResult.value.env).toBe('SAKILA_MARIADB_DATABASE_URL');
     });
 
     test('parses explicit sqlserver dialect and mssql alias', async () => {
@@ -275,7 +277,7 @@ describe('Parsing tests', () => {
 
     test('parses SQL tool with summary and params', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listActors
@@ -307,7 +309,7 @@ describe('Parsing tests', () => {
 
     test('rejects SQL properties outside the canonical order', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 summary: "Actors"
@@ -323,7 +325,7 @@ describe('Parsing tests', () => {
 
     test('parses SQL tool with query and named params', async () => {
         document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: filmsByRating

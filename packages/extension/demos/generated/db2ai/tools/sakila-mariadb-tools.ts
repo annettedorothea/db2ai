@@ -2,12 +2,30 @@
  * Generated from: sakila-mariadb.db2ai
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import * as z from 'zod/v4';
+import {
+    toModuleCredentials,
+    type ModuleCredentials
+} from '../../../src/auth/db2ai/sakila-mariadb-tools/verifySakilaMariadbCredentials.js';
+import { validateListFilmsInput } from '../../../src/auth/db2ai/sakila-mariadb-tools/listFilms.js';
+import { validateSearchFilmsInput } from '../../../src/auth/db2ai/sakila-mariadb-tools/searchFilms.js';
 
 export const connectionEnv = 'SAKILA_MARIADB_DATABASE_URL';
 
 export const databaseDialect = 'mariadb';
 
 export const requiresAuth = false;
+
+export {
+    verifyCredential,
+    toModuleCredentials
+} from '../../../src/auth/db2ai/sakila-mariadb-tools/verifySakilaMariadbCredentials.js';
+export type {
+    VerifyCredentialInput,
+    VerifyCredentialResult,
+    ModuleCredentials,
+    SakilaMariadbCredentials
+} from '../../../src/auth/db2ai/sakila-mariadb-tools/verifySakilaMariadbCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -24,7 +42,9 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
-    access: 'public' | 'protected' | 'checked';
+    access: 'public' | 'protected';
+    hasAuthorize: boolean;
+    hasValidate: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -35,12 +55,8 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
-};
-
-export type CheckedHostContext = {
-    credential: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -51,6 +67,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText: 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ?',
         params: [
             {
@@ -71,6 +89,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=love, maxRows=10',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?",
         params: [
@@ -99,7 +119,13 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'sakila-mariadb-tools';
 export const mcpServerVersion = '0.3.0';
 
-import * as z from 'zod/v4';
+const validators: Record<
+    string,
+    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
+> = {
+    listFilms: validateListFilmsInput,
+    searchFilms: validateSearchFilmsInput
+};
 
 export const inputZodByTool = {
     listFilms: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
@@ -166,13 +192,41 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    const credentialsPlain = host.credentials;
+    let credentialsForStubs: ModuleCredentials | undefined =
+        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
+    let optionsResolved = options;
+
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
+            throw new Error(
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+            );
+        }
+    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
+        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
+    }
+    if (toolMeta.hasValidate) {
+        const validate = validators[toolName];
+        if (typeof validate !== 'function') {
+            throw new Error('No validator for tool: ' + toolName);
+        }
+        if (credentialsForStubs === undefined) {
+            if (toolMeta.access === 'protected') {
+                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+            }
+            credentialsForStubs = toModuleCredentials({});
+        }
+        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
+    }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);
     try {
         switch (toolName) {
             case 'listFilms': {
                 const sqlText = 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ?';
-                const sqlValues = [normalizeMysqlParamValue(options['limit'])];
+                const sqlValues = [normalizeMysqlParamValue(optionsResolved['limit'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listFilms',
                     sql: compactSqlForLog(sqlText),
@@ -189,8 +243,8 @@ export async function invokeTool(
                 const sqlText =
                     "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?";
                 const sqlValues = [
-                    normalizeMysqlParamValue(options['searchText']),
-                    normalizeMysqlParamValue(options['maxRows'])
+                    normalizeMysqlParamValue(optionsResolved['searchText']),
+                    normalizeMysqlParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchFilms',

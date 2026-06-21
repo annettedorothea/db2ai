@@ -1,10 +1,10 @@
 // Sync with api2ai oauth-idp/jwt.mjs — ports/secrets differ per product.
 import { createHmac, randomBytes } from 'node:crypto';
 
-const DEFAULT_SECRET = 'db2ai-orders-postgres';
+const DEFAULT_SECRET = 'db2ai-orders-postgresql';
 
 export function jwtSecret() {
-    return process.env.ORDERS_POSTGRES_JWT_SECRET?.trim() || DEFAULT_SECRET;
+    return process.env.ORDERS_POSTGRESQL_JWT_SECRET?.trim() || DEFAULT_SECRET;
 }
 
 function base64urlEncode(buf) {

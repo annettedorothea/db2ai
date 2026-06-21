@@ -13,7 +13,7 @@
             "previewLimit": 50,
             "server": "localhost",
             "driver": "PostgreSQL",
-            "name": "orders-postgres",
+            "name": "orders-postgresql",
             "connectString": "postgresql://postgres:postgres@localhost:55433/orders_postgres"
         }
     ]

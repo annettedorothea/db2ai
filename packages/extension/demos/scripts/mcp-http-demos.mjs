@@ -11,16 +11,16 @@ function loadProductName(demosRoot) {
 }
 
 export const HTTP_DEMOS = {
-    pagila: {
+    'pagila-postgresql': {
         host: 'passthrough-http-mcp-server.js',
-        tools: 'pagila-tools.js',
-        connectionEnv: 'PAGILA_DATABASE_URL',
-        portEnv: 'PAGILA_HTTP_PORT'
+        tools: 'pagila-postgresql-tools.js',
+        connectionEnv: 'PAGILA_POSTGRESQL_DATABASE_URL',
+        portEnv: 'PAGILA_POSTGRESQL_HTTP_PORT'
     }
 };
 
 /** Hosts started by `npm run start` (HTTP entries in .cursor/mcp.json). */
-export const HTTP_START_DEMO_NAMES = ['pagila'];
+export const HTTP_START_DEMO_NAMES = ['pagila-postgresql'];
 
 export const HTTP_DEMO_NAMES = Object.keys(HTTP_DEMOS);
 

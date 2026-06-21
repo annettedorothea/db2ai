@@ -22,7 +22,7 @@ let parse: ReturnType<typeof parseHelper<Model>>;
 const fixtureDir = path.resolve(process.cwd(), 'test/fixtures');
 
 const sampleDocument = `
-    database postgres env "PAGILA_DATABASE_URL"
+    database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
     SQL {
         toolName: listFilms
@@ -53,7 +53,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
     vi.restoreAllMocks();
-    process.env.PAGILA_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:55432/pagila';
+    process.env.PAGILA_POSTGRESQL_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:55432/pagila';
 });
 
 describe('validateSqlBlocksWithExamples connectivity', () => {
@@ -191,7 +191,7 @@ describe('validateSqlBlocksWithExamples EXPLAIN probes', () => {
     });
 
     test('mysql sends EXPLAIN when connectivity succeeds', async () => {
-        process.env.SAKILA_DATABASE_URL = 'mysql://root:root@127.0.0.1:53306/sakila';
+        process.env.SAKILA_MYSQL_DATABASE_URL = 'mysql://root:root@127.0.0.1:53306/sakila';
         vi.spyOn(connectivity, 'probeDatabaseConnectivity').mockResolvedValue(undefined);
 
         let explainSql = '';
@@ -204,7 +204,7 @@ describe('validateSqlBlocksWithExamples EXPLAIN probes', () => {
         });
 
         const mysqlDocument = `
-            database mysql env "SAKILA_DATABASE_URL"
+            database mysql env "SAKILA_MYSQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms

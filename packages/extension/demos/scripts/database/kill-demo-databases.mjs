@@ -4,7 +4,7 @@
  * (e.g. leftover containers from another checkout or compose project label).
  *
  * Usage: node ./scripts/kill-demo-databases.mjs [main|mssql|oracle|all]
- *   main  — pagila, sakila, orders-postgres
+ *   main  — pagila, sakila, orders-postgresql
  *   mssql — animals-sqlserver only
  *   oracle — plants-oracle only
  *   all   — every demo DB container (default for db:kill:all)
@@ -13,10 +13,10 @@ import { spawnSync } from 'node:child_process';
 
 /** Must match container_name in docker-compose.yml. */
 export const DEMO_DB_CONTAINER_GROUPS = {
-    main: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgres'],
+    main: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgresql'],
     mssql: ['db2ai-animals-sqlserver'],
     oracle: ['db2ai-plants-oracle'],
-    all: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgres', 'db2ai-animals-sqlserver', 'db2ai-plants-oracle']
+    all: ['db2ai-pagila', 'db2ai-sakila', 'db2ai-orders-postgresql', 'db2ai-animals-sqlserver', 'db2ai-plants-oracle']
 };
 
 function resolveContainerNames(scopeArg) {

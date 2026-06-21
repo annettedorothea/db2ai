@@ -3,6 +3,7 @@ database mariadb env "SAKILA_MARIADB_DATABASE_URL"
 SQL {
     toolName: listFilms
     access: public
+    validate: true
     intent: "list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)"
     query: "SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT :limit"
     summary: "Paginated film rows"
@@ -14,6 +15,7 @@ SQL {
 SQL {
     toolName: searchFilms
     access: public
+    validate: true
     intent: "search Sakila films by title substring"
     query: "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', :searchText, '%') ORDER BY title LIMIT :maxRows"
     summary: "Title search in Sakila"

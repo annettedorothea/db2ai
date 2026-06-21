@@ -2,12 +2,30 @@
  * Generated from: plants-oracle.db2ai
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import * as z from 'zod/v4';
+import {
+    toModuleCredentials,
+    type ModuleCredentials
+} from '../../../src/auth/db2ai/plants-oracle-tools/verifyPlantsOracleCredentials.js';
+import { validateListPlantsInput } from '../../../src/auth/db2ai/plants-oracle-tools/listPlants.js';
+import { validateSearchPlantsInput } from '../../../src/auth/db2ai/plants-oracle-tools/searchPlants.js';
 
 export const connectionEnv = 'PLANTS_ORACLE_DATABASE_URL';
 
 export const databaseDialect = 'oracle';
 
 export const requiresAuth = false;
+
+export {
+    verifyCredential,
+    toModuleCredentials
+} from '../../../src/auth/db2ai/plants-oracle-tools/verifyPlantsOracleCredentials.js';
+export type {
+    VerifyCredentialInput,
+    VerifyCredentialResult,
+    ModuleCredentials,
+    PlantsOracleCredentials
+} from '../../../src/auth/db2ai/plants-oracle-tools/verifyPlantsOracleCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -24,7 +42,9 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
-    access: 'public' | 'protected' | 'checked';
+    access: 'public' | 'protected';
+    hasAuthorize: boolean;
+    hasValidate: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -35,12 +55,8 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
-};
-
-export type CheckedHostContext = {
-    credential: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -51,6 +67,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list plants with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             '\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        ORDER BY common_name\n        FETCH FIRST :limit ROWS ONLY\n    ',
         params: [
@@ -72,6 +90,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'search plants by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=oak, maxRows=10',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             "\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        WHERE\n            common_name LIKE '%' || :searchText || '%'\n            OR latin_name LIKE '%' || :searchText || '%'\n        ORDER BY common_name\n        FETCH FIRST :maxRows ROWS ONLY\n    ",
         params: [
@@ -102,6 +122,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'insert a new plant row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: false,
         sqlText:
             '\n        INSERT INTO plants (common_name, latin_name, description)\n        VALUES (:commonName, :latinName, :aboutText)\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -141,6 +163,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'update an existing plant row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: false,
         sqlText:
             '\n        UPDATE plants\n        SET\n            common_name = :commonName,\n            latin_name = :latinName,\n            description = :aboutText\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -189,6 +213,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'delete a plant row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: plantId=999',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: false,
         sqlText:
             '\n        DELETE FROM plants\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -208,7 +234,13 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'plants-oracle-tools';
 export const mcpServerVersion = '0.3.0';
 
-import * as z from 'zod/v4';
+const validators: Record<
+    string,
+    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
+> = {
+    listPlants: validateListPlantsInput,
+    searchPlants: validateSearchPlantsInput
+};
 
 export const inputZodByTool = {
     listPlants: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
@@ -317,6 +349,34 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    const credentialsPlain = host.credentials;
+    let credentialsForStubs: ModuleCredentials | undefined =
+        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
+    let optionsResolved = options;
+
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
+            throw new Error(
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+            );
+        }
+    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
+        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
+    }
+    if (toolMeta.hasValidate) {
+        const validate = validators[toolName];
+        if (typeof validate !== 'function') {
+            throw new Error('No validator for tool: ' + toolName);
+        }
+        if (credentialsForStubs === undefined) {
+            if (toolMeta.access === 'protected') {
+                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+            }
+            credentialsForStubs = toModuleCredentials({});
+        }
+        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
+    }
     const connectionString = resolveConnectionString(host);
     const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));
     try {
@@ -325,7 +385,7 @@ export async function invokeTool(
                 const sqlText =
                     '\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        ORDER BY common_name\n        FETCH FIRST :limit ROWS ONLY\n    ';
                 const binds = {
-                    limit: normalizeOracleNumericParamValue(options['limit'])
+                    limit: normalizeOracleNumericParamValue(optionsResolved['limit'])
                 };
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listPlants',
@@ -347,10 +407,10 @@ export async function invokeTool(
                     "\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        WHERE\n            common_name LIKE '%' || :searchText || '%'\n            OR latin_name LIKE '%' || :searchText || '%'\n        ORDER BY common_name\n        FETCH FIRST :maxRows ROWS ONLY\n    ";
                 const binds = {
                     searchText:
-                        options['searchText'] !== undefined && options['searchText'] !== null
-                            ? String(options['searchText'])
+                        optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
+                            ? String(optionsResolved['searchText'])
                             : null,
-                    maxRows: normalizeOracleNumericParamValue(options['maxRows'])
+                    maxRows: normalizeOracleNumericParamValue(optionsResolved['maxRows'])
                 };
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchPlants',
@@ -372,16 +432,16 @@ export async function invokeTool(
                     'INSERT INTO plants (common_name, latin_name, description)\n        VALUES (:commonName, :latinName, :aboutText) RETURNING plant_id, common_name, latin_name, description INTO :ret0, :ret1, :ret2, :ret3';
                 const binds = {
                     commonName:
-                        options['commonName'] !== undefined && options['commonName'] !== null
-                            ? String(options['commonName'])
+                        optionsResolved['commonName'] !== undefined && optionsResolved['commonName'] !== null
+                            ? String(optionsResolved['commonName'])
                             : null,
                     latinName:
-                        options['latinName'] !== undefined && options['latinName'] !== null
-                            ? String(options['latinName'])
+                        optionsResolved['latinName'] !== undefined && optionsResolved['latinName'] !== null
+                            ? String(optionsResolved['latinName'])
                             : null,
                     aboutText:
-                        options['aboutText'] !== undefined && options['aboutText'] !== null
-                            ? String(options['aboutText'])
+                        optionsResolved['aboutText'] !== undefined && optionsResolved['aboutText'] !== null
+                            ? String(optionsResolved['aboutText'])
                             : null,
                     ret0: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
                     ret1: { type: oracledb.STRING, dir: oracledb.BIND_OUT, maxSize: 4000 },
@@ -412,18 +472,18 @@ export async function invokeTool(
                     'UPDATE plants\n        SET\n            common_name = :commonName,\n            latin_name = :latinName,\n            description = :aboutText\n        WHERE plant_id = :plantId RETURNING plant_id, common_name, latin_name, description INTO :ret0, :ret1, :ret2, :ret3';
                 const binds = {
                     commonName:
-                        options['commonName'] !== undefined && options['commonName'] !== null
-                            ? String(options['commonName'])
+                        optionsResolved['commonName'] !== undefined && optionsResolved['commonName'] !== null
+                            ? String(optionsResolved['commonName'])
                             : null,
                     latinName:
-                        options['latinName'] !== undefined && options['latinName'] !== null
-                            ? String(options['latinName'])
+                        optionsResolved['latinName'] !== undefined && optionsResolved['latinName'] !== null
+                            ? String(optionsResolved['latinName'])
                             : null,
                     aboutText:
-                        options['aboutText'] !== undefined && options['aboutText'] !== null
-                            ? String(options['aboutText'])
+                        optionsResolved['aboutText'] !== undefined && optionsResolved['aboutText'] !== null
+                            ? String(optionsResolved['aboutText'])
                             : null,
-                    plantId: normalizeOracleNumericParamValue(options['plantId']),
+                    plantId: normalizeOracleNumericParamValue(optionsResolved['plantId']),
                     ret0: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
                     ret1: { type: oracledb.STRING, dir: oracledb.BIND_OUT, maxSize: 4000 },
                     ret2: { type: oracledb.STRING, dir: oracledb.BIND_OUT, maxSize: 4000 },
@@ -452,7 +512,7 @@ export async function invokeTool(
                 const sqlText =
                     'DELETE FROM plants\n        WHERE plant_id = :plantId RETURNING plant_id, common_name, latin_name, description INTO :ret0, :ret1, :ret2, :ret3';
                 const binds = {
-                    plantId: normalizeOracleNumericParamValue(options['plantId']),
+                    plantId: normalizeOracleNumericParamValue(optionsResolved['plantId']),
                     ret0: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
                     ret1: { type: oracledb.STRING, dir: oracledb.BIND_OUT, maxSize: 4000 },
                     ret2: { type: oracledb.STRING, dir: oracledb.BIND_OUT, maxSize: 4000 },

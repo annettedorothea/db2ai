@@ -11,15 +11,15 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 - **Nicht lesen, schreiben oder aendern:** `.env`, `.env.local`, `.env.*` und vergleichbare Secret-/Config-Dateien.
 - **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
-- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `DB2AI_AUTH_TOKEN`, `PAGILA_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
+- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `DB2AI_AUTH_TOKEN`, `PAGILA_POSTGRESQL_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
 
 ## Transport (stdio vs. HTTP vs. OAuth, siehe `mcp.json`)
 
-- **`sakila` (stdio):** `DB2AI_AUTH_TOKEN` in `.env` (gleicher Wert wie `MCP_AUTH_EXPECTED`); Validierung in `src/auth/db2ai/sakila-tools/verifyCredential.ts`.
-- **`pagila` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung in `src/auth/db2ai/pagila-tools/verifyCredential.ts` gegen `MCP_AUTH_EXPECTED`.
-- **`orders` (HTTP (oauth)):** Cursor OAuth Sign-in; Validierung in `verifyCredential` — kein Token in Env schreiben.
+- **`sakila-mysql` (stdio):** `DB2AI_AUTH_TOKEN` in `.env` (gleicher Wert wie `MCP_AUTH_EXPECTED`); Validierung in `src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.ts`.
+- **`pagila-postgresql` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung in `src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.ts` gegen `MCP_AUTH_EXPECTED`.
+- **`orders-postgresql` (HTTP oauth):** Cursor OAuth Sign-in; Validierung in `verifyOrdersPostgresqlCredentials.ts` — kein Token in Env schreiben.
 
-Auth-Logik liegt in `src/auth/**/verifyCredential.ts` (OAuth-Gate und stdio/relay) — nicht mehr als Host-CLI-Flags.
+Auth-Logik liegt in `src/auth/**/verify*Credentials.ts` (OAuth-Gate und stdio/relay) — nicht mehr als Host-CLI-Flags.
 
 ## Auth-Fehler: Fehler melden, nicht umgehen
 
@@ -36,12 +36,12 @@ Auth-Logik liegt in `src/auth/**/verifyCredential.ts` (OAuth-Gate und stdio/rela
 - **Nicht** versuchen, Identitaet per Tool-Aufruf zu wechseln, wenn Env auf eine andere Person zeigt.
 - Wenn der Nutzer **explizit** eine andere Demo-Identitaet will (z. B. anderes JWT in `.env.example`): nur erklaeren, welche Variable er selbst in `.env` setzen soll — **nicht** die Datei fuer ihn aendern.
 
-## Beispiel (orders-postgres)
+## Beispiel (orders-postgresql)
 
 **Anfrage:** „db2ai zeig bobs bestellungen an“ — OAuth-Token gehoert zu `alice`.
 
 - ✅ Einmal `listCustomerOrders` mit `customerId: bob` aufrufen.
-- ✅ Bei Mismatch-Fehler melden: Token ist `alice`, angefragt wurde `bob`; Nutzer soll per OAuth als `bob` anmelden (Cursor Sign-in auf `orders`).
+- ✅ Bei Mismatch-Fehler melden: Token ist `alice`, angefragt wurde `bob`; Nutzer soll per OAuth als `bob` anmelden (Cursor Sign-in auf `orders-postgresql`).
 - ❌ `.env` lesen oder aendern.
 - ❌ Erneut `listCustomerOrders` nach eigenmaechtigem Credential-Tausch.
 - ❌ Pagila/Sakila-MCPs als Ersatz nutzen, um die Anfrage doch noch zu erfuellen.

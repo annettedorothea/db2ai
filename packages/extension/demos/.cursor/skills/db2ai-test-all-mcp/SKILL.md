@@ -29,7 +29,7 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 ## Geltende Regeln
 
 - **Schema-only:** Parameter nur aus MCP-Tool-Descriptors (JSON Schema + Beispiele in `description`). Kein Repo-/DSL-Wissen.
-- **Nur konfigurierte Server:** Eintraege in `.cursor/mcp.json` (`sakila`, `sakila-mariadb`, `pagila`, `orders`, `animals`, `plants`).
+- **Nur konfigurierte Server:** Eintraege in `.cursor/mcp.json` (`sakila-mysql`, `sakila-mariadb`, `pagila-postgresql`, `orders-postgresql`, `animals-sqlserver`, `plants-oracle`).
 - **Kein Workaround bei Fehlern:** Kein CLI, kein SQL, kein Retry mit anderen Credentials.
 - **Ausnahme zu „ein Aufruf“:** Bei diesem Skill genau **ein Aufruf pro Tool** — insgesamt alle Tools aller Server. Fehler pro Tool dokumentieren, mit naechstem Tool fortfahren (Server komplett down: Rest des Servers ueberspringen, Fehler melden).
 
@@ -45,7 +45,7 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 - Pflichtfelder aus Schema; fehlen Beispiele → kleinste sinnvolle Werte (`limit: 5`, `offset: 0`, `maxRows: 5`).
 - **Read-Tools zuerst** (parallel pro Server moeglich).
 - **Write-Tools:** create → update (ID aus Response) → delete (gleiche ID). Praefix `MCPTEST` in Namen.
-- **orders:** `listCustomerOrders` ohne `customerId` (JWT-Default). Admin-only-Tools einmal testen; bei `403` dokumentieren, nicht umgehen.
+- **orders-postgresql:** `listCustomerOrders` ohne `customerId` (JWT-Default). Admin-only-Tools einmal testen; bei `403` dokumentieren, nicht umgehen.
 - **delete*** mit FK-Risiko: bevorzugt frisch erzeugte IDs; Schema-Beispiel `999` nur wenn kein create moeglich war.
 
 ### 3. Aufrufe
@@ -62,7 +62,7 @@ Kurz fuer den Nutzer:
 
 | Server | Tools | Status |
 |--------|-------|--------|
-| sakila | 7 | ✅ / ❌ |
+| sakila-mysql | 7 | ✅ / ❌ |
 
 ### Auffaelligkeiten
 - …

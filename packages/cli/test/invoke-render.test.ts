@@ -4,7 +4,10 @@ import type { ResolvedSqlToolCodegen } from '../src/db-query-codegen.js';
 
 describe('renderInvokeBlockTs', () => {
     test('omits compactSqlForLog when there are no SQL tools', () => {
-        const block = renderInvokeBlockTs([], 'postgres', false, false);
+        const block = renderInvokeBlockTs([], 'postgres', false, 'none', {
+            authorizers: false,
+            validators: false
+        });
         expect(block).not.toContain('compactSqlForLog');
         expect(block).toContain('_options: InvokeOptions = {}');
     });
@@ -37,7 +40,9 @@ describe('collectSqlBindValueExpressions', () => {
             }
         ],
         mysqlBindNames: ['searchText', 'searchText', 'maxRows'],
-        access: 'public'
+        access: 'public',
+        hasAuthorize: false,
+        hasValidate: false
     };
 
     test('postgres emits one expression per unique placeholder', () => {

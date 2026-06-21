@@ -2,7 +2,7 @@
 /**
  * Start one db2ai demo: DB (+ MCP HTTP/OAuth host when needed), without killing other demos.
  *
- * Usage: node ./scripts/start-demo.mjs <sakila|pagila|orders|animals|plants>
+ * Usage: node ./scripts/start-demo.mjs <sakila-mysql|pagila-postgresql|orders-postgresql|animals-sqlserver|plants-oracle>
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -54,19 +54,19 @@ function killPortsForDemo() {
         killListenersOnPort(port, { logPrefix: `mcp-oauth:${spec.oauthDemo}:kill` });
     }
     if (spec.oauthIdp) {
-        const idpPort = requireEnvInt('ORDERS_POSTGRES_OAUTH_IDP_PORT');
+        const idpPort = requireEnvInt('ORDERS_POSTGRESQL_OAUTH_IDP_PORT');
         killListenersOnPort(idpPort, { logPrefix: 'oauth-idp:kill' });
     }
 }
 
 async function startMcpHosts() {
     if (spec.oauthIdp) {
-        const idpPort = requireEnvInt('ORDERS_POSTGRES_OAUTH_IDP_PORT');
+        const idpPort = requireEnvInt('ORDERS_POSTGRESQL_OAUTH_IDP_PORT');
         const idpBaseUrl = `http://127.0.0.1:${idpPort}`;
         startService(
             'oauth-idp',
             [path.join(demosRoot, 'oauth-idp', 'server.mjs')],
-            { ORDERS_POSTGRES_OAUTH_IDP_PORT: String(idpPort), OAUTH_IDP_SIGN_ALG: 'RS256' },
+            { ORDERS_POSTGRESQL_OAUTH_IDP_PORT: String(idpPort), OAUTH_IDP_SIGN_ALG: 'RS256' },
             idpPort
         );
         console.log(`[start:${demoName}] waiting for oauth-idp at ${idpBaseUrl}…`);

@@ -11,7 +11,9 @@ DatabaseDialect returns string:
 SqlQuery:
     'SQL' '{'
         ('toolName' ':' toolName=ID)?
-        'access' ':' access=Access
+        'access' ':' access=AccessKind
+        ('authorize' ':' authorize=AuthorizeSpec)?
+        ('validate' ':' validate=ValidateSpec)?
         ('intent' ':' intent=DslText)?
         ('query' ':' query=DslText)?
         ('summary' ':' summary=DslText)?
@@ -19,8 +21,8 @@ SqlQuery:
         ('response' ':' response=DslText)?
     '}';
 
-Access:
-    PublicAccess | ProtectedAccess | CheckedAccess;
+AccessKind:
+    PublicAccess | ProtectedAccess;
 
 PublicAccess:
     {infer PublicAccess} 'public';
@@ -28,11 +30,20 @@ PublicAccess:
 ProtectedAccess:
     {infer ProtectedAccess} 'protected';
 
-CheckedAccess:
-    {infer CheckedAccess} 'checked' ('{' checkedBody=CheckedAccessBody '}')?;
+AuthorizeSpec:
+    AuthorizeTrue;
 
-CheckedAccessBody:
-    ('optionalParams' ':' '[' (optionalParams+=[SqlParamEntry:ID] (',' optionalParams+=[SqlParamEntry:ID])*)? ']')?;
+AuthorizeTrue:
+    {infer AuthorizeTrue} 'true';
+
+ValidateSpec:
+    ValidateTrue | ValidateBody;
+
+ValidateTrue:
+    {infer ValidateTrue} 'true';
+
+ValidateBody:
+    {infer ValidateBody} '{' ('optionalParams' ':' '[' (optionalParams+=[SqlParamEntry:ID] (',' optionalParams+=[SqlParamEntry:ID])*)? ']')? '}';
 
 SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';

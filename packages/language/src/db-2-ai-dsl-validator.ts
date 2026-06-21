@@ -3,7 +3,7 @@ import type { Db2AiDslAstType, Model } from './generated/ast.js';
 import { isSqlQuery } from './generated/ast.js';
 import type { Db2AiDslServices } from './db-2-ai-dsl-module.js';
 import { checkSqlQuery } from './db-2-ai-dsl-sql-validator.js';
-import { accessRequiresAuth } from './query-access.js';
+import { accessRequiresAuth, isToolAuthorizeEnabled } from './query-access.js';
 import {
     databaseDialectDisplayName,
     databaseDialectFromModel,
@@ -38,6 +38,18 @@ export class Db2AiDslValidator {
     }
 
     private checkSqlQueryAccess(model: Model, accept: ValidationAcceptor): void {
+        for (const entry of model.entries) {
+            if (!isSqlQuery(entry)) {
+                continue;
+            }
+            if (isToolAuthorizeEnabled(entry) && !accessRequiresAuth(entry)) {
+                accept('error', 'authorize: true requires access `protected`.', {
+                    node: entry,
+                    property: 'authorize'
+                });
+            }
+        }
+
         if (model.auth) {
             return;
         }
@@ -46,7 +58,7 @@ export class Db2AiDslValidator {
                 continue;
             }
             if (accessRequiresAuth(entry)) {
-                accept('error', 'access `protected` and `checked` require `auth` on the model.', {
+                accept('error', 'access `protected` requires `auth` on the model.', {
                     node: entry,
                     property: 'access'
                 });
@@ -67,10 +79,14 @@ export class Db2AiDslValidator {
             return;
         }
         if (!isValidEnvVarName(String(env))) {
-            accept('error', 'database env must be a valid environment variable name (e.g. PAGILA_DATABASE_URL).', {
-                node: model,
-                property: 'env'
-            });
+            accept(
+                'error',
+                'database env must be a valid environment variable name (e.g. PAGILA_POSTGRESQL_DATABASE_URL).',
+                {
+                    node: model,
+                    property: 'env'
+                }
+            );
         }
     }
 

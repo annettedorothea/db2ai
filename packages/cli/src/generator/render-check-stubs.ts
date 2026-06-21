@@ -1,89 +1,99 @@
 import type { Model } from 'db-2-ai-dsl-language';
-import { getAccessKind, isSqlQuery } from 'db-2-ai-dsl-language';
+import { accessRequiresAuth, isSqlQuery, isToolAuthorizeEnabled, isToolValidateEnabled } from 'db-2-ai-dsl-language';
 import {
-    ensureCheckedAuthStubsFromSource,
-    parameterCheckExportName,
-    renderParameterCheckerImports,
-    renderParameterCheckersMap
+    authorizeExportName,
+    ensureToolAuthStubsFromSource,
+    renderAuthorizerImports,
+    renderAuthorizersMap,
+    renderValidatorImports,
+    renderValidatorsMap,
+    renderInvokeAuthPipeline as renderInvokeAuthPipelineCore,
+    resolveAuthPipelineTier,
+    type AuthPipelineTier,
+    type AuthStubMaps,
+    type ToolAuthStubSpec,
+    validateInputExportName
 } from '@core2ai/core/codegen';
 
-export { parameterCheckExportName, renderParameterCheckerImports, renderParameterCheckersMap };
+export {
+    authorizeExportName,
+    validateInputExportName,
+    renderAuthorizerImports,
+    renderAuthorizersMap,
+    renderValidatorImports,
+    renderValidatorsMap,
+    resolveAuthPipelineTier,
+    type AuthPipelineTier,
+    type AuthStubMaps
+};
 
-function listCheckedToolNames(model: Model): string[] {
+function listToolAuthSpecs(model: Model): ToolAuthStubSpec[] {
+    const specs: ToolAuthStubSpec[] = [];
+    for (const entry of model.entries) {
+        if (!isSqlQuery(entry)) {
+            continue;
+        }
+        const toolName = entry.toolName?.trim();
+        if (!toolName) {
+            continue;
+        }
+        const authorize = isToolAuthorizeEnabled(entry);
+        const validate = isToolValidateEnabled(entry);
+        if (authorize || validate) {
+            specs.push({ toolName, authorize, validate });
+        }
+    }
+    return specs;
+}
+
+export function listAuthorizeToolNames(model: Model): string[] {
+    return listToolAuthSpecs(model)
+        .filter((spec) => spec.authorize)
+        .map((spec) => spec.toolName);
+}
+
+export function listProtectedToolNames(model: Model): string[] {
     const names: string[] = [];
     for (const entry of model.entries) {
         if (!isSqlQuery(entry)) {
             continue;
         }
-        if (getAccessKind(entry) === 'checked' && entry.toolName?.trim()) {
-            names.push(entry.toolName.trim());
+        const toolName = entry.toolName?.trim();
+        if (toolName && accessRequiresAuth(entry)) {
+            names.push(toolName);
         }
     }
     return names;
 }
 
-/** Writes write-once `src/auth/{product}/<mcpModule>/<toolName>.ts` stubs; returns stub paths for imports. */
+export function listValidateToolNames(model: Model): string[] {
+    return listToolAuthSpecs(model)
+        .filter((spec) => spec.validate)
+        .map((spec) => spec.toolName);
+}
+
+export function modelHasAuthPipeline(model: Model): boolean {
+    return model.entries.some(
+        (entry) => isSqlQuery(entry) && (accessRequiresAuth(entry) || isToolValidateEnabled(entry))
+    );
+}
+
 export async function renderCheckStubs(
     source: string,
     model: Model,
     toolsModuleTsPath: string
 ): Promise<Map<string, string>> {
-    const checkedToolNames = listCheckedToolNames(model);
-    if (checkedToolNames.length === 0) {
+    const specs = listToolAuthSpecs(model);
+    if (specs.length === 0) {
         return new Map();
     }
-    return ensureCheckedAuthStubsFromSource(source, checkedToolNames, toolsModuleTsPath);
+    return ensureToolAuthStubsFromSource(source, specs, toolsModuleTsPath);
 }
 
-export function renderInvokeCredentialAndParameterCheck(hasAuth: boolean, hasChecked: boolean): string {
-    const credentialGuard = hasAuth
-        ? hasChecked
-            ? `
-    let credential = host.credential;
-    let sessionClaims = host.sessionClaims;
-    if (toolMeta.access !== 'public') {
-        if (!credential || !String(credential).trim()) {
-            throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
-            );
-        }
-        if (sessionClaims === undefined) {
-            const verified = await verifyCredential({ inboundCredential: String(credential).trim() });
-            credential = verified.upstreamCredential;
-            sessionClaims = verified.sessionClaims;
-        }
-    }`
-            : `
-    if (toolMeta.access !== 'public') {
-        const credential = host.credential;
-        if (!credential || !String(credential).trim()) {
-            throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
-            );
-        }
-        if (host.sessionClaims === undefined) {
-            await verifyCredential({ inboundCredential: String(credential).trim() });
-        }
-    }`
-        : '';
-
-    const checkedAccessBlock = hasChecked
-        ? `
-    if (toolMeta.access === 'checked') {
-        const check = parameterCheckers[toolName];
-        if (typeof check !== 'function') {
-            throw new Error('No parameter checker for checked tool: ' + toolName);
-        }
-        optionsResolved = await Promise.resolve(
-            check(options, {
-                credential: String(credential).trim(),
-                sessionClaims
-            })
-        );
-    }`
-        : '';
-
-    const optionsResolvedDecl = hasChecked ? '\n    let optionsResolved = options;' : '';
-
-    return `${credentialGuard}${optionsResolvedDecl}${checkedAccessBlock}`;
+export function renderInvokeAuthPipeline(
+    tier: AuthPipelineTier,
+    hasVerifyCredential: boolean,
+    stubMaps: AuthStubMaps
+): string {
+    return renderInvokeAuthPipelineCore('db2ai', tier, hasVerifyCredential, stubMaps);
 }

@@ -16,17 +16,29 @@ import {
 } from './generated/ast.js';
 import { usedSqlParamSpecFieldKinds } from './sql-param-spec.js';
 
-const SQL_BLOCK_KEYS = ['toolName', 'access', 'intent', 'query', 'summary', 'params', 'response'] as const;
+const SQL_BLOCK_KEYS = [
+    'toolName',
+    'access',
+    'authorize',
+    'validate',
+    'intent',
+    'query',
+    'summary',
+    'params',
+    'response'
+] as const;
 type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
 const SQL_PARAM_SPEC_KEYS = ['description', 'example', 'type'] as const;
-const ACCESS_KINDS = ['public', 'protected', 'checked'] as const;
+const ACCESS_KINDS = ['public', 'protected'] as const;
 type AccessKindKeyword = (typeof ACCESS_KINDS)[number];
-type CheckedBodyKey = 'optionalParams';
+type ValidateBodyKey = 'optionalParams';
 type SqlParamSpecKey = (typeof SQL_PARAM_SPEC_KEYS)[number];
 
 const SQL_KEYWORD_SORT: Record<SqlBlockKey, string> = {
     toolName: '0100',
     access: '0101',
+    authorize: '0101.25',
+    validate: '0101.5',
     intent: '0102',
     query: '0103',
     summary: '0104',
@@ -36,23 +48,26 @@ const SQL_KEYWORD_SORT: Record<SqlBlockKey, string> = {
 
 const ACCESS_KIND_SORT: Record<AccessKindKeyword, string> = {
     public: '0110',
-    protected: '0111',
-    checked: '0112'
+    protected: '0111'
 };
 
-const CHECKED_BODY_SORT: Record<CheckedBodyKey, string> = {
+const VALIDATE_BODY_SORT: Record<ValidateBodyKey, string> = {
     optionalParams: '0300'
 };
 
 const ACCESS_KIND_INSERT: Record<AccessKindKeyword, string> = {
     public: 'access: public$0',
-    protected: 'access: protected$0',
-    checked: 'access: checked {\n    optionalParams: [$1]\n}'
+    protected: 'access: protected$0'
 };
 
-const CHECKED_BODY_INSERT: Record<CheckedBodyKey, string> = {
+const VALIDATE_BODY_INSERT: Record<ValidateBodyKey, string> = {
     optionalParams: 'optionalParams: [$1]$0'
 };
+
+const VALIDATE_SPEC_INSERT = {
+    true: 'true',
+    block: '{\n    optionalParams: [$1]\n}'
+} as const;
 
 const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
     description: '0201',
@@ -63,6 +78,8 @@ const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
 const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     toolName: 'toolName: $1$0',
     access: 'access: public$0',
+    authorize: 'authorize: true$0',
+    validate: 'validate: true$0',
     intent: 'intent: "$1"$0',
     query: "query: '''\n$1\n'''$0",
     summary: 'summary: "$1"$0',
@@ -112,6 +129,12 @@ function usedSqlBlockKeys(query: SqlQuery): Set<string> {
     }
     if (query.access !== undefined) {
         used.add('access');
+    }
+    if (query.authorize !== undefined) {
+        used.add('authorize');
+    }
+    if (query.validate !== undefined) {
+        used.add('validate');
     }
     if (query.intent !== undefined) {
         used.add('intent');
@@ -474,19 +497,19 @@ function buildAccessKindCompletionItems(document: LangiumDocument, position: Pos
         label: key,
         kind: CompletionItemKind.Keyword,
         detail: 'SQL tool access',
-        insertTextFormat: key === 'checked' ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
+        insertTextFormat: InsertTextFormat.PlainText,
         sortText: ACCESS_KIND_SORT[key],
         insertText: ACCESS_KIND_INSERT[key].replace('$0', '')
     }));
 }
 
-function buildCheckedBodyKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+function buildValidateBodyKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
     const textDoc = document.textDocument;
     const beforeCursor = textDoc.getText({ start: { line: 0, character: 0 }, end: position });
-    if (!/access\s*:\s*checked\s*\{[^}]*$/.test(beforeCursor)) {
+    if (!/validate\s*:\s*\{[^}]*$/.test(beforeCursor)) {
         return [];
     }
-    const blockStart = beforeCursor.lastIndexOf('access');
+    const blockStart = beforeCursor.lastIndexOf('validate');
     const blockText = beforeCursor.slice(blockStart);
     if (/\boptionalParams\b\s*:/.test(blockText)) {
         return [];
@@ -504,12 +527,70 @@ function buildCheckedBodyKeywordCompletionItems(document: LangiumDocument, posit
         {
             label: 'optionalParams',
             kind: CompletionItemKind.Keyword,
-            detail: 'checked access optional SQL params',
+            detail: 'validate optional SQL params',
             insertTextFormat: InsertTextFormat.Snippet,
-            sortText: CHECKED_BODY_SORT.optionalParams,
-            insertText: CHECKED_BODY_INSERT.optionalParams
+            sortText: VALIDATE_BODY_SORT.optionalParams,
+            insertText: VALIDATE_BODY_INSERT.optionalParams
         }
     ];
+}
+
+function buildAuthorizeSpecCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+    const textDoc = document.textDocument;
+    const line = textDoc.getText({
+        start: { line: position.line, character: 0 },
+        end: { line: position.line, character: position.character }
+    });
+    const match = /^\s*authorize\s*:\s*(\w*)$/.exec(line);
+    if (!match) {
+        return [];
+    }
+    const prefix = match[1] ?? '';
+    if (!'true'.startsWith(prefix)) {
+        return [];
+    }
+    return [
+        {
+            label: 'true',
+            kind: CompletionItemKind.Constant,
+            detail: 'Enable authorize{Tool} stub',
+            insertTextFormat: InsertTextFormat.PlainText,
+            insertText: 'true'
+        }
+    ];
+}
+
+function buildValidateSpecCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+    const textDoc = document.textDocument;
+    const line = textDoc.getText({
+        start: { line: position.line, character: 0 },
+        end: { line: position.line, character: position.character }
+    });
+    const match = /^\s*validate\s*:\s*(\w*)$/.exec(line);
+    if (!match) {
+        return [];
+    }
+    const prefix = match[1] ?? '';
+    const items: CompletionItem[] = [];
+    if ('true'.startsWith(prefix)) {
+        items.push({
+            label: 'true',
+            kind: CompletionItemKind.Constant,
+            detail: 'Enable validate{Tool}Input stub',
+            insertTextFormat: InsertTextFormat.PlainText,
+            insertText: VALIDATE_SPEC_INSERT.true
+        });
+    }
+    if (prefix.length === 0 || '{'.startsWith(prefix)) {
+        items.push({
+            label: '{ optionalParams: [...] }',
+            kind: CompletionItemKind.Snippet,
+            detail: 'Validate with optionalParams',
+            insertTextFormat: InsertTextFormat.Snippet,
+            insertText: VALIDATE_SPEC_INSERT.block
+        });
+    }
+    return items;
 }
 
 function buildBlockKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
@@ -541,9 +622,17 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         if (accessKindItems.length > 0) {
             return CompletionList.create(this.deduplicateItems(accessKindItems), false);
         }
-        const checkedBodyItems = buildCheckedBodyKeywordCompletionItems(document, params.position);
-        if (checkedBodyItems.length > 0) {
-            return CompletionList.create(this.deduplicateItems(checkedBodyItems), false);
+        const authorizeSpecItems = buildAuthorizeSpecCompletionItems(document, params.position);
+        if (authorizeSpecItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(authorizeSpecItems), false);
+        }
+        const validateSpecItems = buildValidateSpecCompletionItems(document, params.position);
+        if (validateSpecItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(validateSpecItems), false);
+        }
+        const validateBodyItems = buildValidateBodyKeywordCompletionItems(document, params.position);
+        if (validateBodyItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(validateBodyItems), false);
         }
         const keywordItems = buildBlockKeywordCompletionItems(document, params.position);
         if (keywordItems.length > 0) {

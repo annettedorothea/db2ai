@@ -1,10 +1,11 @@
-database postgres env "ORDERS_POSTGRES_DATABASE_URL"
+database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
 auth
 
 SQL {
     toolName: listCustomerOrders
-    access: checked {
+    access: protected
+    validate: {
         optionalParams: [customerId]
     }
     intent: '''
@@ -30,14 +31,16 @@ SQL {
         customerId: { 
             description: "Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools."
             example: "alice"
-            type: string }
+            type: string 
+        }
     }
 }
 
 SQL {
     toolName: listProducts
     access: public
-    intent: "list products in the orders-postgres catalog"
+    validate: true
+    intent: "list products in the orders-postgresql catalog"
     query: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT :limit"
     summary: "Product catalog rows"
     params: {
@@ -48,9 +51,10 @@ SQL {
 SQL {
     toolName: listProductsWithReviews
     access: protected
+    validate: true
     intent: '''
         List products that have at least one review, with review details.
-        Protected: requires host credential (MCP header or ORDERS_POSTGRES_TOKEN in .env).
+        Protected: requires Cursor OAuth sign-in on orders-postgresql MCP (JWT claim customerId).
         One row per review; same product may appear multiple times.
     '''
     query: '''
@@ -69,11 +73,11 @@ SQL {
             p.product_id,
             r.review_id
         LIMIT
-            LEAST(:limit, 200)
+            LEAST(:limit, 100)
     '''
     summary: '''
         Products with reviews (requires credential).
-        Join products and reviews; cap 200 rows in SQL.
+        Join products and reviews; cap 100 rows in SQL.
     '''
     params: {
         limit: { description: "max rows" example: "50" type: integer }
@@ -82,7 +86,8 @@ SQL {
 
 SQL {
     toolName: createOrder
-    access: checked {
+    access: protected
+    validate: {
         optionalParams: [customerId]
     }
     intent: '''
@@ -101,13 +106,15 @@ SQL {
             type: string }
         productId: { description: "Product id from the catalog"
             example: "1"
-            type: integer }
+            type: integer
+        }
     }
 }
 
 SQL {
     toolName: createProduct
-    access: checked
+    access: protected
+    authorize: true
     intent: '''
         Insert a new product into the catalog.
         Checked access: admin role required (JWT role claim).
@@ -120,13 +127,15 @@ SQL {
             type: string }
         price: { description: "Unit price"
             example: "10.99"
-            type: number }
+            type: number
+        }
     }
 }
 
 SQL {
     toolName: updateProduct
-    access: checked
+    access: protected
+    authorize: true
     intent: '''
         Update name and price of an existing product.
         Checked access: admin role required (JWT role claim).
@@ -142,13 +151,15 @@ SQL {
             type: string }
         price: { description: "New unit price"
             example: "12.99"
-            type: number }
+            type: number 
+        }
     }
 }
 
 SQL {
     toolName: deleteProduct
-    access: checked
+    access: protected
+    authorize: true
     intent: '''
         Delete a product by id.
         Checked access: admin role required (JWT role claim).
@@ -159,7 +170,8 @@ SQL {
     params: {
         productId: { description: "Product id to delete"
             example: "999"
-            type: integer }
+            type: integer
+        }
     }
 }
 

@@ -1,21 +1,39 @@
 /**
- * Generated from: pagila.db2ai
+ * Generated from: pagila-postgresql.db2ai
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
-import { verifyCredential } from '../../../src/auth/db2ai/pagila-tools/verifyCredential.js';
-import { checkListActorsParameters } from '../../../src/auth/db2ai/pagila-tools/listActors.js';
+import * as z from 'zod/v4';
+import {
+    verifyCredential,
+    toModuleCredentials,
+    type ModuleCredentials
+} from '../../../src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
+import { validateListFilmsInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listFilms.js';
+import { validateListActorsInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listActors.js';
+import { validateListCustomersInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listCustomers.js';
+import { validateListCategoriesInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listCategories.js';
+import { validateListCountriesInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listCountries.js';
+import { validateListInventoryInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listInventory.js';
+import { validateFilmsByMpaaRatingInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/filmsByMpaaRating.js';
+import { validateFilmsWithActorLastNameInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/filmsWithActorLastName.js';
+import { validateSearchFilmsInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/searchFilms.js';
 
-export const connectionEnv = 'PAGILA_DATABASE_URL';
+export const connectionEnv = 'PAGILA_POSTGRESQL_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
 
-export const requiresAuth = true;
+export const requiresAuth = false;
 
-export { verifyCredential } from '../../../src/auth/db2ai/pagila-tools/verifyCredential.js';
+export {
+    verifyCredential,
+    toModuleCredentials
+} from '../../../src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
 export type {
     VerifyCredentialInput,
-    VerifyCredentialResult
-} from '../../../src/auth/db2ai/pagila-tools/verifyCredential.js';
+    VerifyCredentialResult,
+    ModuleCredentials,
+    PagilaPostgresqlCredentials
+} from '../../../src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -32,7 +50,9 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
-    access: 'public' | 'protected' | 'checked';
+    access: 'public' | 'protected';
+    hasAuthorize: boolean;
+    hasValidate: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -43,12 +63,8 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
-};
-
-export type CheckedHostContext = {
-    credential: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -57,9 +73,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (film table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (film table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'public',
-        sqlText: 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2',
+        hasAuthorize: false,
+        hasValidate: true,
+        sqlText: 'SELECT * FROM film LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
                 placeholder: ':limit',
@@ -86,9 +104,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated actor rows',
         description:
-            'List actors from Pagila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (actor table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.\n        Checked access: requires DB2AI_AUTH_TOKEN at MCP startup.',
-        access: 'checked',
-        sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2',
+            'List actors from Pagila with pagination.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (actor table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
+        access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
+        sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
                 placeholder: ':limit',
@@ -96,7 +116,7 @@ export const generatedTools: GeneratedTool[] = [
                 name: 'limit',
                 propertyName: 'limit',
                 description:
-                    '\n                Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n            ',
+                    '\n                Max rows per page.\n                SQL caps at 100 via LEAST(:limit, 100).\n            ',
                 example: '100',
                 jsonSchemaType: 'integer'
             },
@@ -116,9 +136,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCustomers',
         title: 'Paginated customer rows',
         description:
-            'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=10, offset=0\n\nResponse:\nObject with rows (customer table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=10, offset=0\n\nResponse:\nObject with rows (customer table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'public',
-        sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2',
+        hasAuthorize: false,
+        hasValidate: true,
+        sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
                 placeholder: ':limit',
@@ -145,9 +167,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCategories',
         title: 'Paginated category rows',
         description:
-            'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (category_id, name, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (category_id, name, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'public',
-        sqlText: 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2',
+        hasAuthorize: false,
+        hasValidate: true,
+        sqlText: 'SELECT * FROM category LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
                 placeholder: ':limit',
@@ -174,9 +198,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCountries',
         title: 'Paginated country rows',
         description:
-            'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (country_id, country, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (country_id, country, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'public',
-        sqlText: 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2',
+        hasAuthorize: false,
+        hasValidate: true,
+        sqlText: 'SELECT * FROM country LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
                 placeholder: ':limit',
@@ -203,10 +229,12 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listInventory',
         title: 'Paginated inventory rows',
         description:
-            'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (inventory table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 500 in SQL.',
+            'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (inventory table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
-            '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 500)\n        OFFSET\n            $2\n    ',
+            '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 100)\n        OFFSET\n            $2\n    ',
         params: [
             {
                 placeholder: ':limit',
@@ -235,6 +263,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'List films with a given MPAA age rating.\n        Valid ratings: G, PG, PG-13, R, NC-17.\n        Results ordered by title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG-13, maxRows=20\n\nResponse:\nObject with rows { film_id, title, rating } and rowCount.\n        Ordered by title; rowCount 0 when no films match the given MPAA rating.',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ',
         params: [
@@ -265,6 +295,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25\n\nResponse:\nObject with rows { first_name, last_name, title } and rowCount.\n        One row per actor–film pair; ordered by last name, then title.',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ",
         params: [
@@ -296,6 +328,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'Search films by free text in title or description.\n        Case-insensitive substring match (PostgreSQL ILIKE).\n        Useful for demo queries such as dog, cat, or grace.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=dog, maxRows=15\n\nResponse:\nObject with rows { film_id, title, rating, description_preview } and rowCount.\n        description_preview is the first 120 characters of description; case-insensitive match in title or description.',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ",
         params: [
@@ -326,6 +360,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'Insert a new actor into Pagila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1.\n        actor_id is the new primary key assigned by the database.',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: false,
         sqlText:
             'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW()) RETURNING actor_id, first_name, last_name, last_update',
         params: [
@@ -356,6 +392,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             "Update an actor's first and last name.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=JONES, actorId=1\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when actor_id exists.\n        rowCount 0 when no row matched actor_id.",
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: false,
         sqlText:
             'UPDATE actor SET first_name = $1, last_name = $2, last_update = NOW() WHERE actor_id = $3 RETURNING actor_id, first_name, last_name, last_update',
         params: [
@@ -395,6 +433,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'Delete an actor by id.\n        Fails if the actor is referenced by film_actor (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: actorId=999\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when deleted.\n        rowCount 0 when actor_id was not found.\n        Fails if the actor is referenced by film_actor (foreign key constraint).',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: false,
         sqlText: 'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update',
         params: [
             {
@@ -410,17 +450,23 @@ export const generatedTools: GeneratedTool[] = [
     }
 ];
 
-export const mcpServerName = 'pagila-tools';
+export const mcpServerName = 'pagila-postgresql-tools';
 export const mcpServerVersion = '0.3.0';
 
-const parameterCheckers: Record<
+const validators: Record<
     string,
-    (options: InvokeOptions, host: CheckedHostContext) => InvokeOptions | Promise<InvokeOptions>
+    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
 > = {
-    listActors: checkListActorsParameters
+    listFilms: validateListFilmsInput,
+    listActors: validateListActorsInput,
+    listCustomers: validateListCustomersInput,
+    listCategories: validateListCategoriesInput,
+    listCountries: validateListCountriesInput,
+    listInventory: validateListInventoryInput,
+    filmsByMpaaRating: validateFilmsByMpaaRatingInput,
+    filmsWithActorLastName: validateFilmsWithActorLastNameInput,
+    searchFilms: validateSearchFilmsInput
 };
-
-import * as z from 'zod/v4';
 
 export const inputZodByTool = {
     listFilms: z
@@ -434,7 +480,7 @@ export const inputZodByTool = {
             limit: z
                 .number()
                 .describe(
-                    'Max rows per page.\n                SQL caps at 500 via LEAST(:limit, 500).\n             (SQL :limit) (example: 100)'
+                    'Max rows per page.\n                SQL caps at 100 via LEAST(:limit, 100).\n             (SQL :limit) (example: 100)'
                 ),
             offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
         })
@@ -542,32 +588,37 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
-    let credential = host.credential;
-    let sessionClaims = host.sessionClaims;
-    if (toolMeta.access !== 'public') {
-        if (!credential || !String(credential).trim()) {
+    const credentialsPlain = host.credentials;
+    let credentialsForStubs: ModuleCredentials | undefined =
+        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
+    let optionsResolved = options;
+
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
             throw new Error(
                 'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
         }
-        if (sessionClaims === undefined) {
-            const verified = await verifyCredential({ inboundCredential: String(credential).trim() });
-            credential = verified.upstreamCredential;
-            sessionClaims = verified.sessionClaims;
+        if (credentialsForStubs === undefined) {
+            const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
+            credentialsForStubs = verified.credentials;
         }
+    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
+        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
     }
-    let optionsResolved = options;
-    if (toolMeta.access === 'checked') {
-        const check = parameterCheckers[toolName];
-        if (typeof check !== 'function') {
-            throw new Error('No parameter checker for checked tool: ' + toolName);
+    if (toolMeta.hasValidate) {
+        const validate = validators[toolName];
+        if (typeof validate !== 'function') {
+            throw new Error('No validator for tool: ' + toolName);
         }
-        optionsResolved = await Promise.resolve(
-            check(options, {
-                credential: String(credential).trim(),
-                sessionClaims
-            })
-        );
+        if (credentialsForStubs === undefined) {
+            if (toolMeta.access === 'protected') {
+                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+            }
+            credentialsForStubs = toModuleCredentials({});
+        }
+        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
     }
     const connectionString = resolveConnectionString(host);
     const client = new Client({ connectionString });
@@ -575,7 +626,7 @@ export async function invokeTool(
     try {
         switch (toolName) {
             case 'listFilms': {
-                const sqlText = 'SELECT * FROM film LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlText = 'SELECT * FROM film LIMIT LEAST($1, 100) OFFSET $2';
                 const sqlValues = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
@@ -592,7 +643,7 @@ export async function invokeTool(
                 };
             }
             case 'listActors': {
-                const sqlText = 'SELECT * FROM actor LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlText = 'SELECT * FROM actor LIMIT LEAST($1, 100) OFFSET $2';
                 const sqlValues = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
@@ -609,7 +660,7 @@ export async function invokeTool(
                 };
             }
             case 'listCustomers': {
-                const sqlText = 'SELECT * FROM customer LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlText = 'SELECT * FROM customer LIMIT LEAST($1, 100) OFFSET $2';
                 const sqlValues = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
@@ -626,7 +677,7 @@ export async function invokeTool(
                 };
             }
             case 'listCategories': {
-                const sqlText = 'SELECT * FROM category LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlText = 'SELECT * FROM category LIMIT LEAST($1, 100) OFFSET $2';
                 const sqlValues = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
@@ -643,7 +694,7 @@ export async function invokeTool(
                 };
             }
             case 'listCountries': {
-                const sqlText = 'SELECT * FROM country LIMIT LEAST($1, 500) OFFSET $2';
+                const sqlText = 'SELECT * FROM country LIMIT LEAST($1, 100) OFFSET $2';
                 const sqlValues = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
@@ -661,7 +712,7 @@ export async function invokeTool(
             }
             case 'listInventory': {
                 const sqlText =
-                    '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 500)\n        OFFSET\n            $2\n    ';
+                    '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 100)\n        OFFSET\n            $2\n    ';
                 const sqlValues = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])

@@ -16,22 +16,22 @@
 
 /** @type {Record<string, DemoLaunchSpec>} */
 export const DEMO_LAUNCH_REGISTRY = {
-    sakila: {
+    'sakila-mysql': {
         docker: [{ service: 'sakila' }],
         mcpMode: 'stdio'
     },
-    pagila: {
+    'pagila-postgresql': {
         docker: [{ service: 'pagila' }],
         mcpMode: 'http',
-        httpDemo: 'pagila'
+        httpDemo: 'pagila-postgresql'
     },
-    orders: {
-        docker: [{ service: 'orders-postgres' }],
+    'orders-postgresql': {
+        docker: [{ service: 'orders-postgresql' }],
         mcpMode: 'oauth',
-        oauthDemo: 'orders',
+        oauthDemo: 'orders-postgresql',
         oauthIdp: true
     },
-    animals: {
+    'animals-sqlserver': {
         docker: [
             {
                 service: 'animals-sqlserver',
@@ -41,7 +41,7 @@ export const DEMO_LAUNCH_REGISTRY = {
         ],
         mcpMode: 'stdio'
     },
-    plants: {
+    'plants-oracle': {
         docker: [
             {
                 service: 'plants-oracle',

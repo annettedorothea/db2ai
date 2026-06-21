@@ -1,25 +1,37 @@
 /**
- * Generated from: orders-postgres.db2ai
+ * Generated from: orders-postgresql.db2ai
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
-import { verifyCredential } from '../../../src/auth/db2ai/orders-postgres-tools/verifyCredential.js';
-import { checkListCustomerOrdersParameters } from '../../../src/auth/db2ai/orders-postgres-tools/listCustomerOrders.js';
-import { checkCreateOrderParameters } from '../../../src/auth/db2ai/orders-postgres-tools/createOrder.js';
-import { checkCreateProductParameters } from '../../../src/auth/db2ai/orders-postgres-tools/createProduct.js';
-import { checkUpdateProductParameters } from '../../../src/auth/db2ai/orders-postgres-tools/updateProduct.js';
-import { checkDeleteProductParameters } from '../../../src/auth/db2ai/orders-postgres-tools/deleteProduct.js';
+import * as z from 'zod/v4';
+import {
+    verifyCredential,
+    toModuleCredentials,
+    type ModuleCredentials
+} from '../../../src/auth/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
+import { authorizeCreateProduct } from '../../../src/auth/db2ai/orders-postgresql-tools/createProduct.js';
+import { authorizeUpdateProduct } from '../../../src/auth/db2ai/orders-postgresql-tools/updateProduct.js';
+import { authorizeDeleteProduct } from '../../../src/auth/db2ai/orders-postgresql-tools/deleteProduct.js';
+import { validateListCustomerOrdersInput } from '../../../src/auth/db2ai/orders-postgresql-tools/listCustomerOrders.js';
+import { validateListProductsInput } from '../../../src/auth/db2ai/orders-postgresql-tools/listProducts.js';
+import { validateListProductsWithReviewsInput } from '../../../src/auth/db2ai/orders-postgresql-tools/listProductsWithReviews.js';
+import { validateCreateOrderInput } from '../../../src/auth/db2ai/orders-postgresql-tools/createOrder.js';
 
-export const connectionEnv = 'ORDERS_POSTGRES_DATABASE_URL';
+export const connectionEnv = 'ORDERS_POSTGRESQL_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
 
 export const requiresAuth = true;
 
-export { verifyCredential } from '../../../src/auth/db2ai/orders-postgres-tools/verifyCredential.js';
+export {
+    verifyCredential,
+    toModuleCredentials
+} from '../../../src/auth/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
 export type {
     VerifyCredentialInput,
-    VerifyCredentialResult
-} from '../../../src/auth/db2ai/orders-postgres-tools/verifyCredential.js';
+    VerifyCredentialResult,
+    ModuleCredentials,
+    OrdersPostgresqlCredentials
+} from '../../../src/auth/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -36,7 +48,9 @@ export type GeneratedTool = {
     title: string;
     description: string;
     kind: 'sql';
-    access: 'public' | 'protected' | 'checked';
+    access: 'public' | 'protected';
+    hasAuthorize: boolean;
+    hasValidate: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -47,12 +61,8 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
-};
-
-export type CheckedHostContext = {
-    credential: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -62,7 +72,9 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Customer order rows',
         description:
             'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: customerId=alice',
-        access: 'checked',
+        access: 'protected',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             '\n        SELECT\n            order_id,\n            customer_id,\n            product_id,\n            quantity\n        FROM\n            orders\n        WHERE\n            customer_id = $1\n        ORDER BY\n            order_id\n    ',
         params: [
@@ -82,8 +94,10 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listProducts',
         title: 'Product catalog rows',
         description:
-            'list products in the orders-postgres catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
+            'list products in the orders-postgresql catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
         access: 'public',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
         params: [
             {
@@ -100,12 +114,14 @@ export const generatedTools: GeneratedTool[] = [
     {
         kind: 'sql',
         toolName: 'listProductsWithReviews',
-        title: 'Products with reviews (requires credential).\n        Join products and reviews; cap 200 rows in SQL.',
+        title: 'Products with reviews (requires credential).\n        Join products and reviews; cap 100 rows in SQL.',
         description:
-            'List products that have at least one review, with review details.\n        Protected: requires host credential (MCP header or ORDERS_POSTGRES_TOKEN in .env).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
+            'List products that have at least one review, with review details.\n        Protected: requires Cursor OAuth sign-in on orders-postgresql MCP (JWT claim customerId).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
         access: 'protected',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
-            '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ',
+            '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 100)\n    ',
         params: [
             {
                 placeholder: ':limit',
@@ -124,7 +140,9 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Create order for customer and product',
         description:
             'Insert a new order row (quantity defaults to 1).\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: customerId=alice, productId=1',
-        access: 'checked',
+        access: 'protected',
+        hasAuthorize: false,
+        hasValidate: true,
         sqlText:
             'INSERT INTO orders (customer_id, product_id, quantity) VALUES ($1, $2, 1) RETURNING order_id, customer_id, product_id, quantity',
         params: [
@@ -155,7 +173,9 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Create product (admin only)',
         description:
             'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productName=Widget Pro, price=10.99',
-        access: 'checked',
+        access: 'protected',
+        hasAuthorize: true,
+        hasValidate: false,
         sqlText: 'INSERT INTO products (name, price) VALUES ($1, $2) RETURNING product_id, name, price',
         params: [
             {
@@ -184,7 +204,9 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Update product (admin only)',
         description:
             'Update name and price of an existing product.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productName=Widget Pro, price=12.99, productId=1',
-        access: 'checked',
+        access: 'protected',
+        hasAuthorize: true,
+        hasValidate: false,
         sqlText: 'UPDATE products SET name = $1, price = $2 WHERE product_id = $3 RETURNING product_id, name, price',
         params: [
             {
@@ -222,7 +244,9 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Delete product (admin only)',
         description:
             'Delete a product by id.\n        Checked access: admin role required (JWT role claim).\n        Fails if the product is referenced by orders or reviews (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productId=999',
-        access: 'checked',
+        access: 'protected',
+        hasAuthorize: true,
+        hasValidate: false,
         sqlText: 'DELETE FROM products WHERE product_id = $1 RETURNING product_id, name, price',
         params: [
             {
@@ -238,21 +262,24 @@ export const generatedTools: GeneratedTool[] = [
     }
 ];
 
-export const mcpServerName = 'orders-postgres-tools';
+export const mcpServerName = 'orders-postgresql-tools';
 export const mcpServerVersion = '0.3.0';
 
-const parameterCheckers: Record<
-    string,
-    (options: InvokeOptions, host: CheckedHostContext) => InvokeOptions | Promise<InvokeOptions>
-> = {
-    listCustomerOrders: checkListCustomerOrdersParameters,
-    createOrder: checkCreateOrderParameters,
-    createProduct: checkCreateProductParameters,
-    updateProduct: checkUpdateProductParameters,
-    deleteProduct: checkDeleteProductParameters
+const authorizers: Record<string, (credentials: ModuleCredentials) => void | Promise<void>> = {
+    createProduct: authorizeCreateProduct,
+    updateProduct: authorizeUpdateProduct,
+    deleteProduct: authorizeDeleteProduct
 };
 
-import * as z from 'zod/v4';
+const validators: Record<
+    string,
+    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
+> = {
+    listCustomerOrders: validateListCustomerOrdersInput,
+    listProducts: validateListProductsInput,
+    listProductsWithReviews: validateListProductsWithReviewsInput,
+    createOrder: validateCreateOrderInput
+};
 
 export const inputZodByTool = {
     listCustomerOrders: z
@@ -335,32 +362,44 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
-    let credential = host.credential;
-    let sessionClaims = host.sessionClaims;
-    if (toolMeta.access !== 'public') {
-        if (!credential || !String(credential).trim()) {
+    const credentialsPlain = host.credentials;
+    let credentialsForStubs: ModuleCredentials | undefined =
+        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
+    let optionsResolved = options;
+
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
             throw new Error(
                 'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
         }
-        if (sessionClaims === undefined) {
-            const verified = await verifyCredential({ inboundCredential: String(credential).trim() });
-            credential = verified.upstreamCredential;
-            sessionClaims = verified.sessionClaims;
+        if (credentialsForStubs === undefined) {
+            const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
+            credentialsForStubs = verified.credentials;
         }
+        if (toolMeta.hasAuthorize) {
+            const authorize = authorizers[toolName];
+            if (typeof authorize !== 'function') {
+                throw new Error('No authorizer for tool: ' + toolName);
+            }
+            await Promise.resolve(authorize(credentialsForStubs!));
+        }
+    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
+        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
     }
-    let optionsResolved = options;
-    if (toolMeta.access === 'checked') {
-        const check = parameterCheckers[toolName];
-        if (typeof check !== 'function') {
-            throw new Error('No parameter checker for checked tool: ' + toolName);
+    if (toolMeta.hasValidate) {
+        const validate = validators[toolName];
+        if (typeof validate !== 'function') {
+            throw new Error('No validator for tool: ' + toolName);
         }
-        optionsResolved = await Promise.resolve(
-            check(options, {
-                credential: String(credential).trim(),
-                sessionClaims
-            })
-        );
+        if (credentialsForStubs === undefined) {
+            if (toolMeta.access === 'protected') {
+                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+            }
+            credentialsForStubs = toModuleCredentials({});
+        }
+        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
     }
     const connectionString = resolveConnectionString(host);
     const client = new Client({ connectionString });
@@ -402,7 +441,7 @@ export async function invokeTool(
             }
             case 'listProductsWithReviews': {
                 const sqlText =
-                    '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 200)\n    ';
+                    '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 100)\n    ';
                 const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listProductsWithReviews',

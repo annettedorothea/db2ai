@@ -35,7 +35,7 @@ db2ai: Create demo workspace (MCP examples)
 
 ### 3. Test your first MCP server
 
-Open **`README.md`** in the demo folder and follow **Quick start** (`npm run start:sakila`, then MCP server `sakila`). Requires Docker Desktop.
+Open **`README.md`** in the demo folder and follow **Quick start** (`npm run start:sakila-mysql`, then MCP server `sakila-mysql`). Requires Docker Desktop.
 
 No repository checkout required.
 
@@ -48,9 +48,9 @@ No repository checkout required.
 The video shows:
 
 - editing a `.db2ai` file and defining SQL tools with `access: public`,
-  `protected`, and `checked`
+  `protected`, and `validate`
 - generating MCP tool modules and auth stubs on save
-- implementing checked-access authorization in TypeScript (JWT claims, role
+- implementing protected-access authorization in TypeScript (JWT claims, role
   checks)
 - enabling the generated MCP server in Cursor and signing in to obtain a JWT
 - calling the same tool as different users and observing allowed vs denied
@@ -61,9 +61,14 @@ The video shows:
 ## Example
 
 ```db2ai
+database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
+
+auth
+
 SQL {
     toolName: listCustomerOrders
-    access: checked {
+    access: protected
+    validate: {
         optionalParams: [customerId]
     }
     intent: '''
@@ -87,10 +92,9 @@ SQL {
     summary: "Customer order rows"
     params: {
         customerId: {
-            description: "Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools."
+            description: "Customer id (e.g. alice, bob). Defaults from JWT when omitted on protected tools."
             example: "alice"
-            type: string
-        }
+            type: string }
     }
 }
 ```

@@ -1,12 +1,13 @@
-database postgres env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
 auth
 
 SQL {
     toolName: listFilms
     access: public
+    validate: true
     intent: "list films from Pagila with pagination"
-    query: "SELECT * FROM film LIMIT LEAST(:limit, 500) OFFSET :offset"
+    query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated film rows"
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
@@ -14,23 +15,23 @@ SQL {
     }
     response: '''
         Object with rows (film table columns from SELECT *) and rowCount.
-        Use rowCount for pagination; limit is capped at 500 in SQL.
+        Use rowCount for pagination; limit is capped at 100 in SQL.
     '''
 }
 
 SQL {
     toolName: listActors
-    access: checked
+    access: public
+    validate: true
     intent: '''
         List actors from Pagila with pagination.
-        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.
     '''
-    query: "SELECT * FROM actor LIMIT LEAST(:limit, 500) OFFSET :offset"
+    query: "SELECT * FROM actor LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated actor rows"
     params: {
         limit: { description: '''
                 Max rows per page.
-                SQL caps at 500 via LEAST(:limit, 500).
+                SQL caps at 100 via LEAST(:limit, 100).
             '''
             example: "100"
             type: integer 
@@ -39,16 +40,16 @@ SQL {
     }
     response: '''
         Object with rows (actor table columns from SELECT *) and rowCount.
-        Use rowCount for pagination; limit is capped at 500 in SQL.
-        Checked access: requires DB2AI_AUTH_TOKEN at MCP startup.
+        Use rowCount for pagination; limit is capped at 100 in SQL.
     '''
 }
 
 SQL {
     toolName: listCustomers
     access: public
+    validate: true
     intent: "list customers with pagination"
-    query: "SELECT * FROM customer LIMIT LEAST(:limit, 500) OFFSET :offset"
+    query: "SELECT * FROM customer LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated customer rows"
     params: {
         limit: { description: "max rows per page" example: "10" type: integer }
@@ -56,15 +57,16 @@ SQL {
     }
     response: '''
         Object with rows (customer table columns from SELECT *) and rowCount.
-        Use rowCount for pagination; limit is capped at 500 in SQL.
+        Use rowCount for pagination; limit is capped at 100 in SQL.
     '''
 }
 
 SQL {
     toolName: listCategories
     access: public
+    validate: true
     intent: "list categories with pagination"
-    query: "SELECT * FROM category LIMIT LEAST(:limit, 500) OFFSET :offset"
+    query: "SELECT * FROM category LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated category rows"
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
@@ -72,15 +74,16 @@ SQL {
     }
     response: '''
         Object with rows (category_id, name, last_update) and rowCount.
-        Use rowCount for pagination; limit is capped at 500 in SQL.
+        Use rowCount for pagination; limit is capped at 100 in SQL.
     '''
 }
 
 SQL {
     toolName: listCountries
     access: public
+    validate: true
     intent: "list countries with pagination"
-    query: "SELECT * FROM country LIMIT LEAST(:limit, 500) OFFSET :offset"
+    query: "SELECT * FROM country LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated country rows"
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
@@ -88,13 +91,14 @@ SQL {
     }
     response: '''
         Object with rows (country_id, country, last_update) and rowCount.
-        Use rowCount for pagination; limit is capped at 500 in SQL.
+        Use rowCount for pagination; limit is capped at 100 in SQL.
     '''
 }
 
 SQL {
     toolName: listInventory
     access: public
+    validate: true
     intent: "list inventory with pagination"
     query: '''
         SELECT
@@ -102,7 +106,7 @@ SQL {
         FROM
             inventory
         LIMIT
-            LEAST(:limit, 500)
+            LEAST(:limit, 100)
         OFFSET
             :offset
     '''
@@ -113,13 +117,14 @@ SQL {
     }
     response: '''
         Object with rows (inventory table columns from SELECT *) and rowCount.
-        Use rowCount for pagination; limit is capped at 500 in SQL.
+        Use rowCount for pagination; limit is capped at 100 in SQL.
     '''
 }
 
 SQL {
     toolName: filmsByMpaaRating
     access: public
+    validate: true
     intent: '''
         List films with a given MPAA age rating.
         Valid ratings: G, PG, PG-13, R, NC-17.
@@ -145,7 +150,8 @@ SQL {
             example: "PG-13" }
         maxRows: { description: "max rows to return"
             example: "20"
-            type: integer }
+            type: integer
+        }
     }
     response: '''
         Object with rows { film_id, title, rating } and rowCount.
@@ -156,6 +162,7 @@ SQL {
 SQL {
     toolName: filmsWithActorLastName
     access: public
+    validate: true
     intent: "which films feature actors whose last name starts with a given prefix"
     query: '''
         SELECT
@@ -185,7 +192,8 @@ SQL {
             example: "GAR" }
         maxRows: { description: "max rows to return"
             example: "25"
-            type: integer }
+            type: integer 
+        }
     }
     response: '''
         Object with rows { first_name, last_name, title } and rowCount.
@@ -196,6 +204,7 @@ SQL {
 SQL {
     toolName: searchFilms
     access: public
+    validate: true
     intent: '''
         Search films by free text in title or description.
         Case-insensitive substring match (PostgreSQL ILIKE).
@@ -223,7 +232,8 @@ SQL {
             example: "dog" }
         maxRows: { description: "max rows to return"
             example: "15"
-            type: integer }
+            type: integer 
+        }
     }
     response: '''
         Object with rows { film_id, title, rating, description_preview } and rowCount.
@@ -241,12 +251,16 @@ SQL {
     query: "INSERT INTO actor (first_name, last_name, last_update) VALUES (:firstName, :lastName, NOW()) RETURNING actor_id, first_name, last_name, last_update"
     summary: "Create actor with first and last name"
     params: {
-        firstName: { description: "actor first name"
+        firstName: { 
+            description: "actor first name"
             example: "MARY"
-            type: string }
-        lastName: { description: "actor last name"
+            type: string
+        }
+        lastName: { 
+            description: "actor last name"
             example: "SMITH"
-            type: string }
+            type: string 
+        }
     }
     response: '''
         Object with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1.
@@ -266,13 +280,18 @@ SQL {
     params: {
         actorId: { description: "actor id to update"
             example: "1"
-            type: integer }
-        firstName: { description: "new first name"
+            type: integer
+        }
+        firstName: { 
+            description: "new first name"
             example: "MARY"
-            type: string }
-        lastName: { description: "new last name"
+            type: string 
+        }
+        lastName: { 
+            description: "new last name"
             example: "JONES"
-            type: string }
+            type: string 
+        }
     }
     response: '''
         Object with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when actor_id exists.
@@ -290,9 +309,11 @@ SQL {
     query: "DELETE FROM actor WHERE actor_id = :actorId RETURNING actor_id, first_name, last_name, last_update"
     summary: "Delete actor by id"
     params: {
-        actorId: { description: "actor id to delete"
+        actorId: { 
+            description: "actor id to delete"
             example: "999"
-            type: integer }
+            type: integer
+        }
     }
     response: '''
         Object with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when deleted.

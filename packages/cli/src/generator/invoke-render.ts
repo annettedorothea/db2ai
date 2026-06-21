@@ -1,7 +1,7 @@
 import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
 import { isMysqlDialect, isOracleNumericReturningColumn, prepareOracleDmlReturning } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
-import { renderInvokeCredentialAndParameterCheck } from './render-check-stubs.js';
+import { renderInvokeAuthPipeline, type AuthPipelineTier, type AuthStubMaps } from './render-check-stubs.js';
 
 function renderOptionValueExpression(
     propertyName: string,
@@ -289,8 +289,14 @@ function renderPostgresClientSetup(typescript: boolean): string {
     await client.connect();`;
 }
 
-function renderInvokeToolPreamble(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
-    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+function renderInvokeToolPreamble(
+    hasAuth: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
+    typescript: boolean
+): string {
+    const accessChecks =
+        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
     return `
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
@@ -302,8 +308,14 @@ ${renderHostBinding(typescript)}${accessChecks}${renderPostgresClientSetup(types
         switch (toolName) {`;
 }
 
-function renderInvokeToolPreambleMysql(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
-    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+function renderInvokeToolPreambleMysql(
+    hasAuth: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
+    typescript: boolean
+): string {
+    const accessChecks =
+        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
     return `
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
@@ -329,8 +341,12 @@ function compactSqlForLog(sql) {
 }
 `.trim();
 
-function renderInvokeOptionsParam(hasSqlTools: boolean, hasChecked: boolean, typescript: boolean): string {
-    const name = hasSqlTools || hasChecked ? 'options' : '_options';
+function renderInvokeOptionsParam(
+    hasSqlTools: boolean,
+    authPipelineTier: AuthPipelineTier,
+    typescript: boolean
+): string {
+    const name = hasSqlTools || authPipelineTier !== 'none' ? 'options' : '_options';
     return typescript ? `${name}: InvokeOptions = {}` : `${name} = {}`;
 }
 
@@ -454,11 +470,12 @@ function renderPostgresInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, true);
+    const preamble = renderInvokeToolPreamble(hasAuth, authPipelineTier, stubMaps, true);
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_TS : '',
@@ -500,11 +517,12 @@ function renderPostgresInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreamble(hasAuth, hasChecked, false);
+    const preamble = renderInvokeToolPreamble(hasAuth, authPipelineTier, stubMaps, false);
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_JS : '',
@@ -544,11 +562,12 @@ function renderMysqlInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, true);
+    const preamble = renderInvokeToolPreambleMysql(hasAuth, authPipelineTier, stubMaps, true);
     const mysqlHelpers = [hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '', flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_TS : '']
         .filter((block) => block.length > 0)
         .join('\n\n');
@@ -604,11 +623,12 @@ function renderMysqlInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleMysql(hasAuth, hasChecked, false);
+    const preamble = renderInvokeToolPreambleMysql(hasAuth, authPipelineTier, stubMaps, false);
     const mysqlHelpers = [hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '', flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_JS : '']
         .filter((block) => block.length > 0)
         .join('\n\n');
@@ -808,8 +828,14 @@ function rowsFromOracleDmlReturning(outBinds, columns, bindNames) {
 }
 `.trim();
 
-function renderInvokeToolPreambleOracle(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
-    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+function renderInvokeToolPreambleOracle(
+    hasAuth: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
+    typescript: boolean
+): string {
+    const accessChecks =
+        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
     return `
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
@@ -823,8 +849,14 @@ ${renderHostBinding(typescript)}${accessChecks}
         switch (toolName) {`;
 }
 
-function renderInvokeToolPreambleSqlserver(hasAuth: boolean, hasChecked: boolean, typescript: boolean): string {
-    const accessChecks = renderInvokeCredentialAndParameterCheck(hasAuth, hasChecked);
+function renderInvokeToolPreambleSqlserver(
+    hasAuth: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
+    typescript: boolean
+): string {
+    const accessChecks =
+        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
     return `
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
@@ -842,11 +874,12 @@ function renderOracleInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleOracle(hasAuth, hasChecked, true);
+    const preamble = renderInvokeToolPreambleOracle(hasAuth, authPipelineTier, stubMaps, true);
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_TS : '',
@@ -905,11 +938,12 @@ function renderSqlserverInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, hasChecked, true);
+    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, authPipelineTier, stubMaps, true);
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_TS : '',
@@ -974,11 +1008,12 @@ function renderOracleInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleOracle(hasAuth, hasChecked, false);
+    const preamble = renderInvokeToolPreambleOracle(hasAuth, authPipelineTier, stubMaps, false);
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
         flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_JS : '',
@@ -1035,11 +1070,12 @@ function renderSqlserverInvokeBlockJs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
-    hasChecked: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, hasChecked, false);
+    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, authPipelineTier, stubMaps, false);
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
         flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_JS : '',
@@ -1102,44 +1138,110 @@ export function renderInvokeBlockTs(
     tools: ResolvedDbToolCodegen[],
     dialect: ResolvedDatabaseDialect,
     hasAuth: boolean,
-    hasChecked: boolean
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps
 ): string {
-    const optionsVar = hasChecked ? 'optionsResolved' : 'options';
+    const optionsVar = authPipelineTier !== 'none' ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
     const hasSqlTools = tools.length > 0;
-    const optionsParam = renderInvokeOptionsParam(hasSqlTools, hasChecked, true);
+    const optionsParam = renderInvokeOptionsParam(hasSqlTools, authPipelineTier, true);
     if (isMysqlDialect(dialect)) {
-        return renderMysqlInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+        return renderMysqlInvokeBlockTs(
+            toolCases,
+            flags,
+            hasAuth,
+            authPipelineTier,
+            stubMaps,
+            hasSqlTools,
+            optionsParam
+        );
     }
     if (dialect === 'sqlserver') {
-        return renderSqlserverInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+        return renderSqlserverInvokeBlockTs(
+            toolCases,
+            flags,
+            hasAuth,
+            authPipelineTier,
+            stubMaps,
+            hasSqlTools,
+            optionsParam
+        );
     }
     if (dialect === 'oracle') {
-        return renderOracleInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+        return renderOracleInvokeBlockTs(
+            toolCases,
+            flags,
+            hasAuth,
+            authPipelineTier,
+            stubMaps,
+            hasSqlTools,
+            optionsParam
+        );
     }
-    return renderPostgresInvokeBlockTs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+    return renderPostgresInvokeBlockTs(
+        toolCases,
+        flags,
+        hasAuth,
+        authPipelineTier,
+        stubMaps,
+        hasSqlTools,
+        optionsParam
+    );
 }
 
 export function renderInvokeBlockJs(
     tools: ResolvedDbToolCodegen[],
     dialect: ResolvedDatabaseDialect,
     hasAuth: boolean,
-    hasChecked: boolean
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: AuthStubMaps
 ): string {
-    const optionsVar = hasChecked ? 'optionsResolved' : 'options';
+    const optionsVar = authPipelineTier !== 'none' ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
     const flags = resolveInvokeParamHelperFlags(tools);
     const hasSqlTools = tools.length > 0;
-    const optionsParam = renderInvokeOptionsParam(hasSqlTools, hasChecked, false);
+    const optionsParam = renderInvokeOptionsParam(hasSqlTools, authPipelineTier, false);
     if (isMysqlDialect(dialect)) {
-        return renderMysqlInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+        return renderMysqlInvokeBlockJs(
+            toolCases,
+            flags,
+            hasAuth,
+            authPipelineTier,
+            stubMaps,
+            hasSqlTools,
+            optionsParam
+        );
     }
     if (dialect === 'sqlserver') {
-        return renderSqlserverInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+        return renderSqlserverInvokeBlockJs(
+            toolCases,
+            flags,
+            hasAuth,
+            authPipelineTier,
+            stubMaps,
+            hasSqlTools,
+            optionsParam
+        );
     }
     if (dialect === 'oracle') {
-        return renderOracleInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+        return renderOracleInvokeBlockJs(
+            toolCases,
+            flags,
+            hasAuth,
+            authPipelineTier,
+            stubMaps,
+            hasSqlTools,
+            optionsParam
+        );
     }
-    return renderPostgresInvokeBlockJs(toolCases, flags, hasAuth, hasChecked, hasSqlTools, optionsParam);
+    return renderPostgresInvokeBlockJs(
+        toolCases,
+        flags,
+        hasAuth,
+        authPipelineTier,
+        stubMaps,
+        hasSqlTools,
+        optionsParam
+    );
 }

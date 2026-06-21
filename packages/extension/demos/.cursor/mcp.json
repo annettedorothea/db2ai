@@ -1,16 +1,16 @@
 {
     "mcpServers": {
-        "sakila": {
+        "sakila-mysql": {
             "command": "node",
             "envFile": ".env",
             "args": [
                 "./generated/db2ai/cli/stdio-mcp-server.js",
-                "./generated/db2ai/tools/sakila-tools.js",
+                "./generated/db2ai/tools/sakila-mysql-tools.js",
                 "--auth-env",
                 "DB2AI_AUTH_TOKEN"
             ],
             "env": {
-                "SAKILA_DATABASE_URL": "mysql://sakila:p_ssW0rd@localhost:53306/sakila"
+                "SAKILA_MYSQL_DATABASE_URL": "mysql://sakila:p_ssW0rd@localhost:53306/sakila"
             }
         },
         "sakila-mariadb": {
@@ -21,19 +21,19 @@
                 "SAKILA_MARIADB_DATABASE_URL": "mariadb://sakila:p_ssW0rd@localhost:53306/sakila"
             }
         },
-        "pagila": {
+        "pagila-postgresql": {
             "url": "http://127.0.0.1:4853/mcp",
             "headers": {
                 "x-api-token": "demo"
             }
         },
-        "orders": {
+        "orders-postgresql": {
             "url": "http://127.0.0.1:4871/mcp",
             "auth": {
                 "CLIENT_ID": "mcp-demo-local"
             }
         },
-        "animals": {
+        "animals-sqlserver": {
             "command": "node",
             "envFile": ".env",
             "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/animals-sqlserver-tools.js"],
@@ -41,7 +41,7 @@
                 "ANIMALS_SQLSERVER_DATABASE_URL": "sqlserver://sa:YourStrong!Passw0rd@localhost:55434/animals?encrypt=true&trustServerCertificate=true"
             }
         },
-        "plants": {
+        "plants-oracle": {
             "command": "node",
             "envFile": ".env",
             "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/plants-oracle-tools.js"],

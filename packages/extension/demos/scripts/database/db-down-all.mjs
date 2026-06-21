@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Stop all demo database containers (Pagila, Sakila, orders-postgres, animals-sqlserver, plants-oracle).
+ * Stop all demo database containers (Pagila, Sakila, orders-postgresql, animals-sqlserver, plants-oracle).
  *
  * Usage: node ./scripts/database/db-down-all.mjs  (npm run db:down)
  */

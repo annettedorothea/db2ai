@@ -15,12 +15,14 @@ const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
 type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
 
+/** Host context inside MCP server templates. Tool modules use DbHostContext; this wider shape is shared across stdio/HTTP hosts. */
 type ApiLikeHostContext = {
     baseUrl?: string;
     connectionString?: string;
     databaseDialect?: DatabaseDialect;
     credential?: string;
-    sessionClaims?: Record<string, unknown>;
+    upstreamCredential?: string;
+    credentials?: unknown;
 };
 
 type VerifyCredentialInput = {
@@ -29,7 +31,7 @@ type VerifyCredentialInput = {
 
 type VerifyCredentialResult = {
     upstreamCredential: string;
-    sessionClaims?: Record<string, unknown>;
+    credentials: unknown;
 };
 
 type VerifyCredentialFn = (input: VerifyCredentialInput) => Promise<VerifyCredentialResult>;
@@ -374,7 +376,7 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
     }
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verifyCredential in src/auth/db2ai/<module>/verifyCredential.ts and re-export from generated tools.'
+            'Generated tools require auth; implement verify*Credentials in src/auth/db2ai/<module>/ and re-export from generated tools.'
         );
     }
 }

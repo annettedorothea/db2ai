@@ -4,7 +4,7 @@ import { isSqlParamEntry, isSqlQuery } from './generated/ast.js';
 
 /**
  * Param map keys live under `params`, but `optionalParams` references them from
- * `access: checked { … }`. Register each SqlParamEntry on its SqlQuery so the
+ * `validate: { optionalParams: … }`. Register each SqlParamEntry on its SqlQuery so the
  * default ScopeProvider finds them when resolving optionalParams cross-refs.
  */
 export class Db2AiDslScopeComputation extends DefaultScopeComputation {
