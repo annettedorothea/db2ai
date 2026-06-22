@@ -232,7 +232,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'animals-sqlserver-tools';
-export const mcpServerVersion = '0.3.0';
+export const mcpServerVersion = '0.4.0';
 
 const validators: Record<
     string,

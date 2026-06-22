@@ -11,7 +11,7 @@ describe('document-actions validation', () => {
         const parse = parseHelper<Model>(services.Db2AiDsl);
         const document = await parse(
             `
-database postgres env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
 SQL {
     toolName: listFilms
@@ -35,7 +35,7 @@ SQL {
         const parse = parseHelper<Model>(services.Db2AiDsl);
         const document = await parse(
             `
-database postgres env "PAGILA_DATABASE_URL"
+database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
 SQL {
     toolName: dupTool

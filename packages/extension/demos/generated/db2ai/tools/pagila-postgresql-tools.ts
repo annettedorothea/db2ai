@@ -22,7 +22,7 @@ export const connectionEnv = 'PAGILA_POSTGRESQL_DATABASE_URL';
 
 export const databaseDialect = 'postgres';
 
-export const requiresAuth = false;
+export const requiresAuth = true;
 
 export {
     verifyCredential,
@@ -74,7 +74,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated film rows',
         description:
             'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (film table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText: 'SELECT * FROM film LIMIT LEAST($1, 100) OFFSET $2',
@@ -105,7 +105,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated actor rows',
         description:
             'List actors from Pagila with pagination.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (actor table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 100) OFFSET $2',
@@ -137,7 +137,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated customer rows',
         description:
             'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=10, offset=0\n\nResponse:\nObject with rows (customer table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 100) OFFSET $2',
@@ -168,7 +168,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated category rows',
         description:
             'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (category_id, name, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText: 'SELECT * FROM category LIMIT LEAST($1, 100) OFFSET $2',
@@ -199,7 +199,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated country rows',
         description:
             'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (country_id, country, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText: 'SELECT * FROM country LIMIT LEAST($1, 100) OFFSET $2',
@@ -230,7 +230,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Paginated inventory rows',
         description:
             'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (inventory table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText:
@@ -262,7 +262,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Films by MPAA rating (G, PG, PG-13, R, NC-17)',
         description:
             'List films with a given MPAA age rating.\n        Valid ratings: G, PG, PG-13, R, NC-17.\n        Results ordered by title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG-13, maxRows=20\n\nResponse:\nObject with rows { film_id, title, rating } and rowCount.\n        Ordered by title; rowCount 0 when no films match the given MPAA rating.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText:
@@ -294,7 +294,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Actor–film cast via film_actor join',
         description:
             'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25\n\nResponse:\nObject with rows { first_name, last_name, title } and rowCount.\n        One row per actor–film pair; ordered by last name, then title.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText:
@@ -327,7 +327,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Film full-text style search (title and description)',
         description:
             'Search films by free text in title or description.\n        Case-insensitive substring match (PostgreSQL ILIKE).\n        Useful for demo queries such as dog, cat, or grace.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=dog, maxRows=15\n\nResponse:\nObject with rows { film_id, title, rating, description_preview } and rowCount.\n        description_preview is the first 120 characters of description; case-insensitive match in title or description.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: true,
         sqlText:
@@ -359,7 +359,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Create actor with first and last name',
         description:
             'Insert a new actor into Pagila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1.\n        actor_id is the new primary key assigned by the database.',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: false,
         sqlText:
@@ -391,7 +391,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Update actor by id',
         description:
             "Update an actor's first and last name.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=JONES, actorId=1\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when actor_id exists.\n        rowCount 0 when no row matched actor_id.",
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: false,
         sqlText:
@@ -432,7 +432,7 @@ export const generatedTools: GeneratedTool[] = [
         title: 'Delete actor by id',
         description:
             'Delete an actor by id.\n        Fails if the actor is referenced by film_actor (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: actorId=999\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when deleted.\n        rowCount 0 when actor_id was not found.\n        Fails if the actor is referenced by film_actor (foreign key constraint).',
-        access: 'public',
+        access: 'protected',
         hasAuthorize: false,
         hasValidate: false,
         sqlText: 'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update',
@@ -451,7 +451,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'pagila-postgresql-tools';
-export const mcpServerVersion = '0.3.0';
+export const mcpServerVersion = '0.4.0';
 
 const validators: Record<
     string,

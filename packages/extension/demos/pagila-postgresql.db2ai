@@ -4,7 +4,7 @@ auth
 
 SQL {
     toolName: listFilms
-    access: public
+    access: protected
     validate: true
     intent: "list films from Pagila with pagination"
     query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
@@ -21,7 +21,7 @@ SQL {
 
 SQL {
     toolName: listActors
-    access: public
+    access: protected
     validate: true
     intent: '''
         List actors from Pagila with pagination.
@@ -46,7 +46,7 @@ SQL {
 
 SQL {
     toolName: listCustomers
-    access: public
+    access: protected
     validate: true
     intent: "list customers with pagination"
     query: "SELECT * FROM customer LIMIT LEAST(:limit, 100) OFFSET :offset"
@@ -63,7 +63,7 @@ SQL {
 
 SQL {
     toolName: listCategories
-    access: public
+    access: protected
     validate: true
     intent: "list categories with pagination"
     query: "SELECT * FROM category LIMIT LEAST(:limit, 100) OFFSET :offset"
@@ -80,7 +80,7 @@ SQL {
 
 SQL {
     toolName: listCountries
-    access: public
+    access: protected
     validate: true
     intent: "list countries with pagination"
     query: "SELECT * FROM country LIMIT LEAST(:limit, 100) OFFSET :offset"
@@ -97,7 +97,7 @@ SQL {
 
 SQL {
     toolName: listInventory
-    access: public
+    access: protected
     validate: true
     intent: "list inventory with pagination"
     query: '''
@@ -123,7 +123,7 @@ SQL {
 
 SQL {
     toolName: filmsByMpaaRating
-    access: public
+    access: protected
     validate: true
     intent: '''
         List films with a given MPAA age rating.
@@ -161,7 +161,7 @@ SQL {
 
 SQL {
     toolName: filmsWithActorLastName
-    access: public
+    access: protected
     validate: true
     intent: "which films feature actors whose last name starts with a given prefix"
     query: '''
@@ -203,7 +203,7 @@ SQL {
 
 SQL {
     toolName: searchFilms
-    access: public
+    access: protected
     validate: true
     intent: '''
         Search films by free text in title or description.
@@ -243,7 +243,7 @@ SQL {
 
 SQL {
     toolName: createActor
-    access: public
+    access: protected
     intent: '''
         Insert a new actor into Pagila.
         Sets last_update to the current time.
@@ -270,7 +270,7 @@ SQL {
 
 SQL {
     toolName: updateActor
-    access: public
+    access: protected
     intent: '''
         Update an actor's first and last name.
         Sets last_update to the current time.
@@ -301,7 +301,7 @@ SQL {
 
 SQL {
     toolName: deleteActor
-    access: public
+    access: protected
     intent: '''
         Delete an actor by id.
         Fails if the actor is referenced by film_actor (foreign key).

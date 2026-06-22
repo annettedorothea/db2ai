@@ -13,8 +13,8 @@ npx db-2-ai-dsl-cli generate <source.db2ai> <dest-tools.ts>
 ## Database env (DSL)
 
 ```text
-database env "PAGILA_DATABASE_URL"
-database mysql env "SAKILA_DATABASE_URL"
+database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
+database mysql env "SAKILA_MYSQL_DATABASE_URL"
 ```
 
 The env **name** is in the DSL; the URL lives in `.env` / `mcp.json` `env`.

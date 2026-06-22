@@ -15,7 +15,7 @@ beforeAll(async () => {
 describe('buildSqlDescription via resolveToolsFromModel', () => {
     test('includes Response section when DSL response is set', async () => {
         const document = await parse(`
-            database postgres env "PAGILA_DATABASE_URL"
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listFilms
