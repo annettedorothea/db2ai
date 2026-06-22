@@ -1,7 +1,7 @@
 {
     "name": "db-2-ai-dsl-cli",
     "description": "CLI for db2ai DSL (parse / validate / generate)",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "type": "module",
     "engines": {
         "node": ">=20.10.0",

@@ -2,10 +2,11 @@
     "mcpServers": {
         "sakila-mysql": {
             "command": "node",
+            "cwd": "${workspaceFolder}",
             "envFile": ".env",
             "args": [
-                "./generated/db2ai/cli/stdio-mcp-server.js",
-                "./generated/db2ai/tools/sakila-mysql-tools.js",
+                "generated/db2ai/cli/stdio-mcp-server.js",
+                "generated/db2ai/tools/sakila-mysql-tools.js",
                 "--auth-env",
                 "DB2AI_AUTH_TOKEN"
             ],
@@ -15,8 +16,12 @@
         },
         "sakila-mariadb": {
             "command": "node",
+            "cwd": "${workspaceFolder}",
             "envFile": ".env",
-            "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/sakila-mariadb-tools.js"],
+            "args": [
+                "generated/db2ai/cli/stdio-mcp-server.js",
+                "generated/db2ai/tools/sakila-mariadb-tools.js"
+            ],
             "env": {
                 "SAKILA_MARIADB_DATABASE_URL": "mariadb://sakila:p_ssW0rd@localhost:53306/sakila"
             }
@@ -35,16 +40,24 @@
         },
         "animals-sqlserver": {
             "command": "node",
+            "cwd": "${workspaceFolder}",
             "envFile": ".env",
-            "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/animals-sqlserver-tools.js"],
+            "args": [
+                "generated/db2ai/cli/stdio-mcp-server.js",
+                "generated/db2ai/tools/animals-sqlserver-tools.js"
+            ],
             "env": {
                 "ANIMALS_SQLSERVER_DATABASE_URL": "sqlserver://sa:YourStrong!Passw0rd@localhost:55434/animals?encrypt=true&trustServerCertificate=true"
             }
         },
         "plants-oracle": {
             "command": "node",
+            "cwd": "${workspaceFolder}",
             "envFile": ".env",
-            "args": ["./generated/db2ai/cli/stdio-mcp-server.js", "./generated/db2ai/tools/plants-oracle-tools.js"],
+            "args": [
+                "generated/db2ai/cli/stdio-mcp-server.js",
+                "generated/db2ai/tools/plants-oracle-tools.js"
+            ],
             "env": {
                 "PLANTS_ORACLE_DATABASE_URL": "oracle://plants:PlantsDemo123@localhost:55221/FREEPDB1"
             }

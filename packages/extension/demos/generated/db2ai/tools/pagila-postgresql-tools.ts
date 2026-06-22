@@ -451,7 +451,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'pagila-postgresql-tools';
-export const mcpServerVersion = '0.4.0';
+export const mcpServerVersion = '0.4.1';
 
 const validators: Record<
     string,
