@@ -217,7 +217,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'animals-sqlserver-tools';
-export const mcpServerVersion = '0.4.1';
+export const mcpServerVersion = '0.5.0';
 
 const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Promise<InvokeOptions>> = {
     listAnimals: prepareListAnimalsInput,

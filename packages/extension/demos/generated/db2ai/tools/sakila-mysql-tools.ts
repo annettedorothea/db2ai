@@ -289,7 +289,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-mysql-tools';
-export const mcpServerVersion = '0.4.1';
+export const mcpServerVersion = '0.5.0';
 
 const preparers: Record<
     string,

@@ -264,7 +264,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'orders-postgresql-tools';
-export const mcpServerVersion = '0.4.1';
+export const mcpServerVersion = '0.5.0';
 
 const authorizers: Record<string, (credentials: ModuleCredentials) => void | Promise<void>> = {
     listCustomerOrders: authorizeListCustomerOrders,
