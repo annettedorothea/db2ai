@@ -3,7 +3,7 @@ database sqlserver env "ANIMALS_SQLSERVER_DATABASE_URL"
 SQL {
     toolName: listAnimals
     access: public
-    validate: true
+    prepare: true
     intent: "list animals with common name, Latin name, and short English description"
     query: '''
         SELECT TOP (:limit)
@@ -23,7 +23,7 @@ SQL {
 SQL {
     toolName: searchAnimals
     access: public
-    validate: true
+    prepare: true
     intent: "search animals by common or Latin name (substring match)"
     query: '''
         SELECT TOP (:maxRows)

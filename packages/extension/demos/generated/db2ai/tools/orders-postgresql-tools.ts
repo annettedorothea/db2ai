@@ -7,14 +7,15 @@ import {
     verifyCredential,
     toModuleCredentials,
     type ModuleCredentials
-} from '../../../src/auth/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
-import { authorizeCreateProduct } from '../../../src/auth/db2ai/orders-postgresql-tools/createProduct.js';
-import { authorizeUpdateProduct } from '../../../src/auth/db2ai/orders-postgresql-tools/updateProduct.js';
-import { authorizeDeleteProduct } from '../../../src/auth/db2ai/orders-postgresql-tools/deleteProduct.js';
-import { validateListCustomerOrdersInput } from '../../../src/auth/db2ai/orders-postgresql-tools/listCustomerOrders.js';
-import { validateListProductsInput } from '../../../src/auth/db2ai/orders-postgresql-tools/listProducts.js';
-import { validateListProductsWithReviewsInput } from '../../../src/auth/db2ai/orders-postgresql-tools/listProductsWithReviews.js';
-import { validateCreateOrderInput } from '../../../src/auth/db2ai/orders-postgresql-tools/createOrder.js';
+} from '../../../src/hooks/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
+import { authorizeListCustomerOrders } from '../../../src/hooks/db2ai/orders-postgresql-tools/listCustomerOrders.js';
+import { authorizeCreateProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/createProduct.js';
+import { authorizeUpdateProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/updateProduct.js';
+import { authorizeDeleteProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/deleteProduct.js';
+import { prepareListCustomerOrdersInput } from '../../../src/hooks/db2ai/orders-postgresql-tools/listCustomerOrders.js';
+import { prepareListProductsInput } from '../../../src/hooks/db2ai/orders-postgresql-tools/listProducts.js';
+import { prepareListProductsWithReviewsInput } from '../../../src/hooks/db2ai/orders-postgresql-tools/listProductsWithReviews.js';
+import { prepareCreateOrderInput } from '../../../src/hooks/db2ai/orders-postgresql-tools/createOrder.js';
 
 export const connectionEnv = 'ORDERS_POSTGRESQL_DATABASE_URL';
 
@@ -25,13 +26,13 @@ export const requiresAuth = true;
 export {
     verifyCredential,
     toModuleCredentials
-} from '../../../src/auth/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
+} from '../../../src/hooks/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
 export type {
     VerifyCredentialInput,
     VerifyCredentialResult,
     ModuleCredentials,
     OrdersPostgresqlCredentials
-} from '../../../src/auth/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
+} from '../../../src/hooks/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -50,7 +51,7 @@ export type GeneratedTool = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -73,8 +74,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: customerId=alice',
         access: 'protected',
-        hasAuthorize: false,
-        hasValidate: true,
+        hasAuthorize: true,
+        hasPrepare: true,
         sqlText:
             '\n        SELECT\n            order_id,\n            customer_id,\n            product_id,\n            quantity\n        FROM\n            orders\n        WHERE\n            customer_id = $1\n        ORDER BY\n            order_id\n    ',
         params: [
@@ -97,7 +98,7 @@ export const generatedTools: GeneratedTool[] = [
             'list products in the orders-postgresql catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
         params: [
             {
@@ -119,7 +120,7 @@ export const generatedTools: GeneratedTool[] = [
             'List products that have at least one review, with review details.\n        Protected: requires Cursor OAuth sign-in on orders-postgresql MCP (JWT claim customerId).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=50',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 100)\n    ',
         params: [
@@ -142,7 +143,7 @@ export const generatedTools: GeneratedTool[] = [
             'Insert a new order row (quantity defaults to 1).\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: customerId=alice, productId=1',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             'INSERT INTO orders (customer_id, product_id, quantity) VALUES ($1, $2, 1) RETURNING order_id, customer_id, product_id, quantity',
         params: [
@@ -175,7 +176,7 @@ export const generatedTools: GeneratedTool[] = [
             'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productName=Widget Pro, price=10.99',
         access: 'protected',
         hasAuthorize: true,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText: 'INSERT INTO products (name, price) VALUES ($1, $2) RETURNING product_id, name, price',
         params: [
             {
@@ -206,7 +207,7 @@ export const generatedTools: GeneratedTool[] = [
             'Update name and price of an existing product.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productName=Widget Pro, price=12.99, productId=1',
         access: 'protected',
         hasAuthorize: true,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText: 'UPDATE products SET name = $1, price = $2 WHERE product_id = $3 RETURNING product_id, name, price',
         params: [
             {
@@ -246,7 +247,7 @@ export const generatedTools: GeneratedTool[] = [
             'Delete a product by id.\n        Checked access: admin role required (JWT role claim).\n        Fails if the product is referenced by orders or reviews (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: productId=999',
         access: 'protected',
         hasAuthorize: true,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText: 'DELETE FROM products WHERE product_id = $1 RETURNING product_id, name, price',
         params: [
             {
@@ -266,19 +267,20 @@ export const mcpServerName = 'orders-postgresql-tools';
 export const mcpServerVersion = '0.4.1';
 
 const authorizers: Record<string, (credentials: ModuleCredentials) => void | Promise<void>> = {
+    listCustomerOrders: authorizeListCustomerOrders,
     createProduct: authorizeCreateProduct,
     updateProduct: authorizeUpdateProduct,
     deleteProduct: authorizeDeleteProduct
 };
 
-const validators: Record<
+const preparers: Record<
     string,
-    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
+    (options: InvokeOptions, credentials?: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
 > = {
-    listCustomerOrders: validateListCustomerOrdersInput,
-    listProducts: validateListProductsInput,
-    listProductsWithReviews: validateListProductsWithReviewsInput,
-    createOrder: validateCreateOrderInput
+    listCustomerOrders: prepareListCustomerOrdersInput,
+    listProducts: prepareListProductsInput,
+    listProductsWithReviews: prepareListProductsWithReviewsInput,
+    createOrder: prepareCreateOrderInput
 };
 
 export const inputZodByTool = {
@@ -385,21 +387,20 @@ export async function invokeTool(
             }
             await Promise.resolve(authorize(credentialsForStubs!));
         }
-    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
-        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
     }
-    if (toolMeta.hasValidate) {
-        const validate = validators[toolName];
-        if (typeof validate !== 'function') {
-            throw new Error('No validator for tool: ' + toolName);
+    if (toolMeta.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
         }
-        if (credentialsForStubs === undefined) {
-            if (toolMeta.access === 'protected') {
-                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+        if (toolMeta.access === 'protected') {
+            if (credentialsForStubs === undefined) {
+                throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
             }
-            credentialsForStubs = toModuleCredentials({});
+            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+        } else {
+            optionsResolved = await Promise.resolve(prepare(options));
         }
-        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
     }
     const connectionString = resolveConnectionString(host);
     const client = new Client({ connectionString });

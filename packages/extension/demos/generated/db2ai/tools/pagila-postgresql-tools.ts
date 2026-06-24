@@ -7,16 +7,16 @@ import {
     verifyCredential,
     toModuleCredentials,
     type ModuleCredentials
-} from '../../../src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
-import { validateListFilmsInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listFilms.js';
-import { validateListActorsInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listActors.js';
-import { validateListCustomersInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listCustomers.js';
-import { validateListCategoriesInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listCategories.js';
-import { validateListCountriesInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listCountries.js';
-import { validateListInventoryInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/listInventory.js';
-import { validateFilmsByMpaaRatingInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/filmsByMpaaRating.js';
-import { validateFilmsWithActorLastNameInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/filmsWithActorLastName.js';
-import { validateSearchFilmsInput } from '../../../src/auth/db2ai/pagila-postgresql-tools/searchFilms.js';
+} from '../../../src/hooks/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
+import { prepareListFilmsInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listFilms.js';
+import { prepareListActorsInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listActors.js';
+import { prepareListCustomersInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listCustomers.js';
+import { prepareListCategoriesInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listCategories.js';
+import { prepareListCountriesInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listCountries.js';
+import { prepareListInventoryInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listInventory.js';
+import { prepareFilmsByMpaaRatingInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/filmsByMpaaRating.js';
+import { prepareFilmsWithActorLastNameInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/filmsWithActorLastName.js';
+import { prepareSearchFilmsInput } from '../../../src/hooks/db2ai/pagila-postgresql-tools/searchFilms.js';
 
 export const connectionEnv = 'PAGILA_POSTGRESQL_DATABASE_URL';
 
@@ -27,13 +27,13 @@ export const requiresAuth = true;
 export {
     verifyCredential,
     toModuleCredentials
-} from '../../../src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
+} from '../../../src/hooks/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
 export type {
     VerifyCredentialInput,
     VerifyCredentialResult,
     ModuleCredentials,
     PagilaPostgresqlCredentials
-} from '../../../src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
+} from '../../../src/hooks/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -52,7 +52,7 @@ export type GeneratedTool = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -76,7 +76,7 @@ export const generatedTools: GeneratedTool[] = [
             'list films from Pagila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (film table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM film LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
@@ -107,7 +107,7 @@ export const generatedTools: GeneratedTool[] = [
             'List actors from Pagila with pagination.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (actor table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM actor LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
@@ -139,7 +139,7 @@ export const generatedTools: GeneratedTool[] = [
             'list customers with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=10, offset=0\n\nResponse:\nObject with rows (customer table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM customer LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
@@ -170,7 +170,7 @@ export const generatedTools: GeneratedTool[] = [
             'list categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (category_id, name, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM category LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
@@ -201,7 +201,7 @@ export const generatedTools: GeneratedTool[] = [
             'list countries with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (country_id, country, last_update) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM country LIMIT LEAST($1, 100) OFFSET $2',
         params: [
             {
@@ -232,7 +232,7 @@ export const generatedTools: GeneratedTool[] = [
             'list inventory with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0\n\nResponse:\nObject with rows (inventory table columns from SELECT *) and rowCount.\n        Use rowCount for pagination; limit is capped at 100 in SQL.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 100)\n        OFFSET\n            $2\n    ',
         params: [
@@ -264,7 +264,7 @@ export const generatedTools: GeneratedTool[] = [
             'List films with a given MPAA age rating.\n        Valid ratings: G, PG, PG-13, R, NC-17.\n        Results ordered by title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG-13, maxRows=20\n\nResponse:\nObject with rows { film_id, title, rating } and rowCount.\n        Ordered by title; rowCount 0 when no films match the given MPAA rating.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ',
         params: [
@@ -296,7 +296,7 @@ export const generatedTools: GeneratedTool[] = [
             'which films feature actors whose last name starts with a given prefix\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25\n\nResponse:\nObject with rows { first_name, last_name, title } and rowCount.\n        One row per actor–film pair; ordered by last name, then title.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ",
         params: [
@@ -329,7 +329,7 @@ export const generatedTools: GeneratedTool[] = [
             'Search films by free text in title or description.\n        Case-insensitive substring match (PostgreSQL ILIKE).\n        Useful for demo queries such as dog, cat, or grace.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=dog, maxRows=15\n\nResponse:\nObject with rows { film_id, title, rating, description_preview } and rowCount.\n        description_preview is the first 120 characters of description; case-insensitive match in title or description.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ",
         params: [
@@ -361,7 +361,7 @@ export const generatedTools: GeneratedTool[] = [
             'Insert a new actor into Pagila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1.\n        actor_id is the new primary key assigned by the database.',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW()) RETURNING actor_id, first_name, last_name, last_update',
         params: [
@@ -393,7 +393,7 @@ export const generatedTools: GeneratedTool[] = [
             "Update an actor's first and last name.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=JONES, actorId=1\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when actor_id exists.\n        rowCount 0 when no row matched actor_id.",
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             'UPDATE actor SET first_name = $1, last_name = $2, last_update = NOW() WHERE actor_id = $3 RETURNING actor_id, first_name, last_name, last_update',
         params: [
@@ -434,7 +434,7 @@ export const generatedTools: GeneratedTool[] = [
             'Delete an actor by id.\n        Fails if the actor is referenced by film_actor (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: actorId=999\n\nResponse:\nObject with one row in rows { actor_id, first_name, last_name, last_update } and rowCount 1 when deleted.\n        rowCount 0 when actor_id was not found.\n        Fails if the actor is referenced by film_actor (foreign key constraint).',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText: 'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update',
         params: [
             {
@@ -453,19 +453,19 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'pagila-postgresql-tools';
 export const mcpServerVersion = '0.4.1';
 
-const validators: Record<
+const preparers: Record<
     string,
-    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
+    (options: InvokeOptions, credentials?: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
 > = {
-    listFilms: validateListFilmsInput,
-    listActors: validateListActorsInput,
-    listCustomers: validateListCustomersInput,
-    listCategories: validateListCategoriesInput,
-    listCountries: validateListCountriesInput,
-    listInventory: validateListInventoryInput,
-    filmsByMpaaRating: validateFilmsByMpaaRatingInput,
-    filmsWithActorLastName: validateFilmsWithActorLastNameInput,
-    searchFilms: validateSearchFilmsInput
+    listFilms: prepareListFilmsInput,
+    listActors: prepareListActorsInput,
+    listCustomers: prepareListCustomersInput,
+    listCategories: prepareListCategoriesInput,
+    listCountries: prepareListCountriesInput,
+    listInventory: prepareListInventoryInput,
+    filmsByMpaaRating: prepareFilmsByMpaaRatingInput,
+    filmsWithActorLastName: prepareFilmsWithActorLastNameInput,
+    searchFilms: prepareSearchFilmsInput
 };
 
 export const inputZodByTool = {
@@ -604,21 +604,20 @@ export async function invokeTool(
             const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
             credentialsForStubs = verified.credentials;
         }
-    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
-        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
     }
-    if (toolMeta.hasValidate) {
-        const validate = validators[toolName];
-        if (typeof validate !== 'function') {
-            throw new Error('No validator for tool: ' + toolName);
+    if (toolMeta.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
         }
-        if (credentialsForStubs === undefined) {
-            if (toolMeta.access === 'protected') {
-                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+        if (toolMeta.access === 'protected') {
+            if (credentialsForStubs === undefined) {
+                throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
             }
-            credentialsForStubs = toModuleCredentials({});
+            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+        } else {
+            optionsResolved = await Promise.resolve(prepare(options));
         }
-        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
     }
     const connectionString = resolveConnectionString(host);
     const client = new Client({ connectionString });

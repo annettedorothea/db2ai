@@ -446,7 +446,7 @@ async function validateOAuthHttpHostAtStartup(
 ): Promise<void> {
     if (generated.requiresAuth && typeof generated.verifyCredential !== 'function') {
         throw new Error(
-            'Generated tools require auth; implement verify*Credentials in src/auth/db2ai/<module>/ and re-export from generated tools.'
+            'Generated tools require auth; implement verify*Credentials in src/hooks/db2ai/<module>/ and re-export from generated tools.'
         );
     }
     if (generated.connectionEnv) {

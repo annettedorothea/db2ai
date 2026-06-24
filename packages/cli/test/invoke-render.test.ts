@@ -6,7 +6,7 @@ describe('renderInvokeBlockTs', () => {
     test('omits compactSqlForLog when there are no SQL tools', () => {
         const block = renderInvokeBlockTs([], 'postgres', false, 'none', {
             authorizers: false,
-            validators: false
+            preparers: false
         });
         expect(block).not.toContain('compactSqlForLog');
         expect(block).toContain('_options: InvokeOptions = {}');
@@ -42,7 +42,7 @@ describe('collectSqlBindValueExpressions', () => {
         mysqlBindNames: ['searchText', 'searchText', 'maxRows'],
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false
+        hasPrepare: false
     };
 
     test('postgres emits one expression per unique placeholder', () => {

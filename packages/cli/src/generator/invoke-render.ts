@@ -1,7 +1,7 @@
 import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
 import { isMysqlDialect, isOracleNumericReturningColumn, prepareOracleDmlReturning } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
-import { renderInvokeAuthPipeline, type AuthPipelineTier, type AuthStubMaps } from './render-check-stubs.js';
+import { renderInvokeAuthPipeline, type AuthPipelineTier, type HookStubMaps } from './render-check-stubs.js';
 
 function renderOptionValueExpression(
     propertyName: string,
@@ -292,7 +292,7 @@ function renderPostgresClientSetup(typescript: boolean): string {
 function renderInvokeToolPreamble(
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     typescript: boolean
 ): string {
     const accessChecks =
@@ -311,7 +311,7 @@ ${renderHostBinding(typescript)}${accessChecks}${renderPostgresClientSetup(types
 function renderInvokeToolPreambleMysql(
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     typescript: boolean
 ): string {
     const accessChecks =
@@ -471,7 +471,7 @@ function renderPostgresInvokeBlockTs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -518,7 +518,7 @@ function renderPostgresInvokeBlockJs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -563,7 +563,7 @@ function renderMysqlInvokeBlockTs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -624,7 +624,7 @@ function renderMysqlInvokeBlockJs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -831,7 +831,7 @@ function rowsFromOracleDmlReturning(outBinds, columns, bindNames) {
 function renderInvokeToolPreambleOracle(
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     typescript: boolean
 ): string {
     const accessChecks =
@@ -852,7 +852,7 @@ ${renderHostBinding(typescript)}${accessChecks}
 function renderInvokeToolPreambleSqlserver(
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     typescript: boolean
 ): string {
     const accessChecks =
@@ -875,7 +875,7 @@ function renderOracleInvokeBlockTs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -939,7 +939,7 @@ function renderSqlserverInvokeBlockTs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -1009,7 +1009,7 @@ function renderOracleInvokeBlockJs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -1071,7 +1071,7 @@ function renderSqlserverInvokeBlockJs(
     flags: InvokeParamHelperFlags,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps,
+    stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
@@ -1139,7 +1139,7 @@ export function renderInvokeBlockTs(
     dialect: ResolvedDatabaseDialect,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps
+    stubMaps: HookStubMaps
 ): string {
     const optionsVar = authPipelineTier !== 'none' ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
@@ -1195,7 +1195,7 @@ export function renderInvokeBlockJs(
     dialect: ResolvedDatabaseDialect,
     hasAuth: boolean,
     authPipelineTier: AuthPipelineTier,
-    stubMaps: AuthStubMaps
+    stubMaps: HookStubMaps
 ): string {
     const optionsVar = authPipelineTier !== 'none' ? 'optionsResolved' : 'options';
     const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);

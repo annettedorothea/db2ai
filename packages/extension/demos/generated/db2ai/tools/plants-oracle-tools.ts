@@ -3,29 +3,14 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import {
-    toModuleCredentials,
-    type ModuleCredentials
-} from '../../../src/auth/db2ai/plants-oracle-tools/verifyPlantsOracleCredentials.js';
-import { validateListPlantsInput } from '../../../src/auth/db2ai/plants-oracle-tools/listPlants.js';
-import { validateSearchPlantsInput } from '../../../src/auth/db2ai/plants-oracle-tools/searchPlants.js';
+import { prepareListPlantsInput } from '../../../src/hooks/db2ai/plants-oracle-tools/listPlants.js';
+import { prepareSearchPlantsInput } from '../../../src/hooks/db2ai/plants-oracle-tools/searchPlants.js';
 
 export const connectionEnv = 'PLANTS_ORACLE_DATABASE_URL';
 
 export const databaseDialect = 'oracle';
 
 export const requiresAuth = false;
-
-export {
-    verifyCredential,
-    toModuleCredentials
-} from '../../../src/auth/db2ai/plants-oracle-tools/verifyPlantsOracleCredentials.js';
-export type {
-    VerifyCredentialInput,
-    VerifyCredentialResult,
-    ModuleCredentials,
-    PlantsOracleCredentials
-} from '../../../src/auth/db2ai/plants-oracle-tools/verifyPlantsOracleCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -44,7 +29,7 @@ export type GeneratedTool = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -68,7 +53,7 @@ export const generatedTools: GeneratedTool[] = [
             'list plants with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             '\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        ORDER BY common_name\n        FETCH FIRST :limit ROWS ONLY\n    ',
         params: [
@@ -91,7 +76,7 @@ export const generatedTools: GeneratedTool[] = [
             'search plants by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=oak, maxRows=10',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             "\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        WHERE\n            common_name LIKE '%' || :searchText || '%'\n            OR latin_name LIKE '%' || :searchText || '%'\n        ORDER BY common_name\n        FETCH FIRST :maxRows ROWS ONLY\n    ",
         params: [
@@ -123,7 +108,7 @@ export const generatedTools: GeneratedTool[] = [
             'insert a new plant row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             '\n        INSERT INTO plants (common_name, latin_name, description)\n        VALUES (:commonName, :latinName, :aboutText)\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -164,7 +149,7 @@ export const generatedTools: GeneratedTool[] = [
             'update an existing plant row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             '\n        UPDATE plants\n        SET\n            common_name = :commonName,\n            latin_name = :latinName,\n            description = :aboutText\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -214,7 +199,7 @@ export const generatedTools: GeneratedTool[] = [
             'delete a plant row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: plantId=999',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             '\n        DELETE FROM plants\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -234,12 +219,9 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'plants-oracle-tools';
 export const mcpServerVersion = '0.4.1';
 
-const validators: Record<
-    string,
-    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
-> = {
-    listPlants: validateListPlantsInput,
-    searchPlants: validateSearchPlantsInput
+const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Promise<InvokeOptions>> = {
+    listPlants: prepareListPlantsInput,
+    searchPlants: prepareSearchPlantsInput
 };
 
 export const inputZodByTool = {
@@ -349,33 +331,14 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
-    const credentialsPlain = host.credentials;
-    let credentialsForStubs: ModuleCredentials | undefined =
-        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
     let optionsResolved = options;
 
-    if (toolMeta.access === 'protected') {
-        const inbound = host.credential;
-        if (!inbound || !String(inbound).trim()) {
-            throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
-            );
+    if (toolMeta.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
         }
-    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
-        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
-    }
-    if (toolMeta.hasValidate) {
-        const validate = validators[toolName];
-        if (typeof validate !== 'function') {
-            throw new Error('No validator for tool: ' + toolName);
-        }
-        if (credentialsForStubs === undefined) {
-            if (toolMeta.access === 'protected') {
-                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
-            }
-            credentialsForStubs = toModuleCredentials({});
-        }
-        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
+        optionsResolved = await Promise.resolve(prepare(options));
     }
     const connectionString = resolveConnectionString(host);
     const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));

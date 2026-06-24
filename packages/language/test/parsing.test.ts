@@ -149,7 +149,7 @@ describe('Parsing tests', () => {
         }
     });
 
-    test('parses auth keyword and validate with optionalParams', async () => {
+    test('parses auth keyword and prepare with optionalParams', async () => {
         document = await parse(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
@@ -158,7 +158,7 @@ describe('Parsing tests', () => {
             SQL {
                 toolName: listCustomerOrders
                 access: protected
-                validate: {
+                prepare: {
                     optionalParams: [customerId]
                 }
                 intent: "orders"

@@ -27,12 +27,12 @@ import {
 import { renderInvokeBlockTs } from './invoke-render.js';
 import {
     listAuthorizeToolNames,
-    listValidateToolNames,
+    listPrepareToolNames,
     modelHasAuthPipeline,
     renderAuthorizerImports,
     renderAuthorizersMap,
-    renderValidatorImports,
-    renderValidatorsMap,
+    renderPreparerImports,
+    renderPreparersMap,
     resolveAuthPipelineTier
 } from './render-check-stubs.js';
 
@@ -53,7 +53,7 @@ export type GeneratedToolModule = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -87,7 +87,7 @@ function toGeneratedToolModule(tool: ResolvedDbToolCodegen): GeneratedToolModule
         description: tool.description,
         access: tool.access,
         hasAuthorize: tool.hasAuthorize,
-        hasValidate: tool.hasValidate,
+        hasPrepare: tool.hasPrepare,
         sqlText: tool.sqlText,
         params: tool.params.map(serializeSqlParam)
     };
@@ -194,7 +194,7 @@ export type GeneratedTool = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -224,21 +224,24 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const inputSchemaByTool = buildInputSchemaByTool(model, tools) as Record<string, JsonSchemaDict>;
     const authKind = authRuntimeKind(model);
     const hasAuth = authKind === 'credential';
+    const needsVerifyCredential = hasAuth;
     const hasAuthPipeline = modelHasAuthPipeline(model);
     const authorizeToolNames = listAuthorizeToolNames(model);
-    const validateToolNames = listValidateToolNames(model);
-    const authPipelineTier = resolveAuthPipelineTier(hasAuthPipeline, authorizeToolNames, validateToolNames);
+    const prepareToolNames = listPrepareToolNames(model);
+    const authPipelineTier = resolveAuthPipelineTier(hasAuthPipeline, authorizeToolNames, prepareToolNames);
+    const includeModuleCredentialsInImport =
+        needsVerifyCredential && (authorizeToolNames.length > 0 || prepareToolNames.length > 0);
     const authorizerImports =
         authorizeToolNames.length > 0 ? renderAuthorizerImports(destinationTsPath, stubPaths, authorizeToolNames) : '';
-    const validatorImports = validateToolNames.length > 0 ? renderValidatorImports(destinationTsPath, stubPaths) : '';
-    const authStubImports = [authorizerImports, validatorImports].filter((s) => s.length > 0).join('\n');
+    const preparerImports = prepareToolNames.length > 0 ? renderPreparerImports(destinationTsPath, stubPaths) : '';
+    const authStubImports = [authorizerImports, preparerImports].filter((s) => s.length > 0).join('\n');
     const authMapBlocks: string[] = [];
     if (authPipelineTier === 'full') {
         if (authorizeToolNames.length > 0) {
             authMapBlocks.push(renderAuthorizersMap(authorizeToolNames));
         }
-        if (validateToolNames.length > 0) {
-            authMapBlocks.push(renderValidatorsMap(validateToolNames));
+        if (prepareToolNames.length > 0) {
+            authMapBlocks.push(renderPreparersMap(prepareToolNames, { includeCredentials: needsVerifyCredential }));
         }
     }
     const authRuntimePrefixBlock = authMapBlocks.length > 0 ? `${authMapBlocks.join('\n\n')}\n\n` : '';
@@ -251,22 +254,19 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
     const stubMaps = {
         authorizers: authorizeToolNames.length > 0,
-        validators: validateToolNames.length > 0
+        preparers: prepareToolNames.length > 0
     };
     const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, authPipelineTier, stubMaps);
 
-    const hasValidateTools = validateToolNames.length > 0;
-    const needsVerifyCredential = hasAuth;
-    const verifyStubPath =
-        needsVerifyCredential || hasValidateTools
-            ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
-            : undefined;
+    const verifyStubPath = needsVerifyCredential
+        ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
+        : undefined;
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
     const verifyCredentialImport =
         verifyStubPath !== undefined
             ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath, {
                   includeVerify: needsVerifyCredential,
-                  includeModuleCredentials: authPipelineTier === 'full' || !needsVerifyCredential
+                  includeModuleCredentials: includeModuleCredentialsInImport
               })
             : '';
 

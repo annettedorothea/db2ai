@@ -13,7 +13,7 @@ SqlQuery:
         ('toolName' ':' toolName=ID)?
         'access' ':' access=AccessKind
         ('authorize' ':' authorize=AuthorizeSpec)?
-        ('validate' ':' validate=ValidateSpec)?
+        ('prepare' ':' prepare=PrepareSpec)?
         ('intent' ':' intent=DslText)?
         ('query' ':' query=DslText)?
         ('summary' ':' summary=DslText)?
@@ -36,14 +36,14 @@ AuthorizeSpec:
 AuthorizeTrue:
     {infer AuthorizeTrue} 'true';
 
-ValidateSpec:
-    ValidateTrue | ValidateBody;
+PrepareSpec:
+    PrepareTrue | PrepareBody;
 
-ValidateTrue:
-    {infer ValidateTrue} 'true';
+PrepareTrue:
+    {infer PrepareTrue} 'true';
 
-ValidateBody:
-    {infer ValidateBody} '{' ('optionalParams' ':' '[' (optionalParams+=[SqlParamEntry:ID] (',' optionalParams+=[SqlParamEntry:ID])*)? ']')? '}';
+PrepareBody:
+    {infer PrepareBody} '{' ('optionalParams' ':' '[' (optionalParams+=[SqlParamEntry:ID] (',' optionalParams+=[SqlParamEntry:ID])*)? ']')? '}';
 
 SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';

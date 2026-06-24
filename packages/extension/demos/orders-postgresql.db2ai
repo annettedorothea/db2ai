@@ -5,7 +5,8 @@ auth
 SQL {
     toolName: listCustomerOrders
     access: protected
-    validate: {
+    authorize: true
+    prepare: {
         optionalParams: [customerId]
     }
     intent: '''
@@ -39,7 +40,7 @@ SQL {
 SQL {
     toolName: listProducts
     access: public
-    validate: true
+    prepare: true
     intent: "list products in the orders-postgresql catalog"
     query: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT :limit"
     summary: "Product catalog rows"
@@ -51,7 +52,7 @@ SQL {
 SQL {
     toolName: listProductsWithReviews
     access: protected
-    validate: true
+    prepare: true
     intent: '''
         List products that have at least one review, with review details.
         Protected: requires Cursor OAuth sign-in on orders-postgresql MCP (JWT claim customerId).
@@ -87,7 +88,7 @@ SQL {
 SQL {
     toolName: createOrder
     access: protected
-    validate: {
+    prepare: {
         optionalParams: [customerId]
     }
     intent: '''

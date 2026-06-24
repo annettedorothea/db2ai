@@ -5,7 +5,7 @@ import {
     getOptionalParams,
     isSqlQuery,
     isToolAuthorizeEnabled,
-    isToolValidateEnabled
+    isToolPrepareEnabled
 } from 'db-2-ai-dsl-language';
 import {
     jsonSchemaExampleValue,
@@ -27,7 +27,7 @@ export type ResolvedSqlToolCodegen = {
     mysqlBindNames?: readonly string[];
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
 };
 
 export type ResolvedDbToolCodegen = ResolvedSqlToolCodegen;
@@ -93,7 +93,7 @@ function resolveSqlTool(query: SqlQuery, dialect: ResolvedDatabaseDialect): Reso
         mysqlBindNames: isMysqlDialect(dialect) ? mysqlBindParamNames(logicalSql) : undefined,
         access: getAccessKind(query),
         hasAuthorize: isToolAuthorizeEnabled(query),
-        hasValidate: isToolValidateEnabled(query)
+        hasPrepare: isToolPrepareEnabled(query)
     };
 }
 

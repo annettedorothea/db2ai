@@ -3,29 +3,14 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import {
-    toModuleCredentials,
-    type ModuleCredentials
-} from '../../../src/auth/db2ai/animals-sqlserver-tools/verifyAnimalsSqlserverCredentials.js';
-import { validateListAnimalsInput } from '../../../src/auth/db2ai/animals-sqlserver-tools/listAnimals.js';
-import { validateSearchAnimalsInput } from '../../../src/auth/db2ai/animals-sqlserver-tools/searchAnimals.js';
+import { prepareListAnimalsInput } from '../../../src/hooks/db2ai/animals-sqlserver-tools/listAnimals.js';
+import { prepareSearchAnimalsInput } from '../../../src/hooks/db2ai/animals-sqlserver-tools/searchAnimals.js';
 
 export const connectionEnv = 'ANIMALS_SQLSERVER_DATABASE_URL';
 
 export const databaseDialect = 'sqlserver';
 
 export const requiresAuth = false;
-
-export {
-    verifyCredential,
-    toModuleCredentials
-} from '../../../src/auth/db2ai/animals-sqlserver-tools/verifyAnimalsSqlserverCredentials.js';
-export type {
-    VerifyCredentialInput,
-    VerifyCredentialResult,
-    ModuleCredentials,
-    AnimalsSqlserverCredentials
-} from '../../../src/auth/db2ai/animals-sqlserver-tools/verifyAnimalsSqlserverCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -44,7 +29,7 @@ export type GeneratedTool = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -68,7 +53,7 @@ export const generatedTools: GeneratedTool[] = [
             'list animals with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             '\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ',
         params: [
@@ -91,7 +76,7 @@ export const generatedTools: GeneratedTool[] = [
             'search animals by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: maxRows=10, searchText=fox',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ",
         params: [
@@ -123,7 +108,7 @@ export const generatedTools: GeneratedTool[] = [
             'insert a new animal row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             '\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ',
         params: [
@@ -164,7 +149,7 @@ export const generatedTools: GeneratedTool[] = [
             'update an existing animal row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows., animalId=1',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             '\n        UPDATE animals\n        SET\n            common_name = @commonName,\n            latin_name = @latinName,\n            description = @aboutText\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        WHERE animal_id = @animalId\n    ',
         params: [
@@ -214,7 +199,7 @@ export const generatedTools: GeneratedTool[] = [
             'delete an animal row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: animalId=999',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText:
             '\n        DELETE FROM animals\n        OUTPUT DELETED.animal_id, DELETED.common_name, DELETED.latin_name, DELETED.description\n        WHERE animal_id = @animalId\n    ',
         params: [
@@ -234,12 +219,9 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'animals-sqlserver-tools';
 export const mcpServerVersion = '0.4.1';
 
-const validators: Record<
-    string,
-    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
-> = {
-    listAnimals: validateListAnimalsInput,
-    searchAnimals: validateSearchAnimalsInput
+const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Promise<InvokeOptions>> = {
+    listAnimals: prepareListAnimalsInput,
+    searchAnimals: prepareSearchAnimalsInput
 };
 
 export const inputZodByTool = {
@@ -340,33 +322,14 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
-    const credentialsPlain = host.credentials;
-    let credentialsForStubs: ModuleCredentials | undefined =
-        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
     let optionsResolved = options;
 
-    if (toolMeta.access === 'protected') {
-        const inbound = host.credential;
-        if (!inbound || !String(inbound).trim()) {
-            throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
-            );
+    if (toolMeta.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
         }
-    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
-        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
-    }
-    if (toolMeta.hasValidate) {
-        const validate = validators[toolName];
-        if (typeof validate !== 'function') {
-            throw new Error('No validator for tool: ' + toolName);
-        }
-        if (credentialsForStubs === undefined) {
-            if (toolMeta.access === 'protected') {
-                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
-            }
-            credentialsForStubs = toModuleCredentials({});
-        }
-        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
+        optionsResolved = await Promise.resolve(prepare(options));
     }
     const connectionString = resolveConnectionString(host);
     const pool = await sql.connect(parseSqlserverConnectInput(connectionString));

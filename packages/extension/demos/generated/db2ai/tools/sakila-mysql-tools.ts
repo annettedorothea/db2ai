@@ -7,13 +7,13 @@ import {
     verifyCredential,
     toModuleCredentials,
     type ModuleCredentials
-} from '../../../src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
-import { validateListFilmsInput } from '../../../src/auth/db2ai/sakila-mysql-tools/listFilms.js';
-import { validateListActorsInput } from '../../../src/auth/db2ai/sakila-mysql-tools/listActors.js';
-import { validateListCategoriesInput } from '../../../src/auth/db2ai/sakila-mysql-tools/listCategories.js';
-import { validateFilmsByRatingInput } from '../../../src/auth/db2ai/sakila-mysql-tools/filmsByRating.js';
-import { validateFilmsWithActorLastNameInput } from '../../../src/auth/db2ai/sakila-mysql-tools/filmsWithActorLastName.js';
-import { validateSearchFilmsInput } from '../../../src/auth/db2ai/sakila-mysql-tools/searchFilms.js';
+} from '../../../src/hooks/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
+import { prepareListFilmsInput } from '../../../src/hooks/db2ai/sakila-mysql-tools/listFilms.js';
+import { prepareListActorsInput } from '../../../src/hooks/db2ai/sakila-mysql-tools/listActors.js';
+import { prepareListCategoriesInput } from '../../../src/hooks/db2ai/sakila-mysql-tools/listCategories.js';
+import { prepareFilmsByRatingInput } from '../../../src/hooks/db2ai/sakila-mysql-tools/filmsByRating.js';
+import { prepareFilmsWithActorLastNameInput } from '../../../src/hooks/db2ai/sakila-mysql-tools/filmsWithActorLastName.js';
+import { prepareSearchFilmsInput } from '../../../src/hooks/db2ai/sakila-mysql-tools/searchFilms.js';
 
 export const connectionEnv = 'SAKILA_MYSQL_DATABASE_URL';
 
@@ -24,13 +24,13 @@ export const requiresAuth = true;
 export {
     verifyCredential,
     toModuleCredentials
-} from '../../../src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
+} from '../../../src/hooks/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
 export type {
     VerifyCredentialInput,
     VerifyCredentialResult,
     ModuleCredentials,
     SakilaMysqlCredentials
-} from '../../../src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
+} from '../../../src/hooks/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -49,7 +49,7 @@ export type GeneratedTool = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -73,7 +73,7 @@ export const generatedTools: GeneratedTool[] = [
             'list films from Sakila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM film LIMIT ? OFFSET ?',
         params: [
             {
@@ -104,7 +104,7 @@ export const generatedTools: GeneratedTool[] = [
             'List actors from Sakila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'protected',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM actor LIMIT ? OFFSET ?',
         params: [
             {
@@ -135,7 +135,7 @@ export const generatedTools: GeneratedTool[] = [
             'list film categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT * FROM category LIMIT ? OFFSET ?',
         params: [
             {
@@ -166,7 +166,7 @@ export const generatedTools: GeneratedTool[] = [
             'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG, maxRows=20',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ',
         params: [
@@ -198,7 +198,7 @@ export const generatedTools: GeneratedTool[] = [
             'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ",
         params: [
@@ -230,7 +230,7 @@ export const generatedTools: GeneratedTool[] = [
             'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=cat, maxRows=15',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ",
         params: [
@@ -263,7 +263,7 @@ export const generatedTools: GeneratedTool[] = [
             'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: false,
+        hasPrepare: false,
         sqlText: 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())',
         params: [
             {
@@ -291,16 +291,16 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'sakila-mysql-tools';
 export const mcpServerVersion = '0.4.1';
 
-const validators: Record<
+const preparers: Record<
     string,
-    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
+    (options: InvokeOptions, credentials?: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
 > = {
-    listFilms: validateListFilmsInput,
-    listActors: validateListActorsInput,
-    listCategories: validateListCategoriesInput,
-    filmsByRating: validateFilmsByRatingInput,
-    filmsWithActorLastName: validateFilmsWithActorLastNameInput,
-    searchFilms: validateSearchFilmsInput
+    listFilms: prepareListFilmsInput,
+    listActors: prepareListActorsInput,
+    listCategories: prepareListCategoriesInput,
+    filmsByRating: prepareFilmsByRatingInput,
+    filmsWithActorLastName: prepareFilmsWithActorLastNameInput,
+    searchFilms: prepareSearchFilmsInput
 };
 
 export const inputZodByTool = {
@@ -425,21 +425,20 @@ export async function invokeTool(
             const verified = await verifyCredential({ inboundCredential: String(inbound).trim() });
             credentialsForStubs = verified.credentials;
         }
-    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
-        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
     }
-    if (toolMeta.hasValidate) {
-        const validate = validators[toolName];
-        if (typeof validate !== 'function') {
-            throw new Error('No validator for tool: ' + toolName);
+    if (toolMeta.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
         }
-        if (credentialsForStubs === undefined) {
-            if (toolMeta.access === 'protected') {
-                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
+        if (toolMeta.access === 'protected') {
+            if (credentialsForStubs === undefined) {
+                throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
             }
-            credentialsForStubs = toModuleCredentials({});
+            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+        } else {
+            optionsResolved = await Promise.resolve(prepare(options));
         }
-        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
     }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);

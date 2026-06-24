@@ -5,7 +5,7 @@ auth
 SQL {
     toolName: listFilms
     access: protected
-    validate: true
+    prepare: true
     intent: "list films from Pagila with pagination"
     query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated film rows"
@@ -22,7 +22,7 @@ SQL {
 SQL {
     toolName: listActors
     access: protected
-    validate: true
+    prepare: true
     intent: '''
         List actors from Pagila with pagination.
     '''
@@ -47,7 +47,7 @@ SQL {
 SQL {
     toolName: listCustomers
     access: protected
-    validate: true
+    prepare: true
     intent: "list customers with pagination"
     query: "SELECT * FROM customer LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated customer rows"
@@ -64,7 +64,7 @@ SQL {
 SQL {
     toolName: listCategories
     access: protected
-    validate: true
+    prepare: true
     intent: "list categories with pagination"
     query: "SELECT * FROM category LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated category rows"
@@ -81,7 +81,7 @@ SQL {
 SQL {
     toolName: listCountries
     access: protected
-    validate: true
+    prepare: true
     intent: "list countries with pagination"
     query: "SELECT * FROM country LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated country rows"
@@ -98,7 +98,7 @@ SQL {
 SQL {
     toolName: listInventory
     access: protected
-    validate: true
+    prepare: true
     intent: "list inventory with pagination"
     query: '''
         SELECT
@@ -124,7 +124,7 @@ SQL {
 SQL {
     toolName: filmsByMpaaRating
     access: protected
-    validate: true
+    prepare: true
     intent: '''
         List films with a given MPAA age rating.
         Valid ratings: G, PG, PG-13, R, NC-17.
@@ -162,7 +162,7 @@ SQL {
 SQL {
     toolName: filmsWithActorLastName
     access: protected
-    validate: true
+    prepare: true
     intent: "which films feature actors whose last name starts with a given prefix"
     query: '''
         SELECT
@@ -204,7 +204,7 @@ SQL {
 SQL {
     toolName: searchFilms
     access: protected
-    validate: true
+    prepare: true
     intent: '''
         Search films by free text in title or description.
         Case-insensitive substring match (PostgreSQL ILIKE).

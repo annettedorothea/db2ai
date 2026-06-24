@@ -3,29 +3,14 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import {
-    toModuleCredentials,
-    type ModuleCredentials
-} from '../../../src/auth/db2ai/sakila-mariadb-tools/verifySakilaMariadbCredentials.js';
-import { validateListFilmsInput } from '../../../src/auth/db2ai/sakila-mariadb-tools/listFilms.js';
-import { validateSearchFilmsInput } from '../../../src/auth/db2ai/sakila-mariadb-tools/searchFilms.js';
+import { prepareListFilmsInput } from '../../../src/hooks/db2ai/sakila-mariadb-tools/listFilms.js';
+import { prepareSearchFilmsInput } from '../../../src/hooks/db2ai/sakila-mariadb-tools/searchFilms.js';
 
 export const connectionEnv = 'SAKILA_MARIADB_DATABASE_URL';
 
 export const databaseDialect = 'mariadb';
 
 export const requiresAuth = false;
-
-export {
-    verifyCredential,
-    toModuleCredentials
-} from '../../../src/auth/db2ai/sakila-mariadb-tools/verifySakilaMariadbCredentials.js';
-export type {
-    VerifyCredentialInput,
-    VerifyCredentialResult,
-    ModuleCredentials,
-    SakilaMariadbCredentials
-} from '../../../src/auth/db2ai/sakila-mariadb-tools/verifySakilaMariadbCredentials.js';
 
 export type GeneratedSqlParam = {
     placeholder: string;
@@ -44,7 +29,7 @@ export type GeneratedTool = {
     kind: 'sql';
     access: 'public' | 'protected';
     hasAuthorize: boolean;
-    hasValidate: boolean;
+    hasPrepare: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -68,7 +53,7 @@ export const generatedTools: GeneratedTool[] = [
             'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText: 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ?',
         params: [
             {
@@ -90,7 +75,7 @@ export const generatedTools: GeneratedTool[] = [
             'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=love, maxRows=10',
         access: 'public',
         hasAuthorize: false,
-        hasValidate: true,
+        hasPrepare: true,
         sqlText:
             "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?",
         params: [
@@ -119,12 +104,9 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'sakila-mariadb-tools';
 export const mcpServerVersion = '0.4.1';
 
-const validators: Record<
-    string,
-    (options: InvokeOptions, credentials: ModuleCredentials) => InvokeOptions | Promise<InvokeOptions>
-> = {
-    listFilms: validateListFilmsInput,
-    searchFilms: validateSearchFilmsInput
+const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Promise<InvokeOptions>> = {
+    listFilms: prepareListFilmsInput,
+    searchFilms: prepareSearchFilmsInput
 };
 
 export const inputZodByTool = {
@@ -192,33 +174,14 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
-    const credentialsPlain = host.credentials;
-    let credentialsForStubs: ModuleCredentials | undefined =
-        credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
     let optionsResolved = options;
 
-    if (toolMeta.access === 'protected') {
-        const inbound = host.credential;
-        if (!inbound || !String(inbound).trim()) {
-            throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
-            );
+    if (toolMeta.hasPrepare) {
+        const prepare = preparers[toolName];
+        if (typeof prepare !== 'function') {
+            throw new Error('No preparer for tool: ' + toolName);
         }
-    } else if (toolMeta.hasValidate && credentialsForStubs === undefined && credentialsPlain != null) {
-        credentialsForStubs = toModuleCredentials(credentialsPlain as Record<string, unknown>);
-    }
-    if (toolMeta.hasValidate) {
-        const validate = validators[toolName];
-        if (typeof validate !== 'function') {
-            throw new Error('No validator for tool: ' + toolName);
-        }
-        if (credentialsForStubs === undefined) {
-            if (toolMeta.access === 'protected') {
-                throw new Error('Validate requires credentials; verify credential or pass host.credentials.');
-            }
-            credentialsForStubs = toModuleCredentials({});
-        }
-        optionsResolved = await Promise.resolve(validate(options, credentialsForStubs));
+        optionsResolved = await Promise.resolve(prepare(options));
     }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);

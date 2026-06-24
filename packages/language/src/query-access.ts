@@ -1,6 +1,6 @@
 import type { Reference } from 'langium';
 import type { SqlParamEntry, SqlQuery } from './generated/ast.js';
-import { isAuthorizeTrue, isProtectedAccess, isPublicAccess, isValidateBody, isValidateTrue } from './generated/ast.js';
+import { isAuthorizeTrue, isProtectedAccess, isPublicAccess, isPrepareBody, isPrepareTrue } from './generated/ast.js';
 
 export function getAccessKind(query: SqlQuery): 'public' | 'protected' {
     const access = query.access;
@@ -24,13 +24,16 @@ export function isToolAuthorizeEnabled(query: SqlQuery): boolean {
     return isAuthorizeTrue(authorize);
 }
 
-export function isToolValidateEnabled(query: SqlQuery): boolean {
-    const validate = query.validate;
-    if (!validate) {
+export function isToolPrepareEnabled(query: SqlQuery): boolean {
+    const prepare = query.prepare;
+    if (!prepare) {
         return false;
     }
-    return isValidateTrue(validate) || isValidateBody(validate);
+    return isPrepareTrue(prepare) || isPrepareBody(prepare);
 }
+
+/** @deprecated Use isToolPrepareEnabled */
+export const isToolValidateEnabled = isToolPrepareEnabled;
 
 export function resolveOptionalParamRef(ref: Reference<SqlParamEntry>): string {
     const key = ref.ref?.key;
@@ -41,9 +44,9 @@ export function resolveOptionalParamRef(ref: Reference<SqlParamEntry>): string {
 }
 
 export function getOptionalParams(query: SqlQuery): readonly string[] {
-    const validate = query.validate;
-    if (isValidateBody(validate) && validate.optionalParams) {
-        return validate.optionalParams
+    const prepare = query.prepare;
+    if (isPrepareBody(prepare) && prepare.optionalParams) {
+        return prepare.optionalParams
             .map((ref) => resolveOptionalParamRef(ref).trim())
             .filter((name) => name.length > 0);
     }

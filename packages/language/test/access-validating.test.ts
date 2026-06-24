@@ -62,7 +62,7 @@ describe('Access validating', () => {
         expect(diagnostics.some((d) => d.message.includes('authorize: true requires access `protected`'))).toBe(true);
     });
 
-    test('accepts protected with validate optionalParams for known SQL param', async () => {
+    test('accepts protected with prepare optionalParams for known SQL param', async () => {
         const document = await parseValidated(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
@@ -71,7 +71,7 @@ describe('Access validating', () => {
             SQL {
                 toolName: listCustomerOrders
                 access: protected
-                validate: {
+                prepare: {
                     optionalParams: [customerId]
                 }
                 intent: "orders"
@@ -101,7 +101,7 @@ describe('Access validating', () => {
             SQL {
                 toolName: listCustomerOrders
                 access: protected
-                validate: {
+                prepare: {
                     optionalParams: [missingParam]
                 }
                 intent: "orders"

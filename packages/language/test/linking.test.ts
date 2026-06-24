@@ -2,7 +2,7 @@ import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
-import { isSqlParamEntry, isSqlQuery, isValidateBody } from '../src/generated/ast.js';
+import { isSqlParamEntry, isSqlQuery, isPrepareBody } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
 
 let parse: ReturnType<typeof parseHelper<Model>>;
@@ -21,7 +21,7 @@ auth
 SQL {
     toolName: listCustomerOrders
     access: protected
-    validate: {
+    prepare: {
         optionalParams: [customerId]
     }
     intent: "orders"
@@ -38,11 +38,11 @@ describe('Cross-reference linking', () => {
 
         const entry = document.parseResult.value.entries[0];
         expect(isSqlQuery(entry)).toBe(true);
-        if (!isSqlQuery(entry) || !isValidateBody(entry.validate)) {
+        if (!isSqlQuery(entry) || !isPrepareBody(entry.prepare)) {
             return;
         }
 
-        const ref = entry.validate.optionalParams?.[0];
+        const ref = entry.prepare.optionalParams?.[0];
         expect(ref).toBeDefined();
         expect(ref?.$refText).toBe('customerId');
         expect(ref?.ref?.key).toBe('customerId');

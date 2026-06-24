@@ -55,7 +55,7 @@ describe('Completion for SQL block keywords', () => {
             'toolName',
             'access',
             'authorize',
-            'validate',
+            'prepare',
             'intent',
             'query',
             'summary',
@@ -88,10 +88,10 @@ describe('Completion for SQL block keywords', () => {
     });
 });
 
-describe('Completion for validate optionalParams', () => {
-    test('suggests optionalParams keyword inside validate block', async () => {
+describe('Completion for prepare optionalParams', () => {
+    test('suggests optionalParams keyword inside prepare block', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    validate: {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    prepare: {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker));
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('optionalParams');
@@ -99,7 +99,7 @@ describe('Completion for validate optionalParams', () => {
 
     test('suggests SQL param names inside optionalParams list', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    validate: {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    prepare: {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');
@@ -107,7 +107,7 @@ describe('Completion for validate optionalParams', () => {
 
     test('suggests SQL param names when editing optionalParams prefix', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    validate: {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    prepare: {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');

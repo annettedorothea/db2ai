@@ -7,7 +7,7 @@
     },
     "include": [
         "generated/**/*.ts",
-        "src/auth/**/*.ts",
+        "src/hooks/**/*.ts",
         "src/utils/**/*.ts",
         "test/**/*.ts",
         "vitest.config.ts",

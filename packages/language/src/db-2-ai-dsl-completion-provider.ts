@@ -20,7 +20,7 @@ const SQL_BLOCK_KEYS = [
     'toolName',
     'access',
     'authorize',
-    'validate',
+    'prepare',
     'intent',
     'query',
     'summary',
@@ -31,14 +31,14 @@ type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
 const SQL_PARAM_SPEC_KEYS = ['description', 'example', 'type'] as const;
 const ACCESS_KINDS = ['public', 'protected'] as const;
 type AccessKindKeyword = (typeof ACCESS_KINDS)[number];
-type ValidateBodyKey = 'optionalParams';
+type PrepareBodyKey = 'optionalParams';
 type SqlParamSpecKey = (typeof SQL_PARAM_SPEC_KEYS)[number];
 
 const SQL_KEYWORD_SORT: Record<SqlBlockKey, string> = {
     toolName: '0100',
     access: '0101',
     authorize: '0101.25',
-    validate: '0101.5',
+    prepare: '0101.5',
     intent: '0102',
     query: '0103',
     summary: '0104',
@@ -51,7 +51,7 @@ const ACCESS_KIND_SORT: Record<AccessKindKeyword, string> = {
     protected: '0111'
 };
 
-const VALIDATE_BODY_SORT: Record<ValidateBodyKey, string> = {
+const PREPARE_BODY_SORT: Record<PrepareBodyKey, string> = {
     optionalParams: '0300'
 };
 
@@ -60,11 +60,11 @@ const ACCESS_KIND_INSERT: Record<AccessKindKeyword, string> = {
     protected: 'access: protected$0'
 };
 
-const VALIDATE_BODY_INSERT: Record<ValidateBodyKey, string> = {
+const PREPARE_BODY_INSERT: Record<PrepareBodyKey, string> = {
     optionalParams: 'optionalParams: [$1]$0'
 };
 
-const VALIDATE_SPEC_INSERT = {
+const PREPARE_SPEC_INSERT = {
     true: 'true',
     block: '{\n    optionalParams: [$1]\n}'
 } as const;
@@ -79,7 +79,7 @@ const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     toolName: 'toolName: $1$0',
     access: 'access: public$0',
     authorize: 'authorize: true$0',
-    validate: 'validate: true$0',
+    prepare: 'prepare: true$0',
     intent: 'intent: "$1"$0',
     query: "query: '''\n$1\n'''$0",
     summary: 'summary: "$1"$0',
@@ -133,8 +133,8 @@ function usedSqlBlockKeys(query: SqlQuery): Set<string> {
     if (query.authorize !== undefined) {
         used.add('authorize');
     }
-    if (query.validate !== undefined) {
-        used.add('validate');
+    if (query.prepare !== undefined) {
+        used.add('prepare');
     }
     if (query.intent !== undefined) {
         used.add('intent');
@@ -503,13 +503,13 @@ function buildAccessKindCompletionItems(document: LangiumDocument, position: Pos
     }));
 }
 
-function buildValidateBodyKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+function buildPrepareBodyKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
     const textDoc = document.textDocument;
     const beforeCursor = textDoc.getText({ start: { line: 0, character: 0 }, end: position });
-    if (!/validate\s*:\s*\{[^}]*$/.test(beforeCursor)) {
+    if (!/prepare\s*:\s*\{[^}]*$/.test(beforeCursor)) {
         return [];
     }
-    const blockStart = beforeCursor.lastIndexOf('validate');
+    const blockStart = beforeCursor.lastIndexOf('prepare');
     const blockText = beforeCursor.slice(blockStart);
     if (/\boptionalParams\b\s*:/.test(blockText)) {
         return [];
@@ -527,10 +527,10 @@ function buildValidateBodyKeywordCompletionItems(document: LangiumDocument, posi
         {
             label: 'optionalParams',
             kind: CompletionItemKind.Keyword,
-            detail: 'validate optional SQL params',
+            detail: 'prepare optional SQL params',
             insertTextFormat: InsertTextFormat.Snippet,
-            sortText: VALIDATE_BODY_SORT.optionalParams,
-            insertText: VALIDATE_BODY_INSERT.optionalParams
+            sortText: PREPARE_BODY_SORT.optionalParams,
+            insertText: PREPARE_BODY_INSERT.optionalParams
         }
     ];
 }
@@ -560,13 +560,13 @@ function buildAuthorizeSpecCompletionItems(document: LangiumDocument, position: 
     ];
 }
 
-function buildValidateSpecCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+function buildPrepareSpecCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
     const textDoc = document.textDocument;
     const line = textDoc.getText({
         start: { line: position.line, character: 0 },
         end: { line: position.line, character: position.character }
     });
-    const match = /^\s*validate\s*:\s*(\w*)$/.exec(line);
+    const match = /^\s*prepare\s*:\s*(\w*)$/.exec(line);
     if (!match) {
         return [];
     }
@@ -576,18 +576,18 @@ function buildValidateSpecCompletionItems(document: LangiumDocument, position: P
         items.push({
             label: 'true',
             kind: CompletionItemKind.Constant,
-            detail: 'Enable validate{Tool}Input stub',
+            detail: 'Enable prepare{Tool}Input stub',
             insertTextFormat: InsertTextFormat.PlainText,
-            insertText: VALIDATE_SPEC_INSERT.true
+            insertText: PREPARE_SPEC_INSERT.true
         });
     }
     if (prefix.length === 0 || '{'.startsWith(prefix)) {
         items.push({
             label: '{ optionalParams: [...] }',
             kind: CompletionItemKind.Snippet,
-            detail: 'Validate with optionalParams',
+            detail: 'Prepare with optionalParams',
             insertTextFormat: InsertTextFormat.Snippet,
-            insertText: VALIDATE_SPEC_INSERT.block
+            insertText: PREPARE_SPEC_INSERT.block
         });
     }
     return items;
@@ -626,13 +626,13 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         if (authorizeSpecItems.length > 0) {
             return CompletionList.create(this.deduplicateItems(authorizeSpecItems), false);
         }
-        const validateSpecItems = buildValidateSpecCompletionItems(document, params.position);
-        if (validateSpecItems.length > 0) {
-            return CompletionList.create(this.deduplicateItems(validateSpecItems), false);
+        const prepareSpecItems = buildPrepareSpecCompletionItems(document, params.position);
+        if (prepareSpecItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(prepareSpecItems), false);
         }
-        const validateBodyItems = buildValidateBodyKeywordCompletionItems(document, params.position);
-        if (validateBodyItems.length > 0) {
-            return CompletionList.create(this.deduplicateItems(validateBodyItems), false);
+        const prepareBodyItems = buildPrepareBodyKeywordCompletionItems(document, params.position);
+        if (prepareBodyItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(prepareBodyItems), false);
         }
         const keywordItems = buildBlockKeywordCompletionItems(document, params.position);
         if (keywordItems.length > 0) {
