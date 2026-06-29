@@ -2,6 +2,7 @@
 /**
  * Generated passthrough HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
  */
+import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -330,6 +331,7 @@ function writeJsonRpcInternalError(res: ServerResponse): void {
     writeJsonRpcError(res, 500, -32_603, 'Internal server error');
 }
 
+/** GET/DELETE without an established session — spec-allowed probe response (Open WebUI Verify Connection). */
 function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
     writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
 }
@@ -487,30 +489,99 @@ async function resolveHostContextForHttpCall(
     return { baseUrl, credential: c };
 }
 
-async function handleHttpMcpPost(
+type SessionEntry = {
+    transport: StreamableHTTPServerTransport;
+    server: McpServer;
+    sessionId: string;
+};
+
+const sessionEntries = new Map<string, SessionEntry>();
+const sessionHeaders = new Map<string, Record<string, string | string[] | undefined>>();
+
+function isInitializeRequestBody(body: unknown): boolean {
+    if (Array.isArray(body)) {
+        return body.some((item) => isInitializeRequestBody(item));
+    }
+    if (!body || typeof body !== 'object') {
+        return false;
+    }
+    const record = body as Record<string, unknown>;
+    return record.jsonrpc === '2.0' && record.method === 'initialize';
+}
+
+function readSessionId(req: IncomingMessage): string | undefined {
+    const raw = req.headers['mcp-session-id'];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+async function createMcpServerForSession(
+    generated: GeneratedHostModule,
+    httpHostConfig: HttpMcpHostRuntimeConfig,
+    sessionId: string,
+    headers: Record<string, string | string[] | undefined>
+): Promise<SessionEntry> {
+    const { name, version } = requireMcpServerIdentity(generated);
+    const server = new McpServer({ name, version });
+    sessionHeaders.set(sessionId, headers);
+    await registerMcpTools(server, generated, {
+        envDirs: httpHostConfig.envDirs,
+        resolveContext: () =>
+            resolveHostContextForHttpCall(httpHostConfig, generated, sessionHeaders.get(sessionId) ?? headers)
+    });
+    const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => sessionId
+    });
+    transport.onclose = () => {
+        sessionEntries.delete(sessionId);
+        sessionHeaders.delete(sessionId);
+        void server.close();
+    };
+    await server.connect(transport);
+    return { transport, server, sessionId };
+}
+
+async function handleHttpMcpRequest(
     req: IncomingMessage,
     res: ServerResponse,
     generated: GeneratedHostModule,
     httpHostConfig: HttpMcpHostRuntimeConfig
 ): Promise<void> {
-    const incomingHeaders = req.headers as Record<string, string | string[] | undefined>;
-    const { name, version } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version });
-    await registerMcpTools(server, generated, {
-        envDirs: httpHostConfig.envDirs,
-        resolveContext: () => resolveHostContextForHttpCall(httpHostConfig, generated, incomingHeaders)
-    });
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const headers = req.headers as Record<string, string | string[] | undefined>;
+    const sessionIdHeader = readSessionId(req);
+    const parsedBody = req.method === 'POST' ? await readMcpHttpJsonBody(req) : undefined;
+
+    let entry: SessionEntry | undefined;
+    if (sessionIdHeader && sessionEntries.has(sessionIdHeader)) {
+        entry = sessionEntries.get(sessionIdHeader);
+    } else if (req.method === 'POST' && isInitializeRequestBody(parsedBody)) {
+        const newSessionId = randomUUID();
+        entry = await createMcpServerForSession(generated, httpHostConfig, newSessionId, headers);
+        sessionEntries.set(newSessionId, entry);
+    } else if (sessionIdHeader) {
+        writeJsonRpcError(res, 404, -32_001, 'Session not found');
+        return;
+    } else if (req.method === 'POST') {
+        writeJsonRpcError(res, 400, -32_000, 'Bad Request: Session ID required');
+        return;
+    } else {
+        writeJsonRpcMethodNotAllowed(res);
+        return;
+    }
+
+    if (!entry) {
+        writeJsonRpcInternalError(res);
+        return;
+    }
+
+    sessionHeaders.set(entry.sessionId, headers);
+
     try {
-        await server.connect(transport);
-        const parsedBody = await readMcpHttpJsonBody(req);
-        res.on('close', () => {
-            void transport.close();
-            void server.close();
-        });
-        await transport.handleRequest(req, res, parsedBody);
+        await entry.transport.handleRequest(req, res, parsedBody);
     } catch (err) {
-        console.error('[mcp] passthrough HTTP request failed:', err);
+        loggingAdapter.error('[mcp] passthrough HTTP request failed', {
+            error: err instanceof Error ? err.message : String(err)
+        });
         if (!res.headersSent) {
             writeJsonRpcInternalError(res);
         }
@@ -550,12 +621,8 @@ async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
             res.writeHead(404).end('Not found');
             return;
         }
-        if (req.method === 'POST') {
-            await handleHttpMcpPost(req, res, generated, httpHostConfig);
-            return;
-        }
-        if (req.method === 'GET' || req.method === 'DELETE') {
-            writeJsonRpcMethodNotAllowed(res);
+        if (req.method === 'POST' || req.method === 'GET' || req.method === 'DELETE') {
+            await handleHttpMcpRequest(req, res, generated, httpHostConfig);
             return;
         }
         res.writeHead(405).end('Method not allowed');

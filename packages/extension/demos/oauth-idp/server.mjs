@@ -15,7 +15,48 @@ import { loggingAdapter } from '../src/utils/logging-adapter.js';
 
 const PORT = Number(process.env.ORDERS_POSTGRESQL_OAUTH_IDP_PORT) || 4863;
 const CLIENT_ID = 'mcp-demo-local';
-const CURSOR_REDIRECT = 'cursor://anysphere.cursor-mcp/oauth/callback';
+const DEFAULT_CURSOR_REDIRECT = 'cursor://anysphere.cursor-mcp/oauth/callback';
+
+function parseCommaSeparatedEnv(name) {
+    const raw = process.env[name]?.trim();
+    if (!raw) {
+        return [];
+    }
+    return raw
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+}
+
+function loadAllowedRedirectRules() {
+    const fromEnv = parseCommaSeparatedEnv('OAUTH_IDP_REDIRECT_URIS');
+    if (fromEnv.length > 0) {
+        return fromEnv;
+    }
+    return [DEFAULT_CURSOR_REDIRECT];
+}
+
+const REDIRECT_RULES = loadAllowedRedirectRules();
+
+function isAllowedRedirectUri(redirectUri) {
+    for (const rule of REDIRECT_RULES) {
+        if (rule.endsWith('*')) {
+            if (redirectUri.startsWith(rule.slice(0, -1))) {
+                return true;
+            }
+            continue;
+        }
+        if (redirectUri === rule) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** Exact URIs only — wildcards are not valid in OAuth client metadata. */
+function registeredRedirectUris() {
+    return REDIRECT_RULES.filter((rule) => !rule.endsWith('*'));
+}
 const DEMO_USERS = [
     { customerId: 'alice', role: 'user' },
     { customerId: 'bob', role: 'user' },
@@ -73,6 +114,14 @@ function verifyPkce(codeVerifier, codeChallenge) {
 }
 
 function issuerUrl(req) {
+    const configured = process.env.OAUTH_IDP_ISSUER_URL?.trim();
+    if (configured) {
+        return configured.replace(/\/$/, '');
+    }
+    const host = req.headers?.host;
+    if (typeof host === 'string' && host.length > 0) {
+        return `http://${host}`;
+    }
     return `http://127.0.0.1:${PORT}`;
 }
 
@@ -125,7 +174,7 @@ function handleAuthorize(req, res, url) {
         sendJson(res, 400, { error: 'invalid_client' });
         return;
     }
-    if (redirectUri !== CURSOR_REDIRECT) {
+    if (!isAllowedRedirectUri(redirectUri)) {
         loggingAdapter.warn('authorize rejected', { error: 'invalid_redirect_uri', redirectUri });
         sendJson(res, 400, { error: 'invalid_redirect_uri', detail: redirectUri });
         return;
@@ -252,7 +301,7 @@ const server = createServer(async (req, res) => {
         sendJson(res, 201, {
             client_id: CLIENT_ID,
             client_id_issued_at: Math.floor(Date.now() / 1000),
-            redirect_uris: [CURSOR_REDIRECT],
+            redirect_uris: registeredRedirectUris(),
             grant_types: ['authorization_code'],
             response_types: ['code'],
             token_endpoint_auth_method: 'none'
@@ -264,5 +313,9 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-    loggingAdapter.info('listening', { url: `http://127.0.0.1:${PORT}`, clientId: CLIENT_ID });
+    loggingAdapter.info('listening', {
+        url: `http://127.0.0.1:${PORT}`,
+        clientId: CLIENT_ID,
+        redirectRules: REDIRECT_RULES
+    });
 });
