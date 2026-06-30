@@ -171,4 +171,38 @@ Integration, consulting, and support: open a [GitHub Discussion](https://github.
 
 ---
 
+## Develop from source (without VSIX)
+
+To run the extension from a git checkout instead of installing a release VSIX:
+
+1. Check out the sibling [**core2ai**](https://github.com/annettodorothea/core2ai) repo as `../core2ai` and build it once:
+
+```bash
+cd ../core2ai && npm install && npm run build
+```
+
+2. From this repo root:
+
+```bash
+npm install
+npm run langium:generate
+npm run build
+```
+
+3. In VS Code or Cursor: **Run and Debug** → **Run db2ai Extension**. This opens
+   [`packages/extension/demos`](./packages/extension/demos) in an Extension Development Host. The
+   launch task runs `langium:generate` and `build` again before start.
+
+To test MCP servers in that window (not only DSL editing and generate-on-save):
+
+```bash
+npm run install:demos
+npm run build:generated --prefix packages/extension/demos
+```
+
+Then follow **Quick start** in [`packages/extension/demos/README.md`](./packages/extension/demos/README.md)
+(Docker Desktop; `npm run start:sakila-mysql` or `npm run start`, enable MCP servers).
+
+---
+
 #Col3:23

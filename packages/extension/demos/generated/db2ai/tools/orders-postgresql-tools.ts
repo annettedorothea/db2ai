@@ -294,8 +294,12 @@ export const inputZodByTool = {
                 .optional()
         })
         .strict(),
-    listProducts: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 50)') }).strict(),
-    listProductsWithReviews: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 50)') }).strict(),
+    listProducts: z
+        .object({ limit: z.union([z.number().int(), z.string()]).describe('max rows (SQL :limit) (example: 50)') })
+        .strict(),
+    listProductsWithReviews: z
+        .object({ limit: z.union([z.number().int(), z.string()]).describe('max rows (SQL :limit) (example: 50)') })
+        .strict(),
     createOrder: z
         .object({
             customerId: z
@@ -304,24 +308,32 @@ export const inputZodByTool = {
                     'Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools.\n             (SQL :customerId) (example: alice)'
                 )
                 .optional(),
-            productId: z.number().describe('Product id from the catalog (SQL :productId) (example: 1)')
+            productId: z
+                .union([z.number().int(), z.string()])
+                .describe('Product id from the catalog (SQL :productId) (example: 1)')
         })
         .strict(),
     createProduct: z
         .object({
             productName: z.string().describe('Product name (SQL :productName) (example: Widget Pro)'),
-            price: z.number().describe('Unit price (SQL :price) (example: 10.99)')
+            price: z.union([z.number(), z.string()]).describe('Unit price (SQL :price) (example: 10.99)')
         })
         .strict(),
     updateProduct: z
         .object({
             productName: z.string().describe('New product name (SQL :productName) (example: Widget Pro)'),
-            price: z.number().describe('New unit price (SQL :price) (example: 12.99)'),
-            productId: z.number().describe('Product id to update (SQL :productId) (example: 1)')
+            price: z.union([z.number(), z.string()]).describe('New unit price (SQL :price) (example: 12.99)'),
+            productId: z
+                .union([z.number().int(), z.string()])
+                .describe('Product id to update (SQL :productId) (example: 1)')
         })
         .strict(),
     deleteProduct: z
-        .object({ productId: z.number().describe('Product id to delete (SQL :productId) (example: 999)') })
+        .object({
+            productId: z
+                .union([z.number().int(), z.string()])
+                .describe('Product id to delete (SQL :productId) (example: 999)')
+        })
         .strict()
 };
 
@@ -364,10 +376,10 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    let optionsResolved = options;
     const credentialsPlain = host.credentials;
     let credentialsForStubs: ModuleCredentials | undefined =
         credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
-    let optionsResolved = options;
 
     if (toolMeta.access === 'protected') {
         const inbound = host.credential;
@@ -397,9 +409,9 @@ export async function invokeTool(
             if (credentialsForStubs === undefined) {
                 throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
             }
-            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved, credentialsForStubs));
         } else {
-            optionsResolved = await Promise.resolve(prepare(options));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved));
         }
     }
     const connectionString = resolveConnectionString(host);

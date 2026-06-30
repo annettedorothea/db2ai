@@ -471,48 +471,48 @@ const preparers: Record<
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listActors: z
         .object({
             limit: z
-                .number()
+                .union([z.number().int(), z.string()])
                 .describe(
                     'Max rows per page.\n                SQL caps at 100 via LEAST(:limit, 100).\n             (SQL :limit) (example: 100)'
                 ),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCustomers: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 10)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 10)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCategories: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCountries: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listInventory: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     filmsByMpaaRating: z
         .object({
             rating: z.string().describe('MPAA rating (G, PG, PG-13, R, or NC-17) (SQL :rating) (example: PG-13)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 20)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 20)')
         })
         .strict(),
     filmsWithActorLastName: z
@@ -522,7 +522,7 @@ export const inputZodByTool = {
                 .describe(
                     'Actor last name prefix (case-insensitive).\n                Examples: GAR, BER, HOP — matches last names starting with the prefix.\n             (SQL :lastNamePrefix) (example: GAR)'
                 ),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 25)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 25)')
         })
         .strict(),
     searchFilms: z
@@ -530,7 +530,7 @@ export const inputZodByTool = {
             searchText: z
                 .string()
                 .describe('search text (matched in title or description) (SQL :searchText) (example: dog)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 15)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 15)')
         })
         .strict(),
     createActor: z
@@ -543,10 +543,16 @@ export const inputZodByTool = {
         .object({
             firstName: z.string().describe('new first name (SQL :firstName) (example: MARY)'),
             lastName: z.string().describe('new last name (SQL :lastName) (example: JONES)'),
-            actorId: z.number().describe('actor id to update (SQL :actorId) (example: 1)')
+            actorId: z.union([z.number().int(), z.string()]).describe('actor id to update (SQL :actorId) (example: 1)')
         })
         .strict(),
-    deleteActor: z.object({ actorId: z.number().describe('actor id to delete (SQL :actorId) (example: 999)') }).strict()
+    deleteActor: z
+        .object({
+            actorId: z
+                .union([z.number().int(), z.string()])
+                .describe('actor id to delete (SQL :actorId) (example: 999)')
+        })
+        .strict()
 };
 
 import { Client } from 'pg';
@@ -588,10 +594,10 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    let optionsResolved = options;
     const credentialsPlain = host.credentials;
     let credentialsForStubs: ModuleCredentials | undefined =
         credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
-    let optionsResolved = options;
 
     if (toolMeta.access === 'protected') {
         const inbound = host.credential;
@@ -614,9 +620,9 @@ export async function invokeTool(
             if (credentialsForStubs === undefined) {
                 throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
             }
-            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved, credentialsForStubs));
         } else {
-            optionsResolved = await Promise.resolve(prepare(options));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved));
         }
     }
     const connectionString = resolveConnectionString(host);

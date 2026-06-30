@@ -2,7 +2,7 @@
 /**
  * Start one db2ai demo: DB (+ MCP HTTP/OAuth host when needed), without killing other demos.
  *
- * Usage: node ./scripts/start-demo.mjs <sakila-mysql|pagila-postgresql|orders-postgresql|animals-sqlserver|plants-oracle>
+ * Usage: node ./scripts/start-demo.mjs <sakila-mysql|sakila-mariadb|pagila-postgresql|orders-postgresql|animals-sqlserver|plants-oracle>
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -112,9 +112,6 @@ async function main() {
 
     console.log(`[start:${demoName}] done.`);
     printMcpReminder();
-    if (spec.mcpMode === 'stdio') {
-        console.log(`[start:${demoName}] Enable MCP server "${demoName}" in Cursor (stdio — no background MCP process).`);
-    }
 }
 
 main().catch((error) => {

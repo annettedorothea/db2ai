@@ -73,6 +73,7 @@ async function main() {
     }
     console.log('[start:all] done. Demo services run in background (npm run demo:kill-all stops MCP, IDP, and Docker).');
     printMcpReminder();
+    console.log('[start:all] Open WebUI + demos: npm run start:open-webui');
     console.log('[start:all] live logs: START_FOREGROUND=1 npm run start:all');
 }
 

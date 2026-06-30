@@ -261,6 +261,14 @@ function renderInvokeSwitchCases(
     return tools.map((tool) => renderSqlInvokeCase(tool, dialect, optionsVar)).join('\n');
 }
 
+function renderOptionsResolvedInit(authPipelineTier: AuthPipelineTier): string {
+    if (authPipelineTier === 'none') {
+        return '';
+    }
+    return `
+    let optionsResolved = options;`;
+}
+
 function renderHostBinding(typescript: boolean): string {
     const guard = `
     if (hostContext === undefined) {
@@ -303,7 +311,7 @@ function renderInvokeToolPreamble(
         throw new Error('Unknown tool: ' + toolName);
     }
     loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${accessChecks}${renderPostgresClientSetup(typescript)}
+${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}${renderPostgresClientSetup(typescript)}
     try {
         switch (toolName) {`;
 }
@@ -322,7 +330,7 @@ function renderInvokeToolPreambleMysql(
         throw new Error('Unknown tool: ' + toolName);
     }
     loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${accessChecks}
+${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);
     try {
@@ -842,7 +850,7 @@ function renderInvokeToolPreambleOracle(
         throw new Error('Unknown tool: ' + toolName);
     }
     loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${accessChecks}
+${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}
     const connectionString = resolveConnectionString(host);
     const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));
     try {
@@ -863,7 +871,7 @@ function renderInvokeToolPreambleSqlserver(
         throw new Error('Unknown tool: ' + toolName);
     }
     loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${accessChecks}
+${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}
     const connectionString = resolveConnectionString(host);
     const pool = await sql.connect(parseSqlserverConnectInput(connectionString));
     try {

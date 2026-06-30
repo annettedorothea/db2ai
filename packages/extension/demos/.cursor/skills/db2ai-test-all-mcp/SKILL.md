@@ -22,7 +22,7 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 ## Voraussetzungen
 
 - Demos-Workspace-Root mit `.cursor/mcp.json`
-- `npm run start:all` (all DBs + HTTP-MCP hosts; alias: `npm run start`)
+- `npm run start:all` (all DBs + HTTP MCP hosts; alias: `npm run start`)
 - Alle benötigten MCP-Server in Cursor aktiviert
 - Keine `.env`-Dateien lesen oder ändern (siehe `db2ai-env-auth-policy`)
 

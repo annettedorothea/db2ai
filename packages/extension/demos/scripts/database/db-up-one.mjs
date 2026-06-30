@@ -3,7 +3,7 @@
  * Start one demo database container (idempotent — does not stop other demo DBs).
  *
  * Usage: node ./scripts/database/db-up-one.mjs <demoName>
- *   demoName: sakila-mysql | pagila-postgresql | orders-postgresql | animals-sqlserver | plants-oracle
+ *   demoName: sakila-mysql | sakila-mariadb | pagila-postgresql | orders-postgresql | animals-sqlserver | plants-oracle
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';

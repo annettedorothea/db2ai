@@ -8,7 +8,7 @@
  *
  * @typedef {object} DemoLaunchSpec
  * @property {DockerServiceSpec[]} docker
- * @property {'stdio' | 'http' | 'oauth'} mcpMode
+ * @property {'http' | 'oauth'} mcpMode
  * @property {string} [httpDemo] key in mcp-http-demos.mjs
  * @property {string} [oauthDemo] key in mcp-oauth-demos.mjs
  * @property {boolean} [oauthIdp] start oauth-idp before oauth MCP host
@@ -18,7 +18,13 @@
 export const DEMO_LAUNCH_REGISTRY = {
     'sakila-mysql': {
         docker: [{ service: 'sakila' }],
-        mcpMode: 'stdio'
+        mcpMode: 'http',
+        httpDemo: 'sakila-mysql'
+    },
+    'sakila-mariadb': {
+        docker: [{ service: 'sakila' }],
+        mcpMode: 'http',
+        httpDemo: 'sakila-mariadb'
     },
     'pagila-postgresql': {
         docker: [{ service: 'pagila' }],
@@ -39,7 +45,8 @@ export const DEMO_LAUNCH_REGISTRY = {
                 postScripts: ['apply-animals-sqlserver-schema.mjs']
             }
         ],
-        mcpMode: 'stdio'
+        mcpMode: 'http',
+        httpDemo: 'animals-sqlserver'
     },
     'plants-oracle': {
         docker: [
@@ -49,7 +56,8 @@ export const DEMO_LAUNCH_REGISTRY = {
                 postScripts: ['wait-plants-oracle.mjs', 'apply-plants-oracle-schema.mjs']
             }
         ],
-        mcpMode: 'stdio'
+        mcpMode: 'http',
+        httpDemo: 'plants-oracle'
     }
 };
 

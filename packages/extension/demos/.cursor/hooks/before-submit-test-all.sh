@@ -30,7 +30,7 @@ if [[ ! -f .cursor/skills/db2ai-test-all-mcp/SKILL.md ]]; then
 fi
 
 if ! command -v node >/dev/null 2>&1; then
-    deny "test-all: node nicht im PATH (fuer stdio-MCPs noetig)."
+    deny "test-all: node nicht im PATH (fuer npm run start:all noetig)."
 fi
 
 allow

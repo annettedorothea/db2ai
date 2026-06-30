@@ -26,4 +26,10 @@ console.log('[kill-all] stopping OAuth IDP…');
 runNode('./oauth-idp/kill-server.mjs');
 console.log('[kill-all] stopping demo Docker databases…');
 runNode('./scripts/database/kill-demo-databases.mjs', ['all']);
+if (process.env.OPEN_WEBUI_SKIP_KILL === '1') {
+    console.log('[kill-all] skipping Open WebUI (OPEN_WEBUI_SKIP_KILL=1).');
+} else {
+    console.log('[kill-all] stopping Open WebUI…');
+    runNode('./scripts/stop-open-webui.mjs');
+}
 console.log('[kill-all] done.');

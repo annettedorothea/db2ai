@@ -13,17 +13,19 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 - **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
 - Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `DB2AI_AUTH_TOKEN`, `PAGILA_POSTGRESQL_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
 
-## Transport (stdio vs. HTTP vs. OAuth, siehe `mcp.json`)
+## Transport (HTTP vs. OAuth, siehe `mcp.json`)
 
-- **`sakila-mysql` (stdio):** `DB2AI_AUTH_TOKEN` in `.env` (gleicher Wert wie `MCP_AUTH_EXPECTED`); Validierung in `src/auth/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.ts`.
-- **`pagila-postgresql` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung in `src/auth/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.ts` gegen `MCP_AUTH_EXPECTED`.
+Alle db2ai-Demo-MCPs nutzen **HTTP-URLs** in `.cursor/mcp.json` (kein stdio/`${workspaceFolder}`).
+
+- **`sakila-mysql` / `pagila-postgresql` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung gegen `MCP_AUTH_EXPECTED` in `src/hooks/db2ai/*/verify*Credentials.ts`.
 - **`orders-postgresql` (HTTP oauth):** Cursor OAuth Sign-in; Validierung in `verifyOrdersPostgresqlCredentials.ts` — kein Token in Env schreiben.
+- **`sakila-mariadb`, `animals-sqlserver`, `plants-oracle` (HTTP public):** keine Auth-Header in `mcp.json`.
 
-Auth-Logik liegt in `src/auth/**/verify*Credentials.ts` (OAuth-Gate und stdio/relay) — nicht mehr als Host-CLI-Flags.
+Auth-Logik liegt in `src/hooks/db2ai/**/verify*Credentials.ts` — nicht als Host-CLI-Flags.
 
 ## Auth-Fehler: Fehler melden, nicht umgehen
 
-- MCP-Server mit `--auth-env` nutzen **ausschliesslich** das vom Host injizierte Credential/JWT — optionale Tool-Argumente oder Header sind **kein** Ersatz fuer fehlende Env-Credentials.
+- MCP-Server mit Auth (passthrough/OAuth) nutzen **ausschliesslich** das vom Host erwartete Credential/JWT bzw. den konfigurierten Header — optionale Tool-Argumente sind **kein** Ersatz.
 - Schlaegt ein authentifizierter MCP-Call fehl (z. B. `401`, `403`, „customerId does not match JWT claim“, „Missing host credential“):
   - **Fehler woertlich** an den Nutzer melden,
   - **sofort stoppen** — keinen zweiten Versuch mit anderem `customerId`, anderem Credential oder anderer Identitaet,

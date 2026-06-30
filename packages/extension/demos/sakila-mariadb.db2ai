@@ -5,10 +5,11 @@ SQL {
     access: public
     prepare: true
     intent: "list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)"
-    query: "SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT :limit"
+    query: "SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT :limit OFFSET :offset"
     summary: "Paginated film rows"
     params: {
-        limit: { description: "max rows" example: "20" type: integer }
+        limit: { description: "max rows per page" example: "20" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 

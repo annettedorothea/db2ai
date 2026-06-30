@@ -225,10 +225,14 @@ const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Prom
 };
 
 export const inputZodByTool = {
-    listAnimals: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
+    listAnimals: z
+        .object({ limit: z.union([z.number().int(), z.string()]).describe('max rows (SQL :limit) (example: 20)') })
+        .strict(),
     searchAnimals: z
         .object({
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 10)'),
+            maxRows: z
+                .union([z.number().int(), z.string()])
+                .describe('max rows to return (SQL :maxRows) (example: 10)'),
             searchText: z.string().describe('text matched in common or Latin name (SQL :searchText) (example: fox)')
         })
         .strict(),
@@ -252,11 +256,17 @@ export const inputZodByTool = {
                 .describe(
                     'short English description (SQL :aboutText) (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)'
                 ),
-            animalId: z.number().describe('animal id to update (SQL :animalId) (example: 1)')
+            animalId: z
+                .union([z.number().int(), z.string()])
+                .describe('animal id to update (SQL :animalId) (example: 1)')
         })
         .strict(),
     deleteAnimal: z
-        .object({ animalId: z.number().describe('animal id to delete (SQL :animalId) (example: 999)') })
+        .object({
+            animalId: z
+                .union([z.number().int(), z.string()])
+                .describe('animal id to delete (SQL :animalId) (example: 999)')
+        })
         .strict()
 };
 
@@ -329,7 +339,7 @@ export async function invokeTool(
         if (typeof prepare !== 'function') {
             throw new Error('No preparer for tool: ' + toolName);
         }
-        optionsResolved = await Promise.resolve(prepare(options));
+        optionsResolved = await Promise.resolve(prepare(optionsResolved));
     }
     const connectionString = resolveConnectionString(host);
     const pool = await sql.connect(parseSqlserverConnectInput(connectionString));

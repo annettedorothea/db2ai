@@ -225,11 +225,13 @@ const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Prom
 };
 
 export const inputZodByTool = {
-    listPlants: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
+    listPlants: z
+        .object({ limit: z.union([z.number().int(), z.string()]).describe('max rows (SQL :limit) (example: 20)') })
+        .strict(),
     searchPlants: z
         .object({
             searchText: z.string().describe('text matched in common or Latin name (SQL :searchText) (example: oak)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 10)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 10)')
         })
         .strict(),
     createPlant: z
@@ -252,10 +254,16 @@ export const inputZodByTool = {
                 .describe(
                     'short English description (SQL :aboutText) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)'
                 ),
-            plantId: z.number().describe('plant id to update (SQL :plantId) (example: 1)')
+            plantId: z.union([z.number().int(), z.string()]).describe('plant id to update (SQL :plantId) (example: 1)')
         })
         .strict(),
-    deletePlant: z.object({ plantId: z.number().describe('plant id to delete (SQL :plantId) (example: 999)') }).strict()
+    deletePlant: z
+        .object({
+            plantId: z
+                .union([z.number().int(), z.string()])
+                .describe('plant id to delete (SQL :plantId) (example: 999)')
+        })
+        .strict()
 };
 
 import oracledb from 'oracledb';
@@ -338,7 +346,7 @@ export async function invokeTool(
         if (typeof prepare !== 'function') {
             throw new Error('No preparer for tool: ' + toolName);
         }
-        optionsResolved = await Promise.resolve(prepare(options));
+        optionsResolved = await Promise.resolve(prepare(optionsResolved));
     }
     const connectionString = resolveConnectionString(host);
     const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));

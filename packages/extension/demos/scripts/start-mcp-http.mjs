@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Start one HTTP MCP host (foreground).
- * Usage: node scripts/start-mcp-http.mjs <pagila>
+ * Usage: node scripts/start-mcp-http.mjs <sakila-mysql|sakila-mariadb|pagila-postgresql|animals-sqlserver|plants-oracle>
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';

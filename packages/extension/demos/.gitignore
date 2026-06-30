@@ -12,3 +12,7 @@ generated/**/*.js
 generated/**/*.js.map
 
 tmp/
+.cursor/plans/
+.open-webui-secret
+.open-webui-data/
+.open-webui-venv/

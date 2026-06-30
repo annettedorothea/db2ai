@@ -306,26 +306,26 @@ const preparers: Record<
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listActors: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     listCategories: z
         .object({
-            limit: z.number().describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.number().describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
         })
         .strict(),
     filmsByRating: z
         .object({
             rating: z.string().describe('rating (G, PG, PG-13, R, or NC-17) (SQL :rating) (example: PG)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 20)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 20)')
         })
         .strict(),
     filmsWithActorLastName: z
@@ -333,7 +333,7 @@ export const inputZodByTool = {
             lastNamePrefix: z
                 .string()
                 .describe('actor last name prefix (e.g. GAR, BER, HOP) (SQL :lastNamePrefix) (example: GAR)'),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 25)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 25)')
         })
         .strict(),
     searchFilms: z
@@ -343,7 +343,7 @@ export const inputZodByTool = {
                 .describe(
                     'Search text matched in title or description.\n                Example: cat, dog, academy.\n             (SQL :searchText) (example: cat)'
                 ),
-            maxRows: z.number().describe('max rows to return (SQL :maxRows) (example: 15)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 15)')
         })
         .strict(),
     insertActor: z
@@ -409,10 +409,10 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    let optionsResolved = options;
     const credentialsPlain = host.credentials;
     let credentialsForStubs: ModuleCredentials | undefined =
         credentialsPlain != null ? toModuleCredentials(credentialsPlain as Record<string, unknown>) : undefined;
-    let optionsResolved = options;
 
     if (toolMeta.access === 'protected') {
         const inbound = host.credential;
@@ -435,9 +435,9 @@ export async function invokeTool(
             if (credentialsForStubs === undefined) {
                 throw new Error('Prepare requires credentials; verify credential or pass host.credentials.');
             }
-            optionsResolved = await Promise.resolve(prepare(options, credentialsForStubs));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved, credentialsForStubs));
         } else {
-            optionsResolved = await Promise.resolve(prepare(options));
+            optionsResolved = await Promise.resolve(prepare(optionsResolved));
         }
     }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));

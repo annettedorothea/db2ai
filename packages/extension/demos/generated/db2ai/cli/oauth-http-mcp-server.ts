@@ -700,7 +700,7 @@ async function createMcpServerForSession(
         sessionEntries.delete(sessionId);
         sessionStore.delete(sessionId);
         sessionHeaders.delete(sessionId);
-        void server.close();
+        // Transport already closed — see public/passthrough HTTP host (avoid server.close loop).
     };
     await server.connect(transport);
     return { transport, server, session };

@@ -50,19 +50,28 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
+            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20, offset=0',
         access: 'public',
         hasAuthorize: false,
         hasPrepare: true,
-        sqlText: 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ?',
+        sqlText: 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ? OFFSET ?',
         params: [
             {
                 placeholder: ':limit',
                 index: 1,
                 name: 'limit',
                 propertyName: 'limit',
-                description: 'max rows',
+                description: 'max rows per page',
                 example: '20',
+                jsonSchemaType: 'integer'
+            },
+            {
+                placeholder: ':offset',
+                index: 2,
+                name: 'offset',
+                propertyName: 'offset',
+                description: 'rows to skip',
+                example: '0',
                 jsonSchemaType: 'integer'
             }
         ]
@@ -110,11 +119,16 @@ const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Prom
 };
 
 export const inputZodByTool = {
-    listFilms: z.object({ limit: z.number().describe('max rows (SQL :limit) (example: 20)') }).strict(),
+    listFilms: z
+        .object({
+            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 20)'),
+            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
+        })
+        .strict(),
     searchFilms: z
         .object({
             searchText: z.string().describe('matched in film title (SQL :searchText) (example: love)'),
-            maxRows: z.number().describe('max rows (SQL :maxRows) (example: 10)')
+            maxRows: z.union([z.number().int(), z.string()]).describe('max rows (SQL :maxRows) (example: 10)')
         })
         .strict()
 };
@@ -181,15 +195,18 @@ export async function invokeTool(
         if (typeof prepare !== 'function') {
             throw new Error('No preparer for tool: ' + toolName);
         }
-        optionsResolved = await Promise.resolve(prepare(options));
+        optionsResolved = await Promise.resolve(prepare(optionsResolved));
     }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);
     try {
         switch (toolName) {
             case 'listFilms': {
-                const sqlText = 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ?';
-                const sqlValues = [normalizeMysqlParamValue(optionsResolved['limit'])];
+                const sqlText = 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ? OFFSET ?';
+                const sqlValues = [
+                    normalizeMysqlParamValue(optionsResolved['limit']),
+                    normalizeMysqlParamValue(optionsResolved['offset'])
+                ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listFilms',
                     sql: compactSqlForLog(sqlText),
