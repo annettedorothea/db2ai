@@ -11,7 +11,7 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 - **Nicht lesen, schreiben oder aendern:** `.env`, `.env.local`, `.env.*` und vergleichbare Secret-/Config-Dateien.
 - **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
-- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `DB2AI_AUTH_TOKEN`, `PAGILA_POSTGRESQL_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
+- Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `MCP_AUTH_EXPECTED`, `PAGILA_POSTGRESQL_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
 
 ## Transport (HTTP vs. OAuth, siehe `mcp.json`)
 
@@ -36,7 +36,7 @@ Auth-Logik liegt in `src/hooks/db2ai/**/verify*Credentials.ts` — nicht als Hos
 
 - db2ai-Demos haben **kein** separates `login`-Tool wie die api2ai Mock-API.
 - **Nicht** versuchen, Identitaet per Tool-Aufruf zu wechseln, wenn Env auf eine andere Person zeigt.
-- Wenn der Nutzer **explizit** eine andere Demo-Identitaet will (z. B. anderes JWT in `.env.example`): nur erklaeren, welche Variable er selbst in `.env` setzen soll — **nicht** die Datei fuer ihn aendern.
+- Wenn der Nutzer **explizit** eine andere Demo-Identitaet will (z. B. anderes JWT in `.env`): nur erklaeren, welche Variable er selbst setzen soll — **nicht** die Datei fuer ihn aendern.
 
 ## Beispiel (orders-postgresql)
 

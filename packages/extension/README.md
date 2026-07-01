@@ -1,35 +1,96 @@
 # db2ai
 
-Language support and code generation for the **`.db2ai` DSL** (SQL → MCP tools): syntax highlighting, validation, schema-aware completion, and generate on save.
+Language support and code generation for the `.db2ai` DSL.
+
+The extension provides:
+
+- Syntax highlighting
+- Validation
+- Schema-aware completion
+- Generate on save
+- MCP host generation
+
+`db2ai` generates curated MCP tools from relational databases.
+
+---
 
 ## Requirements
 
 - VS Code or Cursor **1.67+**
-- Node.js **20+** in the demo workspace
-- **Docker Desktop** (running) for demo databases
-
-## Create demo workspace
-
-**Goal:** set up a local folder with example `.db2ai` files, Docker DB config, and MCP config.
-
-1. Command Palette → **`db2ai: Create demo workspace (MCP examples)`**
-2. Choose an **empty folder** (or confirm overwrite if retrying)
-3. Click **Open folder** when prompted
-
-**Next:** open **`README.md`** in that demo folder — it walks you through testing your first MCP server.
-
-## Your own `.db2ai` projects
-
-Open any folder with `.db2ai` files. On **save**, the extension generates tool modules and MCP hosts (run **`npm install`** once). Set `database env "YOUR_VAR"` in the DSL; put the connection URL in `.env` / MCP config.
-
-Command Palette: **Generate tool code (.ts + MCP host)** for manual generation of the focused file.
-
-Supported dialects: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle.
-
-## License
-
-MIT — Copyright (c) 2026 Annette Pohl. Full license text is in the VSIX (`LICENSE`).
+- Node.js **20+**
+- Docker Desktop for the demo workspace
 
 ---
 
-#Col3:23
+## Quick Start
+
+### 1. Create a demo workspace
+
+Open the Command Palette and run:
+
+```text
+db2ai: Create demo workspace (MCP examples)
+```
+
+Choose an empty folder and open it when prompted.
+
+### 2. Open the demo README
+
+The generated workspace contains its own `README.md` with a guided walkthrough and several example projects.
+
+---
+
+## Working with your own databases
+
+Open a folder containing `.db2ai` files.
+
+Whenever you save a file, the extension generates tool code and MCP hosts automatically.
+
+Generated files are written to:
+
+```text
+generated/db2ai/
+```
+
+Database credentials and runtime configuration belong in:
+
+```text
+.cursor/mcp.json
+```
+
+You can also trigger generation manually:
+
+```text
+db2ai: Generate tool code (.ts + MCP host)
+```
+
+---
+
+## Documentation
+
+Looking for architecture, authentication, MCP concepts, integrations, or development guides?
+
+See the shared documentation in:
+
+https://github.com/annettedorothea/core2ai
+
+---
+
+## Related Projects
+
+- https://github.com/annettedorothea/core2ai
+- https://github.com/annettedorothea/api2ai
+
+---
+
+## License
+
+MIT — see `LICENSE`.
+
+---
+
+> _Whatever you do, work heartily, as for the Lord and not for men._
+>
+> **— Colossians 3:23**
+>
+> _Created by Annette Pohl_

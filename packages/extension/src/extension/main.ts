@@ -127,7 +127,7 @@ function registerGenerateOnSave(context: vscode.ExtensionContext): void {
 }
 
 const DEMO_COPY_SKIP_DIRS = new Set(['node_modules', 'tmp']);
-const DEMO_COPY_SKIP_FILES = new Set(['package-lock.json', '.env', '.env.local']);
+const DEMO_COPY_SKIP_FILES = new Set(['package-lock.json', '.env.local']);
 const DEMO_BUNDLE_REQUIRED: readonly string[] = demoBundleRequired;
 
 function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): void {

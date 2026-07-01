@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -21,20 +21,13 @@ export function runNpm(args) {
     }
 }
 
-export function ensureEnvFromExample(exampleName, targetName) {
-    const examplePath = path.join(demosRoot, exampleName);
-    const targetPath = path.join(demosRoot, targetName);
-    if (existsSync(targetPath)) {
-        console.log(`[start] ${targetName} already exists — not overwritten.`);
-        return false;
-    }
-    if (!existsSync(examplePath)) {
-        console.error(`[start] ${exampleName} missing — create ${targetName} with required variables.`);
+export function prepareWorkspaceEnv() {
+    const envPath = path.join(demosRoot, '.env');
+    if (!existsSync(envPath)) {
+        console.error('[start] Missing .env in demo workspace.');
         process.exit(1);
     }
-    copyFileSync(examplePath, targetPath);
-    console.log(`[start] Created ${targetName} from ${exampleName} — edit database URLs and tokens as needed.`);
-    return true;
+    loadProjectEnvLocal();
 }
 
 function logPrefix(label) {
@@ -113,14 +106,6 @@ export async function waitForTcpListen(port, { timeoutMs = 15_000, intervalMs = 
 export async function waitForMcpHost(label, port, mcpUrl) {
     await waitForTcpListen(port, { label: mcpUrl });
     console.log(`[start] ${label} listening on port ${port}.`);
-}
-
-export function prepareWorkspaceEnv() {
-    loadProjectEnvLocal();
-    const createdEnv = ensureEnvFromExample('.env.example', '.env');
-    if (createdEnv) {
-        loadProjectEnvLocal();
-    }
 }
 
 export function generateAndCompile() {

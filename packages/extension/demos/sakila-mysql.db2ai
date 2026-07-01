@@ -21,7 +21,7 @@ SQL {
     prepare: true
     intent: '''
         List actors from Sakila with pagination.
-        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.
+        Protected: requires MCP auth header matching MCP_AUTH_EXPECTED.
     '''
     query: "SELECT * FROM actor LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila actor rows"

@@ -246,7 +246,7 @@ export function printOpenWebUiInstallHint() {
     console.error('[open-webui] Install globally once (Python 3.11+ recommended):');
     console.error('  pipx install open-webui');
     console.error('  # or: python3 -m pip install --user open-webui');
-    console.error('[open-webui] If installed but not found, set OPEN_WEBUI_COMMAND in .env (see .env.example).');
+    console.error('[open-webui] If installed but not found, set OPEN_WEBUI_COMMAND in .env.');
     console.error('[open-webui] Optional local fallback: python3 -m venv .open-webui-venv && pip install open-webui');
     console.error('[open-webui] Then retry: npm run open-webui');
 }

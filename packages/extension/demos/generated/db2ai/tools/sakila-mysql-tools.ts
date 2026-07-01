@@ -101,7 +101,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated Sakila actor rows',
         description:
-            'List actors from Sakila with pagination.\n        Protected: requires DB2AI_AUTH_TOKEN at MCP startup.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
+            'List actors from Sakila with pagination.\n        Protected: requires MCP auth header matching MCP_AUTH_EXPECTED.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
         access: 'protected',
         hasAuthorize: false,
         hasPrepare: true,
