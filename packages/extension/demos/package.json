@@ -26,7 +26,8 @@
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "check": "npm run format:check && npm run typecheck && npm run lint"
+        "check": "npm run format:check && npm run typecheck && npm run lint",
+        "mcp:inspect": "node ./scripts/mcp-inspect.mjs"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
