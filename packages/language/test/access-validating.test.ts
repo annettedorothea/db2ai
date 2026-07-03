@@ -80,6 +80,27 @@ describe('Access validating', () => {
         expect(diagnostics.some((d) => d.message.includes('`auth` has no effect'))).toBe(true);
     });
 
+    test('warns when database env variable is not set', async () => {
+        delete process.env.ORDERS_POSTGRESQL_DATABASE_URL;
+        const document = await parseValidated(`
+            database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
+
+            SQL {
+                toolName: listActors
+                access: public
+                intent: "list actors"
+                query: "SELECT 1"
+            }
+        `);
+
+        const diagnostics = document.diagnostics ?? [];
+        expect(
+            diagnostics.some(
+                (d) => d.message.includes('ORDERS_POSTGRESQL_DATABASE_URL') && d.message.includes('not set')
+            )
+        ).toBe(true);
+    });
+
     test('accepts protected with prepare optionalParams for known SQL param', async () => {
         const document = await parseValidated(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"

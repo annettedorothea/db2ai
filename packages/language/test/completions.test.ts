@@ -113,3 +113,14 @@ describe('Completion for prepare optionalParams', () => {
         expect(labels).toContain('customerId');
     });
 });
+
+describe('Completion for access kinds', () => {
+    test('suggests public and protected after access colon', async () => {
+        const marker = '/*caret*/';
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: ${marker}\n    intent: "list orders"\n    query: "SELECT 1"\n}\n`;
+        const list = await completionAt(header.replace(marker, ''), header.indexOf(marker));
+        const labels = (list?.items ?? []).map((item) => String(item.label));
+        expect(labels).toContain('public');
+        expect(labels).toContain('protected');
+    });
+});

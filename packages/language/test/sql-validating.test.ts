@@ -178,4 +178,19 @@ describe('SQL tool validation', () => {
 
         expect(errorMessages(document).some((m) => m.includes('integer'))).toBe(true);
     });
+
+    test('requires params block when query uses placeholders', async () => {
+        const document = await parseValidated(`
+            database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
+
+            SQL {
+                toolName: x
+                access: public
+                intent: "y"
+                query: "SELECT 1 WHERE id = :id"
+            }
+        `);
+
+        expect(errorMessages(document).some((m) => m.includes('requires a `params:'))).toBe(true);
+    });
 });
