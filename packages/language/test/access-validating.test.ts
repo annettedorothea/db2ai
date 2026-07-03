@@ -62,6 +62,24 @@ describe('Access validating', () => {
         expect(diagnostics.some((d) => d.message.includes('authorize: true requires access `protected`'))).toBe(true);
     });
 
+    test('warns when auth keyword has no protected SQL blocks', async () => {
+        const document = await parseValidated(`
+            database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
+
+            auth
+
+            SQL {
+                toolName: listActors
+                access: public
+                intent: "list actors"
+                query: "SELECT 1"
+            }
+        `);
+
+        const diagnostics = document.diagnostics ?? [];
+        expect(diagnostics.some((d) => d.message.includes('`auth` has no effect'))).toBe(true);
+    });
+
     test('accepts protected with prepare optionalParams for known SQL param', async () => {
         const document = await parseValidated(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"

@@ -51,6 +51,13 @@ export class Db2AiDslValidator {
         }
 
         if (model.auth) {
+            const hasProtected = model.entries.some((entry) => isSqlQuery(entry) && accessRequiresAuth(entry));
+            if (!hasProtected) {
+                accept('warning', '`auth` has no effect: no SQL block uses access protected.', {
+                    node: model,
+                    property: 'auth'
+                });
+            }
             return;
         }
         for (const entry of model.entries) {
