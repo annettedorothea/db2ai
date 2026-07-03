@@ -1,4 +1,4 @@
-// @generated from @core2ai/core — do not edit; regenerated when running project generate.
+// @generated from @toolfactory.dev/core — do not edit; regenerated when running project generate.
 
 /**
  * Load `.env` then `.env.local` into process.env.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated OAuth + stateful MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';

@@ -23,13 +23,13 @@
         "test": "vitest run"
     },
     "dependencies": {
-        "@core2ai/core": "0.5.0",
         "@modelcontextprotocol/sdk": "^1.29.0",
+        "@toolfactory.dev/core": "^1.0.0-rc",
         "chalk": "~5.6.2",
         "commander": "~15.0.0",
         "db-2-ai-dsl-language": "*",
-        "mysql2": "^3.22.5",
         "mssql": "^11.0.1",
+        "mysql2": "^3.22.5",
         "oracledb": "^6.10.0",
         "pg": "~8.21.0",
         "prettier": "^3.8.3",

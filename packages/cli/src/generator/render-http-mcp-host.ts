@@ -1,4 +1,4 @@
-import { writeGeneratedHttpMcpHosts, type ProjectBootstrapConfig } from '@core2ai/core/codegen';
+import { writeGeneratedHttpMcpHosts, type ProjectBootstrapConfig } from '@toolfactory.dev/core/codegen';
 
 /** Writes `generated/{product}/cli/public-http-mcp-server.ts` and `passthrough-http-mcp-server.ts`. */
 export function renderHttpMcpHosts(

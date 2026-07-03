@@ -17,7 +17,7 @@ From the **db2ai workspace root**, when any of:
 
 - `packages/cli/src/generator/**` changed
 - Demo DSL changed (`packages/extension/demos/*.db2ai`)
-- After `@core2ai/core` pin refresh affecting codegen or MCP host — see [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc)
+- After `@toolfactory.dev/core` pin refresh affecting codegen or MCP host — see [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc)
 - `core2ai/src/codegen/**` changed (MCP host templates; run `npm run test` in core2ai after pin refresh)
 - `core2ai/src/scripts/**` changed (rewrites `packages/extension/demos/scripts/generated/**/*.mjs` utility modules via `writeGeneratedScripts` on the next generate run)
 

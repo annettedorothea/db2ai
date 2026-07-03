@@ -15,7 +15,7 @@ Das betrifft u. a.:
 
 ## Stattdessen
 
-1. **Quelle** anpassen: `*.db2ai`, `packages/cli/src/generator/**`, `@core2ai/core/codegen`, oder `src/hooks/**`.
+1. **Quelle** anpassen: `*.db2ai`, `packages/cli/src/generator/**`, `@toolfactory.dev/core/codegen`, oder `src/hooks/**`.
 2. **Regenerieren** (lokale CLI, nicht nur VSIX-Embed):
 
     ```bash

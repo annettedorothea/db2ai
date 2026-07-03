@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generated public HTTP MCP Streamable HTTP host (static runtime — no @core2ai/core).
+ * Generated public HTTP MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';

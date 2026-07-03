@@ -12,7 +12,7 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
-## [1.0.0-rc] - TBD
+## [1.0.0-rc] - 2026-07-03
 
 First release-candidate: **curated MCP tools from SQL** — define queries in `.db2ai`, enrich with intent and access rules, generate executable MCP servers.
 
@@ -50,7 +50,7 @@ First release-candidate: **curated MCP tools from SQL** — define queries in `.
 - Install VSIX from GitHub release; open or create a project workspace
 - After upgrade: `npm run generate:all` and `npm run build:generated --prefix packages/extension/demos`
 - Set database URLs in `.env` (same line as key); re-open DSL files if env warnings persist
-- Sync `@core2ai/core` pin when upgrading sibling core2ai
+- Sync `@toolfactory.dev/core` pin when upgrading sibling core2ai
 - Before tagging final **1.0.0:** run `npm run check` and full `/test-all` with demos running
 
 ---

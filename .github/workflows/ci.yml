@@ -11,25 +11,11 @@ jobs:
         steps:
             - uses: actions/checkout@v5
 
-            - uses: actions/checkout@v5
-              with:
-                  repository: annettedorothea/core2ai
-                  path: _core2ai
-                  ref: main
-
-            - run: mv _core2ai ../core2ai
-
             - uses: actions/setup-node@v5
               with:
                   node-version: 22
                   cache: npm
                   cache-dependency-path: package-lock.json
-
-            - name: Build core2ai
-              run: npm ci && npm run build && npm run test
-              working-directory: ../core2ai
-              env:
-                  HUSKY: '0'
 
             - name: Install consumer dependencies
               run: npm ci

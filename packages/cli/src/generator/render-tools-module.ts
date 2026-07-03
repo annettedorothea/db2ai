@@ -16,7 +16,7 @@ import {
     resolveBootstrapProjectRootFromSource,
     resolveMcpServerIdentityFromDestination,
     type ProjectBootstrapConfig
-} from '@core2ai/core/codegen';
+} from '@toolfactory.dev/core/codegen';
 import * as path from 'node:path';
 import {
     buildInputSchemaByTool,

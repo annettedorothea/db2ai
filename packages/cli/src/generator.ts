@@ -9,7 +9,7 @@ import {
     writeGeneratedDemosTestSupport,
     writeGeneratedScripts,
     type ProjectBootstrapConfig
-} from '@core2ai/core/codegen';
+} from '@toolfactory.dev/core/codegen';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as url from 'node:url';
