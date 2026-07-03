@@ -2,28 +2,41 @@
 
 Welcome to the `db2ai` demo workspace.
 
-This workspace contains examples that demonstrate database-backed MCP tools, authentication, and integration patterns.
+This workspace contains examples that demonstrate database-backed MCP tools, authentication, authorization, and integration patterns.
 
-If this is your first time using `db2ai`, start with the Sakila examples.
+If this is your first time using `db2ai`, start with the PostgreSQL or MySQL examples.
 
 ---
 
 ## Quick Start
 
-### 1. Start a demo database
+### 1. Start the demo environment
 
 Make sure Docker Desktop is running.
 
-Then start one of the demo databases:
+To start everything:
 
 ```bash
-npm run start:sakila-mysql
+npm run start:all
+```
+
+This command starts:
+
+- all demo databases
+- OAuth identity providers
+- generated MCP hosts
+- supporting services required by the demos
+
+If you only want a single database, you can start it individually:
+
+```bash
+npm run start:pagila-postgresql
 ```
 
 or
 
 ```bash
-npm run start:pagila-postgresql
+npm run start:sakila-mysql
 ```
 
 ---
@@ -32,8 +45,8 @@ npm run start:pagila-postgresql
 
 Examples include:
 
-- `sakila-mysql.db2ai`
 - `pagila-postgresql.db2ai`
+- `sakila-mysql.db2ai`
 
 Save the file to generate the MCP server.
 
@@ -51,17 +64,98 @@ db2ai Which actors appeared in the most films?
 db2ai Which customers generated the highest revenue last month?
 ```
 
-Using the `db2ai` prefix helps Cursor focus on the generated MCP tools and avoid unrelated built-in tools.
+Using the `db2ai` prefix helps Cursor focus on generated MCP tools and avoid unrelated built-in tools.
+
+---
+
+## Learning Path
+
+1. `pagila-postgresql.db2ai`
+   PostgreSQL read tools with public access.
+
+2. `sakila-mysql.db2ai`
+   MySQL equivalent of the Sakila example.
+
+3. `orders-postgresql.db2ai`
+   Protected tools using OAuth MCP and `prepare` hooks.
+
+Authoring documentation:
+
+https://github.com/annettedorothea/core2ai/tree/main/docs/authoring
+
+---
+
+## Available Demos
+
+| Demo                      | Description                        |
+| ------------------------- | ---------------------------------- |
+| `pagila-postgresql.db2ai` | PostgreSQL demo database           |
+| `sakila-mysql.db2ai`      | MySQL demo database                |
+| `sakila-mariadb.db2ai`    | MariaDB example                    |
+| `animals-sqlserver.db2ai` | SQL Server example                 |
+| `plants-oracle.db2ai`     | Oracle example                     |
+| `orders-postgresql.db2ai` | OAuth-protected PostgreSQL example |
+
+Demos cover:
+
+- PostgreSQL
+- MySQL
+- MariaDB
+- SQL Server
+- Oracle
+
+Start the matching database before opening a demo:
+
+```bash
+npm run start:pagila-postgresql
+npm run start:sakila-mysql
+npm run start:animals-sqlserver
+npm run start:plants-oracle
+```
+
+or simply:
+
+```bash
+npm run start:all
+```
+
+---
+
+## Testing
+
+Before release, run:
+
+```text
+/test-all
+```
+
+or:
+
+```text
+db2ai /test-all
+```
+
+Prerequisites:
+
+- databases running
+- MCP hosts running
+- OAuth login completed where required
+
+The demo workspace includes the skill:
+
+```text
+db2ai-test-all-mcp
+```
 
 ---
 
 ## Documentation
 
-Looking for architecture, authentication, MCP concepts, integrations, or development guides?
-
-See the shared documentation in:
-
-https://github.com/annettedorothea/core2ai
+- [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md)
+- [Authoring guides](https://github.com/annettedorothea/core2ai/tree/main/docs/authoring)
+- [db2ai DSL](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/db2ai-dsl.md)
+- [Supported SQL patterns](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/supported-sql.md)
+- [MCP hosts](https://github.com/annettedorothea/core2ai/blob/main/docs/runtime/mcp-hosts.md)
 
 ---
 

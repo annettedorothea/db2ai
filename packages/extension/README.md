@@ -68,11 +68,13 @@ db2ai: Generate tool code (.ts + MCP host)
 
 ## Documentation
 
-Looking for architecture, authentication, MCP concepts, integrations, or development guides?
+See the shared documentation in [core2ai](https://github.com/annettedorothea/core2ai):
 
-See the shared documentation in:
-
-https://github.com/annettedorothea/core2ai
+- [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md)
+- [db2ai DSL](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/db2ai-dsl.md)
+- [Supported SQL patterns](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/supported-sql.md)
+- [Auth and hooks](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/auth-and-hooks.md)
+- [MCP hosts](https://github.com/annettedorothea/core2ai/blob/main/docs/runtime/mcp-hosts.md)
 
 ---
 

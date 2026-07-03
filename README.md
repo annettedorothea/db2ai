@@ -13,7 +13,9 @@
 | [api2ai](https://github.com/annettedorothea/api2ai)   | Generate curated MCP tools from OpenAPI specifications |
 | [db2ai](https://github.com/annettedorothea/db2ai)     | Generate curated MCP tools from relational databases   |
 
-Instead of writing and maintaining custom MCP servers by hand, describe your database access once and let `db2ai` generate the tooling for you.
+Instead of hand-writing MCP servers, define the SQL queries you want as tools, enrich them in `.db2ai`, and generate executable MCP tooling.
+
+You curate which queries become tools — not every table or statement is exposed automatically.
 
 ---
 
@@ -39,7 +41,7 @@ db2ai: Create demo workspace (MCP examples)
 
 Open the generated [Demo Workspace README](packages/extension/demos/README.md) and follow the Quick Start.
 
-The demo workspace contains examples for PostgreSQL and MySQL.
+The demo workspace includes PostgreSQL, MySQL, MariaDB, SQL Server, and Oracle examples.
 
 ---
 
@@ -47,6 +49,9 @@ The demo workspace contains examples for PostgreSQL and MySQL.
 
 ```text
 Database Schema
+        │
+        ▼
+   select & enrich
         │
         ▼
      .db2ai
@@ -63,17 +68,17 @@ Example:
 ```text
 database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"
 
-tool actorsByLastName {
-    description: "Find actors by last name"
+auth
 
-    input {
-        lastName string
-    }
-
-    sql {
-        SELECT *
-        FROM actor
-        WHERE last_name = :lastName
+SQL {
+    toolName: listFilms
+    access: protected
+    prepare: true
+    intent: "list films with pagination"
+    query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
+    params: {
+        limit: { description: "max rows per page" example: "100" type: integer }
+        offset: { description: "rows to skip" example: "0" type: integer }
     }
 }
 ```
@@ -87,6 +92,11 @@ Looking for architecture, authentication, MCP concepts, integrations, or develop
 See the shared documentation in [core2ai](https://github.com/annettedorothea/core2ai):
 
 - [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md)
+- [db2ai DSL](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/db2ai-dsl.md)
+- [Supported SQL patterns](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/supported-sql.md)
+- [Auth and hooks](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/auth-and-hooks.md)
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and upgrade notes.
 
 ---
 
