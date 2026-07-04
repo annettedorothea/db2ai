@@ -73,7 +73,9 @@ auth
 SQL {
     toolName: listFilms
     access: protected
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: "list films with pagination"
     query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
     params: {

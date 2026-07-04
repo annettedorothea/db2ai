@@ -77,7 +77,7 @@ Using the `db2ai` prefix helps Cursor focus on generated MCP tools and avoid unr
    MySQL equivalent of the Sakila example.
 
 3. `orders-postgresql.db2ai`
-   Protected tools using OAuth MCP and `prepare` hooks.
+   Protected tools using OAuth MCP, `checkToolAccess`, and `prepareToolCall` with `clientMayOmit`.
 
 Authoring documentation:
 

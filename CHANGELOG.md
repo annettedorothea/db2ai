@@ -19,15 +19,15 @@ First release-candidate: **curated MCP tools from SQL** — define queries in `.
 ### Added
 
 - **Langium `.db2ai` DSL** with VSIX extension (syntax, validation, completions, generate-on-save)
-- **`SQL { }` tool blocks:** `toolName`, `access`, `intent`, `query`, optional `params`, `prepare`, `authorize`
+- **`SQL { }` tool blocks:** `toolName`, `access`, `intent`, `query`, optional `params`, optional `hooks: { checkToolAccess, prepareToolCall }` with `clientMayOmit`
 - **`database` declarations** binding connection strings from environment variables (`postgres`, `mysql`, `mariadb`, `sqlserver`, `oracle`)
 - **SQL validation** via `EXPLAIN` dry-run against the configured database (no data changes during validation)
 - **Code generator:** per-DSL tool module, Zod input schemas, `invokeTool`, hook stubs under `src/hooks/db2ai/`
 - **Four MCP hosts per project** (same model as api2ai): stdio, public HTTP, passthrough HTTP, OAuth HTTP
-- **Auth keyword** (`auth`) enables credential pipeline; upstream DB credentials stay in env — hooks implement authorization logic
-- **Access control:** `access: public | protected` plus `verifyCredential`, `authorize`, `prepare` hooks (shared core2ai pipeline)
+- **Auth keyword** (`auth` or `auth { hooks: { verifyCredential: true } }`) enables credential pipeline; DB credentials stay in env — hooks implement authorization logic
+- **Access control:** `access: public | protected` plus `verifyCredential`, `checkToolAccess`, `prepareToolCall` hooks (shared core2ai pipeline)
 - **Flat MCP tool arguments** for SQL bind parameters (`:name` placeholders)
-- **Demo workspaces:** Pagila (PostgreSQL), orders and related examples across supported dialects
+- **Demo workspaces:** Pagila (PostgreSQL), Sakila, orders and related examples across supported dialects
 - **Manual E2E gate:** `/test-all` skill (`db2ai-test-all-mcp`)
 - **Validator warning** when `auth` is set but every SQL block uses `access: public`
 - **Validator warning** when `database … env "VAR"` is not set or empty in the editor environment
@@ -37,6 +37,10 @@ First release-candidate: **curated MCP tools from SQL** — define queries in `.
 ### Changed
 
 - Pre-0.5 iterative features (HTTP MCP demos, flat args, hook pipeline) are folded into this baseline; changelog maintenance starts here
+- **Hooks DSL:** `hooks: { checkToolAccess, prepareToolCall }` replaces top-level `authorize` / `prepare` on SQL blocks
+- **verifyCredential stubs:** renamed to `verify*Credential.ts`; raw `credential: string`, void return (no `ModuleCredentials`)
+- **`clientMayOmit`:** optional bind params on `prepareToolCall` (must reference `params` keys)
+- **`/test-all`:** result report only, no full Audit section
 
 ### Known limitations (documented, not bugs)
 
@@ -48,7 +52,8 @@ First release-candidate: **curated MCP tools from SQL** — define queries in `.
 ### Upgrade notes
 
 - Install VSIX from GitHub release; open or create a project workspace
-- After upgrade: `npm run generate:all` and `npm run build:generated --prefix packages/extension/demos`
+- Migrate every `.db2ai` block to `hooks` syntax; run `npm run generate:all` and `npm run build:generated --prefix packages/extension/demos`
+- Update hand-written hooks under `src/hooks/db2ai/**` to `checkToolAccessFor*` / `prepareToolCallFor*` export names
 - Set database URLs in `.env` (same line as key); re-open DSL files if env warnings persist
 - Sync `@toolfactory.dev/core` pin when upgrading sibling core2ai
 - Before tagging final **1.0.0:** run `npm run check` and full `/test-all` with demos running
