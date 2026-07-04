@@ -2,7 +2,7 @@ import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
-import { isSqlParamEntry, isSqlQuery, isPrepareBody } from '../src/generated/ast.js';
+import { isPrepareToolCallBody, isSqlParamEntry, isSqlQuery } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
 
 let parse: ReturnType<typeof parseHelper<Model>>;
@@ -13,7 +13,7 @@ beforeAll(async () => {
     parse = parseHelper<Model>(services.Db2AiDsl);
 });
 
-const validateSqlWithOptionalParam = `
+const validateSqlWithClientMayOmit = `
 database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
 auth
@@ -21,8 +21,10 @@ auth
 SQL {
     toolName: listCustomerOrders
     access: protected
-    prepare: {
-        optionalParams: [customerId]
+    hooks: {
+        prepareToolCall: {
+            clientMayOmit: [customerId]
+        }
     }
     intent: "orders"
     query: "SELECT 1 WHERE id = :customerId"
@@ -33,16 +35,20 @@ SQL {
 `;
 
 describe('Cross-reference linking', () => {
-    test('links optionalParams to SqlParamEntry in params', async () => {
-        const document = await parse(validateSqlWithOptionalParam, { validation: true });
+    test('links clientMayOmit to SqlParamEntry in params', async () => {
+        const document = await parse(validateSqlWithClientMayOmit, { validation: true });
 
         const entry = document.parseResult.value.entries[0];
         expect(isSqlQuery(entry)).toBe(true);
-        if (!isSqlQuery(entry) || !isPrepareBody(entry.prepare)) {
+        if (
+            !isSqlQuery(entry) ||
+            !entry.hooks?.prepareToolCall ||
+            !isPrepareToolCallBody(entry.hooks.prepareToolCall)
+        ) {
             return;
         }
 
-        const ref = entry.prepare.optionalParams?.[0];
+        const ref = entry.hooks.prepareToolCall.clientMayOmit?.[0];
         expect(ref).toBeDefined();
         expect(ref?.$refText).toBe('customerId');
         expect(ref?.ref?.key).toBe('customerId');
@@ -53,27 +59,27 @@ describe('Cross-reference linking', () => {
         expect(linkerErrors).toHaveLength(0);
     });
 
-    test('definition provider finds SqlParamEntry from optionalParams usage', async () => {
-        const document = await parse(validateSqlWithOptionalParam, { validation: true });
+    test('definition provider finds SqlParamEntry from clientMayOmit usage', async () => {
+        const document = await parse(validateSqlWithClientMayOmit, { validation: true });
         const text = document.textDocument.getText();
-        const optionalParamsUsageOffset = text.indexOf('[customerId]') + 1;
+        const clientMayOmitUsageOffset = text.indexOf('[customerId]') + 1;
 
         const defProvider = services.Db2AiDsl.lsp.DefinitionProvider!;
         const links = await defProvider.getDefinition(document, {
             textDocument: { uri: document.uri.toString() },
-            position: document.textDocument.positionAt(optionalParamsUsageOffset)
+            position: document.textDocument.positionAt(clientMayOmitUsageOffset)
         });
         expect(links?.length).toBeGreaterThan(0);
 
         const paramsKeyOffset = text.indexOf('customerId:');
-        expect(paramsKeyOffset).toBeGreaterThan(optionalParamsUsageOffset);
+        expect(paramsKeyOffset).toBeGreaterThan(clientMayOmitUsageOffset);
         const targetOffset = document.textDocument.offsetAt(links![0]!.targetRange.start);
         expect(targetOffset).toBeGreaterThanOrEqual(paramsKeyOffset);
         expect(targetOffset).toBeLessThan(paramsKeyOffset + 'customerId:'.length);
     });
 
     test('reference completion via default provider lists SqlParamEntry targets', async () => {
-        const document = await parse(validateSqlWithOptionalParam, { validation: true });
+        const document = await parse(validateSqlWithClientMayOmit, { validation: true });
         const text = document.textDocument.getText();
         const emptySlotOffset = text.indexOf('[customerId]') + 1;
 

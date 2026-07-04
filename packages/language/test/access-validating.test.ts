@@ -2,7 +2,7 @@ import path from 'node:path';
 import { EmptyFileSystem } from 'langium';
 import { parseHelper, type ParseHelperOptions } from 'langium/test';
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
-import { getAccessKind, getOptionalParams, isToolValidateEnabled } from '../src/query-access.js';
+import { getAccessKind, getClientMayOmit, isPrepareToolCallEnabled } from '../src/query-access.js';
 import { isSqlQuery } from '../src/generated/ast.js';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
 import type { Model } from '../src/generated/ast.js';
@@ -45,21 +45,25 @@ describe('Access validating', () => {
         expect(diagnostics.some((d) => d.message.includes('requires `auth` on the model'))).toBe(true);
     });
 
-    test('reports authorize on public access', async () => {
+    test('reports checkToolAccess on public access', async () => {
         const document = await parseValidated(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
             SQL {
                 toolName: listCustomerOrders
                 access: public
-                authorize: true
+                hooks: {
+                    checkToolAccess: true
+                }
                 intent: "orders"
                 query: "SELECT 1"
             }
         `);
 
         const diagnostics = document.diagnostics ?? [];
-        expect(diagnostics.some((d) => d.message.includes('authorize: true requires access `protected`'))).toBe(true);
+        expect(diagnostics.some((d) => d.message.includes('checkToolAccess: true requires access `protected`'))).toBe(
+            true
+        );
     });
 
     test('warns when auth keyword has no protected SQL blocks', async () => {
@@ -101,7 +105,7 @@ describe('Access validating', () => {
         ).toBe(true);
     });
 
-    test('accepts protected with prepare optionalParams for known SQL param', async () => {
+    test('accepts protected with prepareToolCall clientMayOmit for known SQL param', async () => {
         const document = await parseValidated(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
@@ -110,8 +114,10 @@ describe('Access validating', () => {
             SQL {
                 toolName: listCustomerOrders
                 access: protected
-                prepare: {
-                    optionalParams: [customerId]
+                hooks: {
+                    prepareToolCall: {
+                        clientMayOmit: [customerId]
+                    }
                 }
                 intent: "orders"
                 query: "SELECT 1 FROM orders WHERE customer_id = :customerId"
@@ -126,12 +132,12 @@ describe('Access validating', () => {
         expect(isSqlQuery(entry)).toBe(true);
         if (isSqlQuery(entry)) {
             expect(getAccessKind(entry)).toBe('protected');
-            expect(isToolValidateEnabled(entry)).toBe(true);
-            expect(getOptionalParams(entry)).toEqual(['customerId']);
+            expect(isPrepareToolCallEnabled(entry)).toBe(true);
+            expect(getClientMayOmit(entry)).toEqual(['customerId']);
         }
     });
 
-    test('reports unresolved optionalParams reference', async () => {
+    test('reports unresolved clientMayOmit reference', async () => {
         const document = await parseValidated(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
@@ -140,8 +146,10 @@ describe('Access validating', () => {
             SQL {
                 toolName: listCustomerOrders
                 access: protected
-                prepare: {
-                    optionalParams: [missingParam]
+                hooks: {
+                    prepareToolCall: {
+                        clientMayOmit: [missingParam]
+                    }
                 }
                 intent: "orders"
                 query: "SELECT 1 FROM orders WHERE customer_id = :customerId"

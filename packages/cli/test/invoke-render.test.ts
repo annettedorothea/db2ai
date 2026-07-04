@@ -5,8 +5,8 @@ import type { ResolvedSqlToolCodegen } from '../src/db-query-codegen.js';
 describe('renderInvokeBlockTs', () => {
     test('omits compactSqlForLog when there are no SQL tools', () => {
         const block = renderInvokeBlockTs([], 'postgres', false, 'none', {
-            authorizers: false,
-            preparers: false
+            checkToolAccess: false,
+            prepareToolCall: false
         });
         expect(block).not.toContain('compactSqlForLog');
         expect(block).toContain('_options: InvokeOptions = {}');
@@ -41,8 +41,8 @@ describe('collectSqlBindValueExpressions', () => {
         ],
         mysqlBindNames: ['searchText', 'searchText', 'maxRows'],
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: false
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: false
     };
 
     test('postgres emits one expression per unique placeholder', () => {

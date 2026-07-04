@@ -1,6 +1,13 @@
 import type { Reference } from 'langium';
-import type { SqlParamEntry, SqlQuery } from './generated/ast.js';
-import { isAuthorizeTrue, isProtectedAccess, isPublicAccess, isPrepareBody, isPrepareTrue } from './generated/ast.js';
+import type { Model, SqlParamEntry, SqlQuery } from './generated/ast.js';
+import {
+    isAuthBlock,
+    isBareAuth,
+    isPrepareToolCallBody,
+    isPrepareToolCallTrue,
+    isProtectedAccess,
+    isPublicAccess
+} from './generated/ast.js';
 
 export function getAccessKind(query: SqlQuery): 'public' | 'protected' {
     const access = query.access;
@@ -16,26 +23,37 @@ export function getAccessKind(query: SqlQuery): 'public' | 'protected' {
     throw new Error('SqlQuery is missing access.');
 }
 
-export function isToolAuthorizeEnabled(query: SqlQuery): boolean {
-    const authorize = query.authorize;
-    if (!authorize) {
-        return false;
-    }
-    return isAuthorizeTrue(authorize);
+export function isModelAuthEnabled(model: Model): boolean {
+    return model.auth !== undefined;
 }
 
-export function isToolPrepareEnabled(query: SqlQuery): boolean {
-    const prepare = query.prepare;
-    if (!prepare) {
+export function isVerifyCredentialEnabled(model: Model): boolean {
+    const auth = model.auth;
+    if (!auth) {
         return false;
     }
-    return isPrepareTrue(prepare) || isPrepareBody(prepare);
+    if (isBareAuth(auth)) {
+        return true;
+    }
+    if (isAuthBlock(auth)) {
+        return auth.hooks?.verifyCredential === true;
+    }
+    return false;
 }
 
-/** @deprecated Use isToolPrepareEnabled */
-export const isToolValidateEnabled = isToolPrepareEnabled;
+export function isCheckToolAccessEnabled(query: SqlQuery): boolean {
+    return query.hooks?.checkToolAccess === true;
+}
 
-export function resolveOptionalParamRef(ref: Reference<SqlParamEntry>): string {
+export function isPrepareToolCallEnabled(query: SqlQuery): boolean {
+    const spec = query.hooks?.prepareToolCall;
+    if (!spec) {
+        return false;
+    }
+    return isPrepareToolCallTrue(spec) || isPrepareToolCallBody(spec);
+}
+
+export function resolveClientMayOmitRef(ref: Reference<SqlParamEntry>): string {
     const key = ref.ref?.key;
     if (key !== undefined && String(key).trim().length > 0) {
         return String(key).trim();
@@ -43,12 +61,10 @@ export function resolveOptionalParamRef(ref: Reference<SqlParamEntry>): string {
     return ref.$refText?.trim() ?? '';
 }
 
-export function getOptionalParams(query: SqlQuery): readonly string[] {
-    const prepare = query.prepare;
-    if (isPrepareBody(prepare) && prepare.optionalParams) {
-        return prepare.optionalParams
-            .map((ref) => resolveOptionalParamRef(ref).trim())
-            .filter((name) => name.length > 0);
+export function getClientMayOmit(query: SqlQuery): readonly string[] {
+    const spec = query.hooks?.prepareToolCall;
+    if (isPrepareToolCallBody(spec) && spec.clientMayOmit) {
+        return spec.clientMayOmit.map((ref) => resolveClientMayOmitRef(ref).trim()).filter((name) => name.length > 0);
     }
     return [];
 }

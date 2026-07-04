@@ -17,11 +17,11 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 
 Alle db2ai-Demo-MCPs nutzen **HTTP-URLs** in `.cursor/mcp.json` (kein stdio/`${workspaceFolder}`).
 
-- **`sakila-mysql` / `pagila-postgresql` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung gegen `MCP_AUTH_EXPECTED` in `src/hooks/db2ai/*/verify*Credentials.ts`.
-- **`orders-postgresql` (HTTP oauth):** Cursor OAuth Sign-in; Validierung in `verifyOrdersPostgresqlCredentials.ts` — kein Token in Env schreiben.
+- **`sakila-mysql` / `pagila-postgresql` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung gegen `MCP_AUTH_EXPECTED` in `src/hooks/db2ai/*/verify*Credential.ts`.
+- **`orders-postgresql` (HTTP oauth):** Cursor OAuth Sign-in; Validierung in `verifyOrdersPostgresqlCredential.ts` — kein Token in Env schreiben.
 - **`sakila-mariadb`, `animals-sqlserver`, `plants-oracle` (HTTP public):** keine Auth-Header in `mcp.json`.
 
-Auth-Logik liegt in `src/hooks/db2ai/**/verify*Credentials.ts` — nicht als Host-CLI-Flags.
+Auth-Logik liegt in `src/hooks/db2ai/**/verify*Credential.ts` — nicht als Host-CLI-Flags.
 
 ## Auth-Fehler: Fehler melden, nicht umgehen
 

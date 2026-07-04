@@ -16,29 +16,18 @@ import {
 } from './generated/ast.js';
 import { usedSqlParamSpecFieldKinds } from './sql-param-spec.js';
 
-const SQL_BLOCK_KEYS = [
-    'toolName',
-    'access',
-    'authorize',
-    'prepare',
-    'intent',
-    'query',
-    'summary',
-    'params',
-    'response'
-] as const;
+const SQL_BLOCK_KEYS = ['toolName', 'access', 'hooks', 'intent', 'query', 'summary', 'params', 'response'] as const;
 type SqlBlockKey = (typeof SQL_BLOCK_KEYS)[number];
 const SQL_PARAM_SPEC_KEYS = ['description', 'example', 'type'] as const;
 const ACCESS_KINDS = ['public', 'protected'] as const;
 type AccessKindKeyword = (typeof ACCESS_KINDS)[number];
-type PrepareBodyKey = 'optionalParams';
+type PrepareBodyKey = 'clientMayOmit';
 type SqlParamSpecKey = (typeof SQL_PARAM_SPEC_KEYS)[number];
 
 const SQL_KEYWORD_SORT: Record<SqlBlockKey, string> = {
     toolName: '0100',
     access: '0101',
-    authorize: '0101.25',
-    prepare: '0101.5',
+    hooks: '0101.5',
     intent: '0102',
     query: '0103',
     summary: '0104',
@@ -52,7 +41,7 @@ const ACCESS_KIND_SORT: Record<AccessKindKeyword, string> = {
 };
 
 const PREPARE_BODY_SORT: Record<PrepareBodyKey, string> = {
-    optionalParams: '0300'
+    clientMayOmit: '0300'
 };
 
 const ACCESS_KIND_INSERT: Record<AccessKindKeyword, string> = {
@@ -61,12 +50,12 @@ const ACCESS_KIND_INSERT: Record<AccessKindKeyword, string> = {
 };
 
 const PREPARE_BODY_INSERT: Record<PrepareBodyKey, string> = {
-    optionalParams: 'optionalParams: [$1]$0'
+    clientMayOmit: 'clientMayOmit: [$1]$0'
 };
 
 const PREPARE_SPEC_INSERT = {
     true: 'true',
-    block: '{\n    optionalParams: [$1]\n}'
+    block: '{\n    clientMayOmit: [$1]\n}'
 } as const;
 
 const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
@@ -78,8 +67,7 @@ const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
 const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     toolName: 'toolName: $1$0',
     access: 'access: public$0',
-    authorize: 'authorize: true$0',
-    prepare: 'prepare: true$0',
+    hooks: 'hooks: {\n    checkToolAccess: true\n    prepareToolCall: true\n}$0',
     intent: 'intent: "$1"$0',
     query: "query: '''\n$1\n'''$0",
     summary: 'summary: "$1"$0',
@@ -130,11 +118,8 @@ function usedSqlBlockKeys(query: SqlQuery): Set<string> {
     if (query.access !== undefined) {
         used.add('access');
     }
-    if (query.authorize !== undefined) {
-        used.add('authorize');
-    }
-    if (query.prepare !== undefined) {
-        used.add('prepare');
+    if (query.hooks !== undefined) {
+        used.add('hooks');
     }
     if (query.intent !== undefined) {
         used.add('intent');
@@ -405,7 +390,7 @@ function cursorInsideOptionalParamsList(
         start: textDoc.positionAt(queryStart),
         end: position
     });
-    return /optionalParams\s*:\s*\[[^\]]*$/m.test(beforeCursor);
+    return /clientMayOmit\s*:\s*\[[^\]]*$/m.test(beforeCursor);
 }
 
 function blockKeywordItemsForSqlQuery(
@@ -506,31 +491,31 @@ function buildAccessKindCompletionItems(document: LangiumDocument, position: Pos
 function buildPrepareBodyKeywordCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
     const textDoc = document.textDocument;
     const beforeCursor = textDoc.getText({ start: { line: 0, character: 0 }, end: position });
-    if (!/prepare\s*:\s*\{[^}]*$/.test(beforeCursor)) {
+    if (!/prepareToolCall\s*:\s*\{[^}]*$/.test(beforeCursor)) {
         return [];
     }
-    const blockStart = beforeCursor.lastIndexOf('prepare');
+    const blockStart = beforeCursor.lastIndexOf('prepareToolCall');
     const blockText = beforeCursor.slice(blockStart);
-    if (/\boptionalParams\b\s*:/.test(blockText)) {
+    if (/\bclientMayOmit\b\s*:/.test(blockText)) {
         return [];
     }
     const line = textDoc.getText({
         start: { line: position.line, character: 0 },
         end: { line: position.line, character: position.character }
     });
-    const prefixMatch = /optionalParams\s*$/.exec(line.trimEnd());
-    const prefix = prefixMatch ? 'optionalParams' : '';
-    if (prefix.length > 0 && !'optionalParams'.startsWith(prefix)) {
+    const prefixMatch = /clientMayOmit\s*$/.exec(line.trimEnd());
+    const prefix = prefixMatch ? 'clientMayOmit' : '';
+    if (prefix.length > 0 && !'clientMayOmit'.startsWith(prefix)) {
         return [];
     }
     return [
         {
-            label: 'optionalParams',
+            label: 'clientMayOmit',
             kind: CompletionItemKind.Keyword,
-            detail: 'prepare optional SQL params',
+            detail: 'prepareToolCall optional SQL params',
             insertTextFormat: InsertTextFormat.Snippet,
-            sortText: PREPARE_BODY_SORT.optionalParams,
-            insertText: PREPARE_BODY_INSERT.optionalParams
+            sortText: PREPARE_BODY_SORT.clientMayOmit,
+            insertText: PREPARE_BODY_INSERT.clientMayOmit
         }
     ];
 }
@@ -541,7 +526,7 @@ function buildAuthorizeSpecCompletionItems(document: LangiumDocument, position: 
         start: { line: position.line, character: 0 },
         end: { line: position.line, character: position.character }
     });
-    const match = /^\s*authorize\s*:\s*(\w*)$/.exec(line);
+    const match = /^\s*checkToolAccess\s*:\s*(\w*)$/.exec(line);
     if (!match) {
         return [];
     }
@@ -553,7 +538,7 @@ function buildAuthorizeSpecCompletionItems(document: LangiumDocument, position: 
         {
             label: 'true',
             kind: CompletionItemKind.Constant,
-            detail: 'Enable authorize{Tool} stub',
+            detail: 'Enable checkToolAccessFor{Tool} stub',
             insertTextFormat: InsertTextFormat.PlainText,
             insertText: 'true'
         }
@@ -566,7 +551,7 @@ function buildPrepareSpecCompletionItems(document: LangiumDocument, position: Po
         start: { line: position.line, character: 0 },
         end: { line: position.line, character: position.character }
     });
-    const match = /^\s*prepare\s*:\s*(\w*)$/.exec(line);
+    const match = /^\s*prepareToolCall\s*:\s*(\w*)$/.exec(line);
     if (!match) {
         return [];
     }
@@ -576,16 +561,16 @@ function buildPrepareSpecCompletionItems(document: LangiumDocument, position: Po
         items.push({
             label: 'true',
             kind: CompletionItemKind.Constant,
-            detail: 'Enable prepare{Tool}Input stub',
+            detail: 'Enable prepareToolCallFor{Tool} stub',
             insertTextFormat: InsertTextFormat.PlainText,
             insertText: PREPARE_SPEC_INSERT.true
         });
     }
     if (prefix.length === 0 || '{'.startsWith(prefix)) {
         items.push({
-            label: '{ optionalParams: [...] }',
+            label: '{ clientMayOmit: [...] }',
             kind: CompletionItemKind.Snippet,
-            detail: 'Prepare with optionalParams',
+            detail: 'Prepare with clientMayOmit',
             insertTextFormat: InsertTextFormat.Snippet,
             insertText: PREPARE_SPEC_INSERT.block
         });
@@ -622,17 +607,17 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         if (accessKindItems.length > 0) {
             return CompletionList.create(this.deduplicateItems(accessKindItems), false);
         }
-        const authorizeSpecItems = buildAuthorizeSpecCompletionItems(document, params.position);
-        if (authorizeSpecItems.length > 0) {
-            return CompletionList.create(this.deduplicateItems(authorizeSpecItems), false);
+        const checkToolAccessSpecItems = buildAuthorizeSpecCompletionItems(document, params.position);
+        if (checkToolAccessSpecItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(checkToolAccessSpecItems), false);
         }
-        const prepareSpecItems = buildPrepareSpecCompletionItems(document, params.position);
-        if (prepareSpecItems.length > 0) {
-            return CompletionList.create(this.deduplicateItems(prepareSpecItems), false);
+        const prepareToolCallSpecItems = buildPrepareSpecCompletionItems(document, params.position);
+        if (prepareToolCallSpecItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(prepareToolCallSpecItems), false);
         }
-        const prepareBodyItems = buildPrepareBodyKeywordCompletionItems(document, params.position);
-        if (prepareBodyItems.length > 0) {
-            return CompletionList.create(this.deduplicateItems(prepareBodyItems), false);
+        const prepareToolCallBodyItems = buildPrepareBodyKeywordCompletionItems(document, params.position);
+        if (prepareToolCallBodyItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(prepareToolCallBodyItems), false);
         }
         const keywordItems = buildBlockKeywordCompletionItems(document, params.position);
         if (keywordItems.length > 0) {

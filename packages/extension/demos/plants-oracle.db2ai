@@ -3,7 +3,9 @@ database oracle env "PLANTS_ORACLE_DATABASE_URL"
 SQL {
     toolName: listPlants
     access: public
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: "list plants with common name, Latin name, and short English description"
     query: '''
         SELECT
@@ -24,7 +26,9 @@ SQL {
 SQL {
     toolName: searchPlants
     access: public
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: "search plants by common or Latin name (substring match)"
     query: '''
         SELECT

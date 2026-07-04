@@ -1,11 +1,10 @@
 /**
  * Validate stub for "listCategories" — cap SQL row limit at 100.
  */
-import type { ModuleCredentials } from './verifyPagilaPostgresqlCredentials.js';
 import type { InvokeOptions } from '../../../../generated/db2ai/tools/pagila-postgresql-tools.js';
 import { capSqlLimit } from '../../../utils/sql-limit-validate.js';
 
-export function prepareListCategoriesInput(options: InvokeOptions, credentials?: ModuleCredentials): InvokeOptions {
-    void credentials;
+export function prepareToolCallForListCategories(options: InvokeOptions, credential: string): InvokeOptions {
+    void credential;
     return capSqlLimit(options);
 }

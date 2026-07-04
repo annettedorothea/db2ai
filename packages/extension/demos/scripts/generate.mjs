@@ -40,6 +40,12 @@ function resolveEmbedHome(cliPath, embedDirName) {
     return undefined;
 }
 
+/** Live monorepo CLI (packages/cli) — prefers linked @toolfactory.dev/core over stale extension embed. */
+function findMonorepoSourceCli() {
+    const candidate = path.join(projectRoot, '..', '..', 'cli', 'bin', 'cli.js');
+    return existsSync(candidate) ? candidate : undefined;
+}
+
 function findMonorepoEmbedCli(config) {
     const candidate = path.join(projectRoot, '..', 'out', config.embedDirName, 'cli.cjs');
     return existsSync(candidate) ? candidate : undefined;
@@ -72,6 +78,11 @@ function resolveCliSpawn(config) {
     const envCli = process.env[config.cliEnvVar];
     if (envCli && existsSync(envCli)) {
         return { scriptPath: envCli, embedHome: resolveEmbedHome(envCli, config.embedDirName) };
+    }
+
+    const monorepoSourceCli = findMonorepoSourceCli();
+    if (monorepoSourceCli) {
+        return { scriptPath: monorepoSourceCli, embedHome: undefined };
     }
 
     const monorepoCli = findMonorepoEmbedCli(config);

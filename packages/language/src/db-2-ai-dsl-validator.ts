@@ -3,7 +3,13 @@ import type { Db2AiDslAstType, Model } from './generated/ast.js';
 import { isSqlQuery } from './generated/ast.js';
 import type { Db2AiDslServices } from './db-2-ai-dsl-module.js';
 import { checkSqlQuery } from './db-2-ai-dsl-sql-validator.js';
-import { accessRequiresAuth, isToolAuthorizeEnabled } from './query-access.js';
+import {
+    accessRequiresAuth,
+    isCheckToolAccessEnabled,
+    isModelAuthEnabled,
+    isVerifyCredentialEnabled
+} from './query-access.js';
+import { isAuthBlock } from './generated/ast.js';
 import {
     databaseDialectDisplayName,
     databaseDialectFromModel,
@@ -27,6 +33,7 @@ export function registerValidationChecks(services: Db2AiDslServices): void {
 export class Db2AiDslValidator {
     async checkModel(model: Model, accept: ValidationAcceptor): Promise<void> {
         this.checkDatabaseEnv(model, accept);
+        this.checkAuthVerifyCredential(model, accept);
         this.checkSqlQueryAccess(model, accept);
         this.checkUniqueToolNames(model, accept);
         this.checkConnectionUrlDialect(model, accept);
@@ -37,15 +44,34 @@ export class Db2AiDslValidator {
         }
     }
 
+    private checkAuthVerifyCredential(model: Model, accept: ValidationAcceptor): void {
+        if (!isModelAuthEnabled(model)) {
+            return;
+        }
+        if (isVerifyCredentialEnabled(model)) {
+            return;
+        }
+        const auth = model.auth;
+        const node = auth && isAuthBlock(auth) ? auth : model;
+        accept(
+            'error',
+            'auth requires `hooks: { verifyCredential: true }` (bare `auth` is shorthand). Exposing database credentials without verifyCredential hook is not allowed.',
+            {
+                node,
+                property: 'auth'
+            }
+        );
+    }
+
     private checkSqlQueryAccess(model: Model, accept: ValidationAcceptor): void {
         for (const entry of model.entries) {
             if (!isSqlQuery(entry)) {
                 continue;
             }
-            if (isToolAuthorizeEnabled(entry) && !accessRequiresAuth(entry)) {
-                accept('error', 'authorize: true requires access `protected`.', {
+            if (isCheckToolAccessEnabled(entry) && !accessRequiresAuth(entry)) {
+                accept('error', 'checkToolAccess: true requires access `protected`.', {
                     node: entry,
-                    property: 'authorize'
+                    property: 'hooks'
                 });
             }
         }

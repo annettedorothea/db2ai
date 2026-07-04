@@ -4,6 +4,6 @@
 import type { InvokeOptions } from '../../../../generated/db2ai/tools/plants-oracle-tools.js';
 import { capSqlLimit } from '../../../utils/sql-limit-validate.js';
 
-export function prepareListPlantsInput(options: InvokeOptions): InvokeOptions {
+export function prepareToolCallForListPlants(options: InvokeOptions): InvokeOptions {
     return capSqlLimit(options);
 }

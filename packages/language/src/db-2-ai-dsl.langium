@@ -2,8 +2,20 @@ grammar Db2AiDsl
 
 entry Model:
     'database' dialect=DatabaseDialect ('env' env=STRING)?
-    (auth?='auth')?
+    (auth=Auth)?
     (entries += SqlQuery)*;
+
+Auth:
+    BareAuth | AuthBlock;
+
+BareAuth:
+    {infer BareAuth} 'auth';
+
+AuthBlock:
+    'auth' '{' ('hooks' ':' hooks=AuthHooks)? '}';
+
+AuthHooks:
+    '{' 'verifyCredential' ':' verifyCredential=Boolean '}';
 
 DatabaseDialect returns string:
     'postgres' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlserver' | 'mssql' | 'oracle';
@@ -12,14 +24,28 @@ SqlQuery:
     'SQL' '{'
         ('toolName' ':' toolName=ID)?
         'access' ':' access=AccessKind
-        ('authorize' ':' authorize=AuthorizeSpec)?
-        ('prepare' ':' prepare=PrepareSpec)?
+        ('hooks' ':' hooks=ToolHooks)?
         ('intent' ':' intent=DslText)?
         ('query' ':' query=DslText)?
         ('summary' ':' summary=DslText)?
         ('params' ':' params=SqlParamMap)?
         ('response' ':' response=DslText)?
     '}';
+
+ToolHooks:
+    '{'
+        ('checkToolAccess' ':' checkToolAccess=Boolean)?
+        ('prepareToolCall' ':' prepareToolCall=PrepareToolCallSpec)?
+    '}';
+
+PrepareToolCallSpec:
+    PrepareToolCallTrue | PrepareToolCallBody;
+
+PrepareToolCallTrue:
+    {infer PrepareToolCallTrue} 'true';
+
+PrepareToolCallBody:
+    {infer PrepareToolCallBody} '{' 'clientMayOmit' ':' '[' (clientMayOmit+=[SqlParamEntry:ID] (',' clientMayOmit+=[SqlParamEntry:ID])*)? ']' '}';
 
 AccessKind:
     PublicAccess | ProtectedAccess;
@@ -29,21 +55,6 @@ PublicAccess:
 
 ProtectedAccess:
     {infer ProtectedAccess} 'protected';
-
-AuthorizeSpec:
-    AuthorizeTrue;
-
-AuthorizeTrue:
-    {infer AuthorizeTrue} 'true';
-
-PrepareSpec:
-    PrepareTrue | PrepareBody;
-
-PrepareTrue:
-    {infer PrepareTrue} 'true';
-
-PrepareBody:
-    {infer PrepareBody} '{' ('optionalParams' ':' '[' (optionalParams+=[SqlParamEntry:ID] (',' optionalParams+=[SqlParamEntry:ID])*)? ']')? '}';
 
 SqlParamMap:
     '{' (entries += SqlParamEntry)* '}';
@@ -61,6 +72,9 @@ SqlParamSpecField:
 
 SqlParamType returns string:
     'string' | 'integer' | 'number' | 'boolean';
+
+Boolean returns boolean:
+    'true' | 'false';
 
 DslText returns string:
     STRING | MULTILINE_STRING;

@@ -4,6 +4,6 @@
 import type { InvokeOptions } from '../../../../generated/db2ai/tools/sakila-mysql-tools.js';
 import { capSqlMaxRows } from '../../../utils/sql-limit-validate.js';
 
-export function prepareFilmsByRatingInput(options: InvokeOptions): InvokeOptions {
+export function prepareToolCallForFilmsByRating(options: InvokeOptions): InvokeOptions {
     return capSqlMaxRows(options);
 }

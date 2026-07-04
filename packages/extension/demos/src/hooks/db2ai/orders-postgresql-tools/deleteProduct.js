@@ -1,9 +1,8 @@
-export function authorizeDeleteProduct(credentials) {
-    const role = String(credentials.role ?? '').trim();
-    if (role.length === 0) {
-        throw new Error('JWT payload missing role claim.');
-    }
+import { decodeJwtPayload } from '../../shared/decode-jwt-payload.js';
+export async function checkToolAccessForDeleteProduct(credential) {
+    const claims = await decodeJwtPayload(credential);
+    const role = String(claims.role ?? '').trim();
     if (role !== 'admin') {
-        throw new Error(`Admin role required; JWT role is "${role}".`);
+        throw new Error(`Admin role required to delete products; JWT role is "${role || 'unknown'}".`);
     }
 }

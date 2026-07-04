@@ -26,13 +26,14 @@ import {
 } from '../db-query-codegen.js';
 import { renderInvokeBlockTs } from './invoke-render.js';
 import {
-    listAuthorizeToolNames,
-    listPrepareToolNames,
+    listCheckToolAccessToolNames,
+    listPrepareToolCallHookEntries,
+    listPrepareToolCallToolNames,
     modelHasAuthPipeline,
-    renderAuthorizerImports,
-    renderAuthorizersMap,
-    renderPreparerImports,
-    renderPreparersMap,
+    renderCheckToolAccessHookImports,
+    renderCheckToolAccessHooksMap,
+    renderPrepareToolCallHookImports,
+    renderPrepareToolCallHooksMap,
     resolveAuthPipelineTier
 } from './render-check-stubs.js';
 
@@ -52,8 +53,8 @@ export type GeneratedToolModule = {
     description: string;
     kind: 'sql';
     access: 'public' | 'protected';
-    hasAuthorize: boolean;
-    hasPrepare: boolean;
+    hasCheckToolAccess: boolean;
+    hasPrepareToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -86,8 +87,8 @@ function toGeneratedToolModule(tool: ResolvedDbToolCodegen): GeneratedToolModule
         title: tool.title,
         description: tool.description,
         access: tool.access,
-        hasAuthorize: tool.hasAuthorize,
-        hasPrepare: tool.hasPrepare,
+        hasCheckToolAccess: tool.hasCheckToolAccess,
+        hasPrepareToolCall: tool.hasPrepareToolCall,
         sqlText: tool.sqlText,
         params: tool.params.map(serializeSqlParam)
     };
@@ -193,8 +194,8 @@ export type GeneratedTool = {
     description: string;
     kind: 'sql';
     access: 'public' | 'protected';
-    hasAuthorize: boolean;
-    hasPrepare: boolean;
+    hasCheckToolAccess: boolean;
+    hasPrepareToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -205,8 +206,6 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    upstreamCredential?: string;
-    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = ${toolsLiteral};
@@ -224,24 +223,28 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const inputSchemaByTool = buildInputSchemaByTool(model, tools) as Record<string, JsonSchemaDict>;
     const authKind = authRuntimeKind(model);
     const hasAuth = authKind === 'credential';
-    const needsVerifyCredential = hasAuth;
     const hasAuthPipeline = modelHasAuthPipeline(model);
-    const authorizeToolNames = listAuthorizeToolNames(model);
-    const prepareToolNames = listPrepareToolNames(model);
-    const authPipelineTier = resolveAuthPipelineTier(hasAuthPipeline, authorizeToolNames, prepareToolNames);
-    const includeModuleCredentialsInImport =
-        needsVerifyCredential && (authorizeToolNames.length > 0 || prepareToolNames.length > 0);
-    const authorizerImports =
-        authorizeToolNames.length > 0 ? renderAuthorizerImports(destinationTsPath, stubPaths, authorizeToolNames) : '';
-    const preparerImports = prepareToolNames.length > 0 ? renderPreparerImports(destinationTsPath, stubPaths) : '';
-    const authStubImports = [authorizerImports, preparerImports].filter((s) => s.length > 0).join('\n');
+    const checkToolAccessToolNames = listCheckToolAccessToolNames(model);
+    const prepareToolCallToolNames = listPrepareToolCallToolNames(model);
+    const authPipelineTier = resolveAuthPipelineTier(
+        hasAuthPipeline,
+        checkToolAccessToolNames,
+        prepareToolCallToolNames
+    );
+    const checkToolAccessImports =
+        checkToolAccessToolNames.length > 0
+            ? renderCheckToolAccessHookImports(destinationTsPath, stubPaths, checkToolAccessToolNames)
+            : '';
+    const prepareToolCallImports =
+        prepareToolCallToolNames.length > 0 ? renderPrepareToolCallHookImports(destinationTsPath, stubPaths) : '';
+    const authStubImports = [checkToolAccessImports, prepareToolCallImports].filter((s) => s.length > 0).join('\n');
     const authMapBlocks: string[] = [];
     if (authPipelineTier === 'full') {
-        if (authorizeToolNames.length > 0) {
-            authMapBlocks.push(renderAuthorizersMap(authorizeToolNames));
+        if (checkToolAccessToolNames.length > 0) {
+            authMapBlocks.push(renderCheckToolAccessHooksMap(checkToolAccessToolNames));
         }
-        if (prepareToolNames.length > 0) {
-            authMapBlocks.push(renderPreparersMap(prepareToolNames, { includeCredentials: needsVerifyCredential }));
+        if (prepareToolCallToolNames.length > 0) {
+            authMapBlocks.push(renderPrepareToolCallHooksMap(listPrepareToolCallHookEntries(model)));
         }
     }
     const authRuntimePrefixBlock = authMapBlocks.length > 0 ? `${authMapBlocks.join('\n\n')}\n\n` : '';
@@ -253,22 +256,15 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const mcpServerIdentityBlock = renderMcpServerIdentityExports(mcpServerName, mcpServerVersion);
     const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
     const stubMaps = {
-        authorizers: authorizeToolNames.length > 0,
-        preparers: prepareToolNames.length > 0
+        checkToolAccess: checkToolAccessToolNames.length > 0,
+        prepareToolCall: prepareToolCallToolNames.length > 0
     };
     const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, authPipelineTier, stubMaps);
 
-    const verifyStubPath = needsVerifyCredential
-        ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
-        : undefined;
+    const verifyStubPath = hasAuth ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath) : undefined;
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
     const verifyCredentialImport =
-        verifyStubPath !== undefined
-            ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath, {
-                  includeVerify: needsVerifyCredential,
-                  includeModuleCredentials: includeModuleCredentialsInImport
-              })
-            : '';
+        verifyStubPath !== undefined ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath) : '';
 
     const hasZodSchemas = Object.keys(inputSchemaByTool).length > 0;
 

@@ -2,10 +2,10 @@ import type { Model, SqlQuery } from 'db-2-ai-dsl-language';
 import { databaseDialectFromModel, isMysqlDialect, type ResolvedDatabaseDialect } from 'db-2-ai-dsl-language';
 import {
     getAccessKind,
-    getOptionalParams,
+    getClientMayOmit,
     isSqlQuery,
-    isToolAuthorizeEnabled,
-    isToolPrepareEnabled
+    isCheckToolAccessEnabled,
+    isPrepareToolCallEnabled
 } from 'db-2-ai-dsl-language';
 import {
     jsonSchemaExampleValue,
@@ -26,8 +26,8 @@ export type ResolvedSqlToolCodegen = {
     params: ResolvedSqlParam[];
     mysqlBindNames?: readonly string[];
     access: 'public' | 'protected';
-    hasAuthorize: boolean;
-    hasPrepare: boolean;
+    hasCheckToolAccess: boolean;
+    hasPrepareToolCall: boolean;
 };
 
 export type ResolvedDbToolCodegen = ResolvedSqlToolCodegen;
@@ -92,8 +92,8 @@ function resolveSqlTool(query: SqlQuery, dialect: ResolvedDatabaseDialect): Reso
         params,
         mysqlBindNames: isMysqlDialect(dialect) ? mysqlBindParamNames(logicalSql) : undefined,
         access: getAccessKind(query),
-        hasAuthorize: isToolAuthorizeEnabled(query),
-        hasPrepare: isToolPrepareEnabled(query)
+        hasCheckToolAccess: isCheckToolAccessEnabled(query),
+        hasPrepareToolCall: isPrepareToolCallEnabled(query)
     };
 }
 
@@ -137,8 +137,8 @@ export function buildInputSchemaByTool(model: Model, tools: ResolvedDbToolCodege
     const out: Record<string, JsonSchemaDict> = {};
     for (const tool of tools) {
         const query = model.entries.find((e) => isSqlQuery(e) && e.toolName?.trim() === tool.toolName);
-        const optionalParams = query && isSqlQuery(query) ? getOptionalParams(query) : [];
-        out[tool.toolName] = buildSqlInputSchema(tool, optionalParams);
+        const clientMayOmit = query && isSqlQuery(query) ? getClientMayOmit(query) : [];
+        out[tool.toolName] = buildSqlInputSchema(tool, clientMayOmit);
     }
     return out;
 }

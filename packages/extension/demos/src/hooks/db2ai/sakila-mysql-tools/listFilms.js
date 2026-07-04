@@ -1,4 +1,4 @@
 import { capSqlLimit } from '../../../utils/sql-limit-validate.js';
-export function prepareListFilmsInput(options) {
+export function prepareToolCallForListFilms(options) {
     return capSqlLimit(options);
 }

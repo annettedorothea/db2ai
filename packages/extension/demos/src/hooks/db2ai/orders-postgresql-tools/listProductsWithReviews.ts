@@ -1,14 +1,6 @@
-/**
- * Validate stub for "listProductsWithReviews" — cap SQL row limit at 100.
- */
-import type { ModuleCredentials } from './verifyOrdersPostgresqlCredentials.js';
 import type { InvokeOptions } from '../../../../generated/db2ai/tools/orders-postgresql-tools.js';
-import { capSqlLimit } from '../../../utils/sql-limit-validate.js';
 
-export function prepareListProductsWithReviewsInput(
-    options: InvokeOptions,
-    credentials?: ModuleCredentials
-): InvokeOptions {
-    void credentials;
-    return capSqlLimit(options);
+export function prepareToolCallForListProductsWithReviews(options: InvokeOptions, credential: string): InvokeOptions {
+    void credential;
+    return options;
 }

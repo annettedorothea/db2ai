@@ -3,9 +3,9 @@ import type { AstNode, LangiumDocument } from 'langium';
 import { isSqlParamEntry, isSqlQuery } from './generated/ast.js';
 
 /**
- * Param map keys live under `params`, but `optionalParams` references them from
- * ` prepare: { optionalParams: … }`. Register each SqlParamEntry on its SqlQuery so the
- * default ScopeProvider finds them when resolving optionalParams cross-refs.
+ * Param map keys live under `params`, but `clientMayOmit` references them from
+ * `prepareToolCall: { clientMayOmit: … }`. Register each SqlParamEntry on its SqlQuery so the
+ * default ScopeProvider finds them when resolving clientMayOmit cross-refs.
  */
 export class Db2AiDslScopeComputation extends DefaultScopeComputation {
     protected override addLocalSymbol(

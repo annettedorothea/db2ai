@@ -1,11 +1,9 @@
-import type { ModuleCredentials } from './verifyOrdersPostgresqlCredentials.js';
+import { decodeJwtPayload } from '../../shared/decode-jwt-payload.js';
 
-export function authorizeUpdateProduct(credentials: ModuleCredentials): void {
-    const role = String(credentials.role ?? '').trim();
-    if (role.length === 0) {
-        throw new Error('JWT payload missing role claim.');
-    }
+export async function checkToolAccessForUpdateProduct(credential: string): Promise<void> {
+    const claims = await decodeJwtPayload(credential);
+    const role = String(claims.role ?? '').trim();
     if (role !== 'admin') {
-        throw new Error(`Admin role required; JWT role is "${role}".`);
+        throw new Error(`Admin role required to update products; JWT role is "${role || 'unknown'}".`);
     }
 }

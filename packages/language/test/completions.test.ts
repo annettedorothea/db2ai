@@ -51,17 +51,7 @@ describe('Completion for SQL block keywords', () => {
         const list = await completionAt(header, offset);
 
         const labels = sortedBlockKeywordLabels(list?.items ?? []);
-        expect(labels).toEqual([
-            'toolName',
-            'access',
-            'authorize',
-            'prepare',
-            'intent',
-            'query',
-            'summary',
-            'params',
-            'response'
-        ]);
+        expect(labels).toEqual(['toolName', 'access', 'hooks', 'intent', 'query', 'summary', 'params', 'response']);
     });
 
     test('does not suggest already used block keywords', async () => {
@@ -88,26 +78,26 @@ describe('Completion for SQL block keywords', () => {
     });
 });
 
-describe('Completion for prepare optionalParams', () => {
-    test('suggests optionalParams keyword inside prepare block', async () => {
+describe('Completion for prepareToolCall clientMayOmit', () => {
+    test('suggests clientMayOmit keyword inside prepareToolCall block', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    prepare: {\n        ${marker}\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    hooks: {\n        prepareToolCall: {\n            ${marker}\n        }\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker));
         const labels = (list?.items ?? []).map((item) => String(item.label));
-        expect(labels).toContain('optionalParams');
+        expect(labels).toContain('clientMayOmit');
     });
 
-    test('suggests SQL param names inside optionalParams list', async () => {
+    test('suggests SQL param names inside clientMayOmit list', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    prepare: {\n        optionalParams: [${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    hooks: {\n        prepareToolCall: {\n            clientMayOmit: [${marker}]\n        }\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');
     });
 
-    test('suggests SQL param names when editing optionalParams prefix', async () => {
+    test('suggests SQL param names when editing clientMayOmit prefix', async () => {
         const marker = '/*caret*/';
-        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    prepare: {\n        optionalParams: [cust${marker}]\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
+        const header = `database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"\n\nSQL {\n    toolName: listOrders\n    access: public\n    hooks: {\n        prepareToolCall: {\n            clientMayOmit: [cust${marker}]\n        }\n    }\n    intent: "list orders"\n    query: "SELECT 1 WHERE id = :customerId"\n    params: {\n        customerId: { description: "id" example: "1" type: string }\n    }\n}\n`;
         const list = await completionAt(header.replace(marker, ''), header.indexOf(marker), { validation: true });
         const labels = (list?.items ?? []).map((item) => String(item.label));
         expect(labels).toContain('customerId');

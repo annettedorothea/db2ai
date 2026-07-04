@@ -1,5 +1,5 @@
 import { capSqlMaxRows } from '../../../utils/sql-limit-validate.js';
-export function prepareFilmsByMpaaRatingInput(options, credentials) {
-    void credentials;
+export function prepareToolCallForFilmsByMpaaRating(options, credential) {
+    void credential;
     return capSqlMaxRows(options);
 }

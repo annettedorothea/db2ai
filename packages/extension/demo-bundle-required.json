@@ -49,9 +49,9 @@
     "scripts/start-mcp-http.mjs",
     "scripts/start-mcp-oauth.mjs",
     "src/hooks/db2ai/orders-postgresql-tools/listCustomerOrders.ts",
-    "src/hooks/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredentials.ts",
-    "src/hooks/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredentials.ts",
-    "src/hooks/db2ai/sakila-mysql-tools/verifySakilaMysqlCredentials.ts",
+    "src/hooks/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredential.ts",
+    "src/hooks/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredential.ts",
+    "src/hooks/db2ai/sakila-mysql-tools/verifySakilaMysqlCredential.ts",
     "tsconfig.generated.json",
     "tsconfig.json"
 ]

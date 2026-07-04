@@ -50,10 +50,9 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 
 ### 3. Aufrufe
 
-- MCP-Server-Name im Audit = `serverName` aus `mcp.json`, nicht der Cursor-`serverIdentifier`.
-- Pro Tool: Intent aus Descriptor als Audit-Ueberschrift (Deutsch, sinngemaess).
+- Pro Tool: ein MCP-Aufruf; Fehler in der Zusammenfassung (Abschnitt 4) festhalten — **kein** vollstaendiger Audit-Block pro Tool.
 
-### 4. Ergebnisbericht
+### 4. Ergebnisbericht (einzige Ausgabe — kein Audit)
 
 Kurz fuer den Nutzer:
 
@@ -70,10 +69,7 @@ Kurz fuer den Nutzer:
 
 - Leere Listen (`rowCount: 0`) = OK, wenn kein Fehler.
 - Schreib-Tests: temporaere Datensaetze wieder loeschen; verbleibende Test-Orders erwaehnen.
-
-### 5. Audit
-
-Vollstaendiger `Audit`-Abschnitt gemaess `mcp-db2ai-only.mdc` — pro Tool eine `###`-Ueberschrift mit MCP-Server, MCP-Tool, Params, Antwort (gekuerzt bei grossen payloads).
+- **Kein** Abschnitt `Audit` und keine pro-Tool-`###`-Bloecke — nur diese Tabelle und `Auffaelligkeiten`. (Ausnahme zu `mcp-db2ai-only.mdc` nur fuer `/test-all`.)
 
 ## Checkliste
 
@@ -82,6 +78,5 @@ Vollstaendiger `Audit`-Abschnitt gemaess `mcp-db2ai-only.mdc` — pro Tool eine 
 - [ ] Alle Tool-Schemas gelesen
 - [ ] Read-Tools aller Server aufgerufen
 - [ ] Write-Tools (create/update/delete) getestet
-- [ ] Zusammenfassungstabelle
-- [ ] Audit
+- [ ] Zusammenfassungstabelle (kein Audit)
 ```

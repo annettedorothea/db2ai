@@ -1,5 +1,5 @@
 import { capSqlLimit } from '../../../utils/sql-limit-validate.js';
-export function prepareListCountriesInput(options, credentials) {
-    void credentials;
+export function prepareToolCallForListCountries(options, credential) {
+    void credential;
     return capSqlLimit(options);
 }

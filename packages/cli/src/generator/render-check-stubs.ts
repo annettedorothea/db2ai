@@ -3,31 +3,31 @@ import {
     accessRequiresAuth,
     getAccessKind,
     isSqlQuery,
-    isToolAuthorizeEnabled,
-    isToolPrepareEnabled
+    isCheckToolAccessEnabled,
+    isPrepareToolCallEnabled
 } from 'db-2-ai-dsl-language';
 import {
-    authorizeExportName,
+    checkToolAccessExportName,
     ensureToolHookStubsFromSource,
-    renderAuthorizerImports,
-    renderAuthorizersMap,
-    renderPreparerImports,
-    renderPreparersMap,
+    renderCheckToolAccessHookImports,
+    renderCheckToolAccessHooksMap,
+    renderPrepareToolCallHookImports,
+    renderPrepareToolCallHooksMap,
     renderInvokeAuthPipeline as renderInvokeAuthPipelineCore,
     resolveAuthPipelineTier,
     type AuthPipelineTier,
     type HookStubMaps,
     type ToolHookStubSpec,
-    prepareInputExportName
+    prepareToolCallExportName
 } from '@toolfactory.dev/core/codegen';
 
 export {
-    authorizeExportName,
-    prepareInputExportName,
-    renderAuthorizerImports,
-    renderAuthorizersMap,
-    renderPreparerImports,
-    renderPreparersMap,
+    checkToolAccessExportName,
+    prepareToolCallExportName,
+    renderCheckToolAccessHookImports,
+    renderCheckToolAccessHooksMap,
+    renderPrepareToolCallHookImports,
+    renderPrepareToolCallHooksMap,
     resolveAuthPipelineTier,
     type AuthPipelineTier,
     type HookStubMaps
@@ -43,18 +43,18 @@ function listToolHookSpecs(model: Model): ToolHookStubSpec[] {
         if (!toolName) {
             continue;
         }
-        const authorize = isToolAuthorizeEnabled(entry);
-        const prepare = isToolPrepareEnabled(entry);
-        if (authorize || prepare) {
-            specs.push({ toolName, authorize, prepare, access: getAccessKind(entry) });
+        const checkToolAccess = isCheckToolAccessEnabled(entry);
+        const prepareToolCall = isPrepareToolCallEnabled(entry);
+        if (checkToolAccess || prepareToolCall) {
+            specs.push({ toolName, checkToolAccess, prepareToolCall, access: getAccessKind(entry) });
         }
     }
     return specs;
 }
 
-export function listAuthorizeToolNames(model: Model): string[] {
+export function listCheckToolAccessToolNames(model: Model): string[] {
     return listToolHookSpecs(model)
-        .filter((spec) => spec.authorize)
+        .filter((spec) => spec.checkToolAccess)
         .map((spec) => spec.toolName);
 }
 
@@ -72,15 +72,21 @@ export function listProtectedToolNames(model: Model): string[] {
     return names;
 }
 
-export function listPrepareToolNames(model: Model): string[] {
+export function listPrepareToolCallToolNames(model: Model): string[] {
     return listToolHookSpecs(model)
-        .filter((spec) => spec.prepare)
+        .filter((spec) => spec.prepareToolCall)
         .map((spec) => spec.toolName);
+}
+
+export function listPrepareToolCallHookEntries(model: Model): { toolName: string; access: 'public' | 'protected' }[] {
+    return listToolHookSpecs(model)
+        .filter((spec) => spec.prepareToolCall)
+        .map(({ toolName, access }) => ({ toolName, access }));
 }
 
 export function modelHasAuthPipeline(model: Model): boolean {
     return model.entries.some(
-        (entry) => isSqlQuery(entry) && (accessRequiresAuth(entry) || isToolPrepareEnabled(entry))
+        (entry) => isSqlQuery(entry) && (accessRequiresAuth(entry) || isPrepareToolCallEnabled(entry))
     );
 }
 

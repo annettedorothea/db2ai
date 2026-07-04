@@ -3,8 +3,8 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import { prepareListFilmsInput } from '../../../src/hooks/db2ai/sakila-mariadb-tools/listFilms.js';
-import { prepareSearchFilmsInput } from '../../../src/hooks/db2ai/sakila-mariadb-tools/searchFilms.js';
+import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/listFilms.js';
+import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/searchFilms.js';
 
 export const connectionEnv = 'SAKILA_MARIADB_DATABASE_URL';
 
@@ -28,8 +28,8 @@ export type GeneratedTool = {
     description: string;
     kind: 'sql';
     access: 'public' | 'protected';
-    hasAuthorize: boolean;
-    hasPrepare: boolean;
+    hasCheckToolAccess: boolean;
+    hasPrepareToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -40,8 +40,6 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    upstreamCredential?: string;
-    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -52,8 +50,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20, offset=0',
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: true,
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: true,
         sqlText: 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ? OFFSET ?',
         params: [
             {
@@ -83,8 +81,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=love, maxRows=10',
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: true,
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: true,
         sqlText:
             "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?",
         params: [
@@ -113,9 +111,12 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'sakila-mariadb-tools';
 export const mcpServerVersion = '0.5.0';
 
-const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Promise<InvokeOptions>> = {
-    listFilms: prepareListFilmsInput,
-    searchFilms: prepareSearchFilmsInput
+const prepareToolCallHooks: Record<
+    string,
+    (options: InvokeOptions, credential?: string) => InvokeOptions | Promise<InvokeOptions>
+> = {
+    listFilms: prepareToolCallForListFilms,
+    searchFilms: prepareToolCallForSearchFilms
 };
 
 export const inputZodByTool = {
@@ -189,13 +190,30 @@ export async function invokeTool(
     }
     const host = hostContext as DbHostContext;
     let optionsResolved = options;
+    let credential: string | undefined = host.credential?.trim() ? String(host.credential).trim() : undefined;
 
-    if (toolMeta.hasPrepare) {
-        const prepare = preparers[toolName];
-        if (typeof prepare !== 'function') {
-            throw new Error('No preparer for tool: ' + toolName);
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
+            throw new Error(
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+            );
         }
-        optionsResolved = await Promise.resolve(prepare(optionsResolved));
+        credential = String(inbound).trim();
+    }
+    if (toolMeta.hasPrepareToolCall) {
+        const prepareToolCall = prepareToolCallHooks[toolName];
+        if (typeof prepareToolCall !== 'function') {
+            throw new Error('No prepareToolCall hook for tool: ' + toolName);
+        }
+        if (toolMeta.access === 'protected') {
+            if (credential === undefined) {
+                throw new Error('prepareToolCall requires credential for protected tools.');
+            }
+            optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved, credential));
+        } else {
+            optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved));
+        }
     }
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);

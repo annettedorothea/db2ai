@@ -3,8 +3,8 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import { prepareListAnimalsInput } from '../../../src/hooks/db2ai/animals-sqlserver-tools/listAnimals.js';
-import { prepareSearchAnimalsInput } from '../../../src/hooks/db2ai/animals-sqlserver-tools/searchAnimals.js';
+import { prepareToolCallForListAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/listAnimals.js';
+import { prepareToolCallForSearchAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/searchAnimals.js';
 
 export const connectionEnv = 'ANIMALS_SQLSERVER_DATABASE_URL';
 
@@ -28,8 +28,8 @@ export type GeneratedTool = {
     description: string;
     kind: 'sql';
     access: 'public' | 'protected';
-    hasAuthorize: boolean;
-    hasPrepare: boolean;
+    hasCheckToolAccess: boolean;
+    hasPrepareToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -40,8 +40,6 @@ export type DbHostContext = {
     connectionString: string;
     databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
     credential?: string;
-    upstreamCredential?: string;
-    credentials?: unknown;
 };
 
 export const generatedTools: GeneratedTool[] = [
@@ -52,8 +50,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'list animals with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: true,
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: true,
         sqlText:
             '\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ',
         params: [
@@ -75,8 +73,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'search animals by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: maxRows=10, searchText=fox',
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: true,
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: true,
         sqlText:
             "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ",
         params: [
@@ -107,8 +105,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'insert a new animal row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.',
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: false,
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: false,
         sqlText:
             '\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ',
         params: [
@@ -148,8 +146,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'update an existing animal row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows., animalId=1',
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: false,
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: false,
         sqlText:
             '\n        UPDATE animals\n        SET\n            common_name = @commonName,\n            latin_name = @latinName,\n            description = @aboutText\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        WHERE animal_id = @animalId\n    ',
         params: [
@@ -198,8 +196,8 @@ export const generatedTools: GeneratedTool[] = [
         description:
             'delete an animal row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: animalId=999',
         access: 'public',
-        hasAuthorize: false,
-        hasPrepare: false,
+        hasCheckToolAccess: false,
+        hasPrepareToolCall: false,
         sqlText:
             '\n        DELETE FROM animals\n        OUTPUT DELETED.animal_id, DELETED.common_name, DELETED.latin_name, DELETED.description\n        WHERE animal_id = @animalId\n    ',
         params: [
@@ -219,9 +217,12 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'animals-sqlserver-tools';
 export const mcpServerVersion = '0.5.0';
 
-const preparers: Record<string, (options: InvokeOptions) => InvokeOptions | Promise<InvokeOptions>> = {
-    listAnimals: prepareListAnimalsInput,
-    searchAnimals: prepareSearchAnimalsInput
+const prepareToolCallHooks: Record<
+    string,
+    (options: InvokeOptions, credential?: string) => InvokeOptions | Promise<InvokeOptions>
+> = {
+    listAnimals: prepareToolCallForListAnimals,
+    searchAnimals: prepareToolCallForSearchAnimals
 };
 
 export const inputZodByTool = {
@@ -333,13 +334,30 @@ export async function invokeTool(
     }
     const host = hostContext as DbHostContext;
     let optionsResolved = options;
+    let credential: string | undefined = host.credential?.trim() ? String(host.credential).trim() : undefined;
 
-    if (toolMeta.hasPrepare) {
-        const prepare = preparers[toolName];
-        if (typeof prepare !== 'function') {
-            throw new Error('No preparer for tool: ' + toolName);
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
+            throw new Error(
+                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+            );
         }
-        optionsResolved = await Promise.resolve(prepare(optionsResolved));
+        credential = String(inbound).trim();
+    }
+    if (toolMeta.hasPrepareToolCall) {
+        const prepareToolCall = prepareToolCallHooks[toolName];
+        if (typeof prepareToolCall !== 'function') {
+            throw new Error('No prepareToolCall hook for tool: ' + toolName);
+        }
+        if (toolMeta.access === 'protected') {
+            if (credential === undefined) {
+                throw new Error('prepareToolCall requires credential for protected tools.');
+            }
+            optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved, credential));
+        } else {
+            optionsResolved = await Promise.resolve(prepareToolCall(optionsResolved));
+        }
     }
     const connectionString = resolveConnectionString(host);
     const pool = await sql.connect(parseSqlserverConnectInput(connectionString));

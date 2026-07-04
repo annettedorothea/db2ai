@@ -2,7 +2,7 @@ import { EmptyFileSystem, type LangiumDocument } from 'langium';
 import { parseHelper } from 'langium/test';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
-import { getAccessKind, isToolValidateEnabled } from '../src/query-access.js';
+import { getAccessKind, isPrepareToolCallEnabled } from '../src/query-access.js';
 import { parseSqlParamSpec } from '../src/sql-param-spec.js';
 import { isSqlQuery } from '../src/generated/ast.js';
 import type { Model } from '../src/generated/ast.js';
@@ -149,7 +149,7 @@ describe('Parsing tests', () => {
         }
     });
 
-    test('parses auth keyword and prepare with optionalParams', async () => {
+    test('parses auth keyword and prepareToolCall with clientMayOmit', async () => {
         document = await parse(`
             database postgres env "ORDERS_POSTGRESQL_DATABASE_URL"
 
@@ -158,8 +158,10 @@ describe('Parsing tests', () => {
             SQL {
                 toolName: listCustomerOrders
                 access: protected
-                prepare: {
-                    optionalParams: [customerId]
+                hooks: {
+                    prepareToolCall: {
+                        clientMayOmit: [customerId]
+                    }
                 }
                 intent: "orders"
                 query: "SELECT 1"
@@ -171,7 +173,7 @@ describe('Parsing tests', () => {
         const entry = document.parseResult.value.entries[0];
         if (isSqlQuery(entry)) {
             expect(getAccessKind(entry)).toBe('protected');
-            expect(isToolValidateEnabled(entry)).toBe(true);
+            expect(isPrepareToolCallEnabled(entry)).toBe(true);
         }
     });
 

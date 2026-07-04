@@ -1,10 +1,12 @@
-/** protected + authorize — role gate (user | admin). */
-export function authorizeListCustomerOrders(credentials) {
-    const jwtCustomer = String(credentials.customerId ?? '').trim();
+import { decodeJwtPayload } from '../../shared/decode-jwt-payload.js';
+/** protected + checkToolAccess — role gate (user | admin). */
+export async function checkToolAccessForListCustomerOrders(credential) {
+    const claims = await decodeJwtPayload(credential);
+    const jwtCustomer = String(claims.customerId ?? '').trim();
     if (jwtCustomer.length === 0) {
         throw new Error('JWT payload missing customerId claim.');
     }
-    const role = String(credentials.role ?? '').trim();
+    const role = String(claims.role ?? '').trim();
     if (role.length === 0) {
         throw new Error('JWT payload missing role claim.');
     }
@@ -12,13 +14,11 @@ export function authorizeListCustomerOrders(credentials) {
         throw new Error(`Unsupported role "${role}".`);
     }
 }
-/** protected + prepare — fill optional customerId, scope for role=user. */
-export function prepareListCustomerOrdersInput(options, credentials) {
-    if (!credentials) {
-        throw new Error('Prepare requires credentials.');
-    }
-    const jwtCustomer = String(credentials.customerId ?? '').trim();
-    const role = String(credentials.role ?? '').trim();
+/** protected + prepareToolCall — fill optional customerId, scope for role=user. */
+export async function prepareToolCallForListCustomerOrders(options, credential) {
+    const claims = await decodeJwtPayload(credential);
+    const jwtCustomer = String(claims.customerId ?? '').trim();
+    const role = String(claims.role ?? '').trim();
     let customerId = options.customerId;
     if (customerId == null || String(customerId).trim() === '') {
         customerId = jwtCustomer;

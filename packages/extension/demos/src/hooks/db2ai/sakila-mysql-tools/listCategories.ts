@@ -4,6 +4,6 @@
 import type { InvokeOptions } from '../../../../generated/db2ai/tools/sakila-mysql-tools.js';
 import { capSqlLimit } from '../../../utils/sql-limit-validate.js';
 
-export function prepareListCategoriesInput(options: InvokeOptions): InvokeOptions {
+export function prepareToolCallForListCategories(options: InvokeOptions): InvokeOptions {
     return capSqlLimit(options);
 }

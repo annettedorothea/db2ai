@@ -65,10 +65,18 @@ if (fromNpm) {
     });
     console.log('[sync-core2ai-pin] lockfile should resolve from registry.npmjs.org (no ../core2ai link)');
 } else {
-    console.log('[sync-core2ai-pin] refreshing ../core2ai link in package-lock.json…');
-    execSync('npm install', {
+    const core2aiDir = path.join(root, '..', 'core2ai');
+    console.log('[sync-core2ai-pin] linking ../core2ai in package-lock.json (semver pin kept in package.json)…');
+    execSync(`npm install file:${core2aiDir} --workspace packages/cli`, {
         cwd: root,
         stdio: 'inherit',
         env: { ...process.env, HUSKY: '0' }
     });
+    const cliAfter = JSON.parse(readFileSync(cliPkgPath, 'utf8'));
+    if (cliAfter.dependencies?.[CORE_PACKAGE]?.startsWith('file:')) {
+        cliAfter.dependencies[CORE_PACKAGE] = coreVersion;
+        writeFileSync(cliPkgPath, `${JSON.stringify(cliAfter, null, 4)}\n`, 'utf8');
+        console.log(`packages/cli/package.json: restored ${CORE_PACKAGE} semver pin → ${coreVersion}`);
+    }
+    console.log('[sync-core2ai-pin] lockfile should show ../core2ai with "link": true');
 }

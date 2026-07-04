@@ -5,7 +5,9 @@ auth
 SQL {
     toolName: listFilms
     access: public
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: "list films from Sakila with pagination"
     query: "SELECT * FROM film LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila film rows"
@@ -18,7 +20,9 @@ SQL {
 SQL {
     toolName: listActors
     access: protected
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: '''
         List actors from Sakila with pagination.
         Protected: requires MCP auth header matching MCP_AUTH_EXPECTED.
@@ -34,7 +38,9 @@ SQL {
 SQL {
     toolName: listCategories
     access: public
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: "list film categories with pagination"
     query: "SELECT * FROM category LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila category rows"
@@ -47,7 +53,9 @@ SQL {
 SQL {
     toolName: filmsByRating
     access: public
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: "list films with a given rating"
     query: '''
         SELECT
@@ -76,7 +84,9 @@ SQL {
 SQL {
     toolName: filmsWithActorLastName
     access: public
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: '''
         Find films featuring actors whose last name starts with a prefix.
         Joins actor, film_actor, and film (MySQL LIKE / CONCAT).
@@ -115,7 +125,9 @@ SQL {
 SQL {
     toolName: searchFilms
     access: public
-    prepare: true
+    hooks: {
+        prepareToolCall: true
+    }
     intent: '''
         Search films by free text in title or description.
         Case-sensitive substring match (MySQL LIKE with CONCAT).

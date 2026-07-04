@@ -4,6 +4,6 @@
 import type { InvokeOptions } from '../../../../generated/db2ai/tools/sakila-mariadb-tools.js';
 import { capSqlLimit } from '../../../utils/sql-limit-validate.js';
 
-export function prepareListFilmsInput(options: InvokeOptions): InvokeOptions {
+export function prepareToolCallForListFilms(options: InvokeOptions): InvokeOptions {
     return capSqlLimit(options);
 }
