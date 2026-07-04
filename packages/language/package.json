@@ -1,7 +1,7 @@
 {
     "name": "db-2-ai-dsl-language",
     "description": "The language specific package",
-    "version": "0.5.0",
+    "version": "1.0.0-rc",
     "type": "module",
     "engines": {
         "node": ">=20.10.0",

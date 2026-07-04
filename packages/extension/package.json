@@ -2,7 +2,7 @@
     "name": "vscode-db2ai",
     "displayName": "db2ai",
     "description": "Language support and code generation for the .db2ai DSL (PostgreSQL, MySQL, MariaDB, SQL Server, Oracle → MCP tools).",
-    "version": "0.5.0",
+    "version": "1.0.0-rc",
     "publisher": "db2ai",
     "license": "MIT",
     "icon": "icon.png",
