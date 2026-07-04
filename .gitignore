@@ -12,6 +12,7 @@ syntaxes/
 *.tsbuildinfo
 *.vsix
 .idea
+packages/extension/demos/.env
 packages/extension/demos/.env.local
 packages/extension/demos/node_modules/
 packages/extension/demos/tmp/

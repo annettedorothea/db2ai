@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { ensureEnvFromExample } from './copy-env.mjs';
 import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
 
 export const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,11 +22,7 @@ export function runNpm(args) {
 }
 
 export function prepareWorkspaceEnv() {
-    const envPath = path.join(demosRoot, '.env');
-    if (!existsSync(envPath)) {
-        console.error('[start] Missing .env in demo workspace.');
-        process.exit(1);
-    }
+    ensureEnvFromExample();
     loadProjectEnvLocal();
 }
 

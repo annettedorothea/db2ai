@@ -1,6 +1,6 @@
 [
     ".cursor/mcp.json",
-    ".env",
+    ".env.example",
     "project-generate.config.json",
     "docker-compose.yml",
     "oauth-idp/demo-rsa-private.pem",
@@ -19,6 +19,7 @@
     "animals-sqlserver.db2ai",
     "plants-oracle.db2ai",
     "README.md",
+    "scripts/copy-env.mjs",
     "scripts/demo-launch-registry.mjs",
     "scripts/foreground-lifecycle.mjs",
     "scripts/generate-all.mjs",

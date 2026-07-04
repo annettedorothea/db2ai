@@ -9,5 +9,6 @@ demos/node_modules/**
 demos/generated/**
 # Keep demos/scripts/** and demos/project-generate.config.json in the VSIX (demo workspace copy)
 demos/package-lock.json
+demos/.env
 demos/.env.local
 demos/tmp/**
