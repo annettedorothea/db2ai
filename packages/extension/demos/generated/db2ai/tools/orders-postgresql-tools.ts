@@ -249,7 +249,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'orders-postgresql-tools';
-export const mcpServerVersion = '0.5.0';
+export const mcpServerVersion = '1.0.0-rc';
 
 const checkToolAccessHooks: Record<string, (credential: string) => void | Promise<void>> = {
     listCustomerOrders: checkToolAccessForListCustomerOrders,
