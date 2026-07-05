@@ -89,14 +89,7 @@ SQL {
 
 ## Documentation
 
-Looking for architecture, authentication, MCP concepts, integrations, or development guides?
-
-See the shared documentation in [core2ai](https://github.com/annettedorothea/core2ai):
-
-- [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md)
-- [db2ai DSL](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/db2ai-dsl.md)
-- [Supported SQL patterns](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/supported-sql.md)
-- [Auth and hooks](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/auth-and-hooks.md)
+[Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md) — architecture, authoring, runtime, and integrations.
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and upgrade notes.
 
@@ -109,11 +102,15 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and upgrade notes.
 
 ---
 
+## Feedback
+
+**1.0.0-rc** — we welcome feedback on onboarding, documentation, DSL ergonomics, and MCP integration. Share your experience in [GitHub Discussions](https://github.com/annettedorothea/db2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/db2ai/issues).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-Questions, ideas, bug reports, and feature requests are always welcome through GitHub Discussions or Issues.
 
 ---
 

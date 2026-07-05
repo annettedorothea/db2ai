@@ -79,9 +79,7 @@ Using the `db2ai` prefix helps Cursor focus on generated MCP tools and avoid unr
 3. `orders-postgresql.db2ai`
    Protected tools using OAuth MCP, `checkToolAccess`, and `prepareToolCall` with `clientMayOmit`.
 
-Authoring documentation:
-
-https://github.com/annettedorothea/core2ai/tree/main/docs/authoring
+Authoring documentation: [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md)
 
 ---
 
@@ -151,11 +149,7 @@ db2ai-test-all-mcp
 
 ## Documentation
 
-- [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md)
-- [Authoring guides](https://github.com/annettedorothea/core2ai/tree/main/docs/authoring)
-- [db2ai DSL](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/db2ai-dsl.md)
-- [Supported SQL patterns](https://github.com/annettedorothea/core2ai/blob/main/docs/authoring/supported-sql.md)
-- [MCP hosts](https://github.com/annettedorothea/core2ai/blob/main/docs/runtime/mcp-hosts.md)
+[Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md) — architecture, authoring, runtime, and integrations.
 
 ---
 
@@ -163,6 +157,12 @@ db2ai-test-all-mcp
 
 - https://github.com/annettedorothea/core2ai
 - https://github.com/annettedorothea/api2ai
+
+---
+
+## Feedback
+
+**1.0.0-rc** — share onboarding and integration feedback in [GitHub Discussions](https://github.com/annettedorothea/db2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/db2ai/issues).
 
 ---
 
