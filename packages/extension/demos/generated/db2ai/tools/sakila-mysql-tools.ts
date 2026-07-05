@@ -391,7 +391,7 @@ export async function invokeTool(
     loggingAdapter.debug('invokeTool', { toolName });
 
     if (hostContext === undefined) {
-        throw new Error('invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).');
+        throw new Error('invokeTool requires hostContext from the MCP host (servers/*-mcp-server).');
     }
     const host = hostContext as DbHostContext;
     let optionsResolved = options;
@@ -401,7 +401,7 @@ export async function invokeTool(
         const inbound = host.credential;
         if (!inbound || !String(inbound).trim()) {
             throw new Error(
-                'Missing host credential. stdio: set env for --auth-env on stdio-mcp-server; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+                'Missing host credential. stdio: set env for --auth-env on the MCP host; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
             );
         }
         credential = String(inbound).trim();

@@ -39,12 +39,16 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
     const oauthIdpUrl = requireEnv(demo.oauthIdpUrlEnv, env);
     const port = requireEnvInt(demo.portEnv, env);
     const product = loadProductName(demosRoot);
-    const hostJs = path.join(demosRoot, 'generated', product, 'cli', 'oauth-http-mcp-server.js');
-    const toolsJs = path.join(demosRoot, 'generated', product, 'tools', demo.tools);
+    const serverJs = path.join(
+        demosRoot,
+        'generated',
+        product,
+        'servers',
+        `${name}-oauth-http-mcp-server.js`
+    );
     const oauthScope = demo.oauthScope ?? name;
     const args = [
-        hostJs,
-        toolsJs,
+        serverJs,
         '--oauth-idp-url',
         oauthIdpUrl,
         '--oauth-scope',

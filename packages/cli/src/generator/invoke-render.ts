@@ -273,7 +273,7 @@ function renderHostBinding(typescript: boolean): string {
     const guard = `
     if (hostContext === undefined) {
         throw new Error(
-            'invokeTool requires hostContext from the MCP host (stdio-mcp-server or http-mcp-server).'
+            'invokeTool requires hostContext from the MCP host (servers/*-mcp-server).'
         );
     }`;
     if (typescript) {

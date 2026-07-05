@@ -1,13 +1,12 @@
-#!/usr/bin/env node
 /**
- * Generated public HTTP MCP Streamable HTTP host (static runtime — no @toolfactory.dev/core).
+ * Generated passthrough HTTP MCP Streamable HTTP runtime (static tools import).
  */
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
@@ -402,6 +401,33 @@ function parseHttpMcpHostArgv(argv: string[], envDirs: string[]): HttpMcpHostRun
     };
 }
 
+function readCredentialFromEnv(authEnvKey: string | undefined): string | undefined {
+    const key = authEnvKey?.trim();
+    if (!key) {
+        return undefined;
+    }
+    const value = process.env[key]?.trim();
+    return value && value.length > 0 ? value : undefined;
+}
+
+const DEFAULT_MCP_AUTH_HEADER = 'x-api-token';
+
+function readAuthHeaderNameFromEnv(): string {
+    const configured = process.env.MCP_AUTH_HEADER?.trim();
+    return configured && configured.length > 0 ? configured : DEFAULT_MCP_AUTH_HEADER;
+}
+
+function readCredentialFromHttpHeaders(
+    headers: Record<string, string | string[] | undefined>,
+    headerName: string
+): string | undefined {
+    const normalized = headerName.trim().toLowerCase();
+    const raw = headers[normalized];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    const trimmed = typeof value === 'string' ? value.trim() : '';
+    return trimmed.length > 0 ? trimmed : undefined;
+}
+
 function validateHttpMcpHostAtStartup(httpHostConfig: HttpMcpHostRuntimeConfig, generated: GeneratedHostModule): void {
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -437,9 +463,13 @@ function validateHttpMcpHostAtStartup(httpHostConfig: HttpMcpHostRuntimeConfig, 
 async function resolveHostContextForHttpCall(
     httpHostConfig: HttpMcpHostRuntimeConfig,
     generated: GeneratedHostModule,
-    _incomingHeaders: Record<string, string | string[] | undefined>
+    incomingHeaders: Record<string, string | string[] | undefined>
 ): Promise<ApiLikeHostContext> {
-    const credential = undefined;
+    const headerName = readAuthHeaderNameFromEnv();
+    let credential = readCredentialFromHttpHeaders(incomingHeaders, headerName);
+    if (!credential?.trim()) {
+        credential = readCredentialFromEnv(httpHostConfig.authEnvKey);
+    }
     const { credential: c } = resolveRelayHostCredential(credential);
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -472,6 +502,11 @@ type SessionEntry = {
 
 const sessionEntries = new Map<string, SessionEntry>();
 const sessionHeaders = new Map<string, Record<string, string | string[] | undefined>>();
+
+function defaultMcpEnvDirs(): string[] {
+    const runtimeDir = path.dirname(fileURLToPath(import.meta.url));
+    return [process.cwd(), path.join(runtimeDir, '..', 'tools')];
+}
 
 function isInitializeRequestBody(body: unknown): boolean {
     if (Array.isArray(body)) {
@@ -510,8 +545,6 @@ async function createMcpServerForSession(
     transport.onclose = () => {
         sessionEntries.delete(sessionId);
         sessionHeaders.delete(sessionId);
-        // Transport already closed (onclose runs from transport.close). Do not call server.close()
-        // here — that re-enters transport.close() and overflows the stack.
     };
     await server.connect(transport);
     return { transport, server, sessionId };
@@ -555,7 +588,7 @@ async function handleHttpMcpRequest(
     try {
         await entry.transport.handleRequest(req, res, parsedBody);
     } catch (err) {
-        loggingAdapter.error('[mcp] public HTTP request failed', {
+        loggingAdapter.error('[mcp] passthrough HTTP request failed', {
             error: err instanceof Error ? err.message : String(err)
         });
         if (!res.headersSent) {
@@ -564,31 +597,11 @@ async function handleHttpMcpRequest(
     }
 }
 
-async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
-    const modulePath = argv[0];
-    if (!modulePath) {
-        throw new Error(
-            'Usage: node public-http-mcp-server.js <path-to-*-tools.js> [--base-url-env ENV] --port N [--host HOST] [--path /mcp]'
-        );
-    }
-    const envDirs = [process.cwd(), path.dirname(path.resolve(modulePath))];
-    loadLocalEnvFiles(envDirs);
-    const imported = await import(pathToFileURL(path.resolve(modulePath)).href);
-    if (!imported || typeof imported !== 'object') {
-        throw new Error(`Generated module "${modulePath}" did not export an object.`);
-    }
-    const generated = readGeneratedModule(imported as Record<string, unknown>);
-    const httpHostConfig = parseHttpMcpHostArgv(argv.slice(1), envDirs);
-    if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
-        throw new Error(
-            'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
-        );
-    }
-    validateHttpMcpHostAtStartup(httpHostConfig, generated);
-    loggingAdapter.info('[mcp] public HTTP listening', {
+async function listenHttpMcp(generated: GeneratedHostModule, httpHostConfig: HttpMcpHostRuntimeConfig): Promise<void> {
+    loggingAdapter.info('[mcp] passthrough HTTP listening', {
         url: 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath,
-        profile: 'public',
-        credentialHeader: undefined
+        profile: 'passthrough',
+        credentialHeader: readAuthHeaderNameFromEnv()
     });
 
     const httpServer = http.createServer(async (req, res) => {
@@ -610,4 +623,19 @@ async function runHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> {
     });
 }
 
-await runHttpMcpStandaloneFromArgv(process.argv.slice(2));
+export async function runPassthroughHttpMcp(
+    toolsModule: Record<string, unknown>,
+    argv: string[],
+    envDirs: string[] = defaultMcpEnvDirs()
+): Promise<void> {
+    loadLocalEnvFiles(envDirs);
+    const generated = readGeneratedModule(toolsModule);
+    const httpHostConfig = parseHttpMcpHostArgv(argv, envDirs);
+    if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
+        throw new Error(
+            'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
+        );
+    }
+    validateHttpMcpHostAtStartup(httpHostConfig, generated);
+    await listenHttpMcp(generated, httpHostConfig);
+}
