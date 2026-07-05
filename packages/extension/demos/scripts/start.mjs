@@ -3,7 +3,8 @@
  * Full demo stack: kill-all, all Docker DBs (incl. Oracle), generate, compile, all MCP/IDP hosts.
  * Use for /test-all and release checks. For a single demo use: npm run start:<demo>
  *
- * npm run start:all  (alias: npm run start)
+ * npm run start:all  (alias: npm run start) — foreground, banners in this terminal
+ * npm run start:background — detached, terminal free after setup
  */
 import path from 'node:path';
 import { buildHostLaunch, HTTP_START_DEMO_NAMES } from './mcp-http-demos.mjs';
@@ -12,7 +13,7 @@ import {
     buildHttpMcpCatalogEntries,
     buildOAuthMcpCatalogEntries
 } from './mcp-catalog-entries.mjs';
-import { printMcpServerCatalog } from './generated/print-mcp-catalog.mjs';
+import { printStartMcpSummary } from './generated/print-mcp-catalog.mjs';
 import { requireEnvInt } from './generated/require-env.mjs';
 import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
 import {
@@ -30,17 +31,18 @@ import {
  * @param {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} httpStatus
  * @param {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} oauthStatus
  */
-function printStartMcpCatalog(httpStatus, oauthStatus) {
-    printMcpServerCatalog({
+function printStartMcpSummaryFromStatus(httpStatus, oauthStatus) {
+    printStartMcpSummary({
         logPrefix: '[start:all]',
         title: 'Demo MCP hosts',
         httpEntries: buildHttpMcpCatalogEntries(HTTP_START_DEMO_NAMES, process.env, httpStatus),
         oauthEntries: buildOAuthMcpCatalogEntries(OAUTH_HTTP_START_DEMO_NAMES, process.env, oauthStatus),
+        compactRunningUrls: !foreground,
         footerLines: [
             'Cursor: Settings → Tools & MCPs — enable servers, reload MCP.',
             'HTTP debug: npm run mcp:inspect -- <demo>',
             'Stop: npm run demo:kill-all (MCP, IDP, Docker)',
-            'Live logs: START_FOREGROUND=1 npm run start:all'
+            foreground ? 'Detached mode: npm run start:background' : 'Live banners: npm run start:all'
         ]
     });
 }
@@ -57,7 +59,9 @@ async function main() {
     runNpm(['run', 'generate:all']);
     runNpm(['run', 'build:generated']);
     if (foreground) {
-        console.log('[start:all] foreground mode — LOG_LEVEL=debug for services, logs in this terminal.');
+        console.log('[start:all] foreground — LOG_LEVEL=debug, MCP banners in this terminal.');
+    } else {
+        console.log('[start:all] background — services detached; use npm run start:all for live banners.');
     }
 
     const idpPort = requireEnvInt('ORDERS_POSTGRESQL_OAUTH_IDP_PORT');
@@ -108,7 +112,7 @@ async function main() {
         }
     }
 
-    printStartMcpCatalog(httpStatus, oauthStatus);
+    printStartMcpSummaryFromStatus(httpStatus, oauthStatus);
 
     if (foreground) {
         console.log('[start:all] Ctrl+C stops MCP/IDP processes started here (npm run demo:kill-all also stops Docker).');

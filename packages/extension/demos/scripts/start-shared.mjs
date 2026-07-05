@@ -6,10 +6,16 @@ import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
 
 export const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-export const foreground =
-    process.env.START_FOREGROUND === '1' ||
-    process.env.START_FOREGROUND === 'true' ||
-    process.env.START_FOREGROUND === 'yes';
+function envTruthy(name) {
+    const value = process.env[name]?.trim().toLowerCase();
+    return value === '1' || value === 'true' || value === 'yes';
+}
+
+/** Detached children, stdio ignored — opt-in via START_BACKGROUND or npm run start:background. */
+export const background = envTruthy('START_BACKGROUND');
+
+/** Default: logs and MCP banners in this terminal until Ctrl+C. */
+export const foreground = !background;
 
 /** @type {import('node:child_process').ChildProcess[]} */
 export const serviceChildren = [];
@@ -101,7 +107,6 @@ export async function waitForTcpListen(port, { timeoutMs = 15_000, intervalMs = 
 
 export async function waitForMcpHost(label, port, mcpUrl) {
     await waitForTcpListen(port, { label: mcpUrl });
-    console.log(`[start] ${label} listening on port ${port}.`);
 }
 
 export function generateAndCompile() {

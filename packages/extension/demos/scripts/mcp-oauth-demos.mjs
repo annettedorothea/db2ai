@@ -12,7 +12,6 @@ function loadProductName(demosRoot) {
 
 export const OAUTH_HTTP_DEMOS = {
     'orders-postgresql': {
-        tools: 'orders-postgresql-tools.js',
         connectionEnv: 'ORDERS_POSTGRESQL_DATABASE_URL',
         oauthIdpUrlEnv: 'ORDERS_POSTGRESQL_OAUTH_IDP_URL',
         portEnv: 'ORDERS_POSTGRESQL_OAUTH_HTTP_PORT',

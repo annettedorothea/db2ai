@@ -12,4 +12,5 @@ generated/**/*.js
 generated/**/*.js.map
 
 tmp/
+dist/
 .cursor/plans/
