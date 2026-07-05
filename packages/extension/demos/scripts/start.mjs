@@ -8,19 +8,42 @@
 import path from 'node:path';
 import { buildHostLaunch, HTTP_START_DEMO_NAMES } from './mcp-http-demos.mjs';
 import { buildOAuthHostLaunch, OAUTH_HTTP_START_DEMO_NAMES } from './mcp-oauth-demos.mjs';
+import {
+    buildHttpMcpCatalogEntries,
+    buildOAuthMcpCatalogEntries
+} from './mcp-catalog-entries.mjs';
+import { printMcpServerCatalog } from './generated/print-mcp-catalog.mjs';
 import { requireEnvInt } from './generated/require-env.mjs';
 import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
 import {
     demosRoot,
     foreground,
     prepareWorkspaceEnv,
-    printMcpReminder,
     runNpm,
     serviceChildren,
     startService,
     waitForHttpOk,
     waitForMcpHost
 } from './start-shared.mjs';
+
+/**
+ * @param {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} httpStatus
+ * @param {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} oauthStatus
+ */
+function printStartMcpCatalog(httpStatus, oauthStatus) {
+    printMcpServerCatalog({
+        logPrefix: '[start:all]',
+        title: 'Demo MCP hosts',
+        httpEntries: buildHttpMcpCatalogEntries(HTTP_START_DEMO_NAMES, process.env, httpStatus),
+        oauthEntries: buildOAuthMcpCatalogEntries(OAUTH_HTTP_START_DEMO_NAMES, process.env, oauthStatus),
+        footerLines: [
+            'Cursor: Settings → Tools & MCPs — enable servers, reload MCP.',
+            'HTTP debug: npm run mcp:inspect -- <demo>',
+            'Stop: npm run demo:kill-all (MCP, IDP, Docker)',
+            'Live logs: START_FOREGROUND=1 npm run start:all'
+        ]
+    });
+}
 
 async function main() {
     prepareWorkspaceEnv();
@@ -51,30 +74,48 @@ async function main() {
         label: 'oauth-idp openid-configuration'
     });
 
+    /** @type {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} */
+    const httpStatus = new Map();
     for (const name of HTTP_START_DEMO_NAMES) {
-        const { port, args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
-        const label = `mcp-http:${name} (${mcpUrl})`;
-        startService(label, args);
-        await waitForMcpHost(label, port, mcpUrl);
+        const labelBase = `mcp-http:${name}`;
+        try {
+            const { port, args, mcpUrl } = buildHostLaunch(name, demosRoot, process.env);
+            const label = `${labelBase} (${mcpUrl})`;
+            startService(label, args);
+            await waitForMcpHost(label, port, mcpUrl);
+            httpStatus.set(name, { status: 'running' });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`[start:all] ${labelBase} skipped: ${message}`);
+            httpStatus.set(name, { status: 'skipped', skipReason: message });
+        }
     }
 
+    /** @type {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} */
+    const oauthStatus = new Map();
     for (const name of OAUTH_HTTP_START_DEMO_NAMES) {
-        const { port, args, mcpUrl } = buildOAuthHostLaunch(name, demosRoot, process.env);
-        const label = `mcp-oauth:${name} (${mcpUrl})`;
-        startService(label, args);
-        await waitForMcpHost(label, port, mcpUrl);
+        const labelBase = `mcp-oauth:${name}`;
+        try {
+            const { port, args, mcpUrl } = buildOAuthHostLaunch(name, demosRoot, process.env);
+            const label = `${labelBase} (${mcpUrl})`;
+            startService(label, args);
+            await waitForMcpHost(label, port, mcpUrl);
+            oauthStatus.set(name, { status: 'running' });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`[start:all] ${labelBase} skipped: ${message}`);
+            oauthStatus.set(name, { status: 'skipped', skipReason: message });
+        }
     }
+
+    printStartMcpCatalog(httpStatus, oauthStatus);
 
     if (foreground) {
-        printMcpReminder();
         console.log('[start:all] Ctrl+C stops MCP/IDP processes started here (npm run demo:kill-all also stops Docker).');
         await waitForForegroundServiceShutdown({ label: 'start:all', serviceChildren, demosRoot });
         return;
     }
-    console.log('[start:all] done. Demo services run in background (npm run demo:kill-all stops MCP, IDP, and Docker).');
-    printMcpReminder();
-    console.log('[start:all] Open WebUI + demos: npm run start:open-webui');
-    console.log('[start:all] live logs: START_FOREGROUND=1 npm run start:all');
+    console.log('[start:all] done. Demo services run in background.');
 }
 
 main().catch((error) => {

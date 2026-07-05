@@ -320,7 +320,7 @@ function writeJsonRpcInternalError(res: ServerResponse): void {
     writeJsonRpcError(res, 500, -32_603, 'Internal server error');
 }
 
-/** GET/DELETE without an established session — spec-allowed probe response (Open WebUI Verify Connection). */
+/** GET/DELETE without an established session — spec-allowed probe response (HTTP clients verifying connection). */
 function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
     writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
 }

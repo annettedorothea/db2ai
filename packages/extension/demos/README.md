@@ -133,6 +133,13 @@ or:
 db2ai /test-all
 ```
 
+For HTTP transport debugging:
+
+```bash
+npm run mcp:inspect -- pagila-postgresql
+npm run mcp:inspect -- orders-postgresql --with-deps
+```
+
 Prerequisites:
 
 - databases running

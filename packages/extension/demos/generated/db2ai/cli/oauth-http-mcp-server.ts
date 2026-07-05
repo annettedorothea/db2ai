@@ -313,7 +313,7 @@ function writeJsonRpcInternalError(res: ServerResponse): void {
     writeJsonRpcError(res, 500, -32_603, 'Internal server error');
 }
 
-/** GET/DELETE without an established session — spec-allowed probe response (Open WebUI Verify Connection). */
+/** GET/DELETE without an established session — spec-allowed probe response (HTTP clients verifying connection). */
 function writeJsonRpcMethodNotAllowed(res: ServerResponse): void {
     writeJsonRpcError(res, 405, -32_000, 'Method not allowed.');
 }
@@ -584,6 +584,41 @@ function oauthResourceMetadataDocument(httpHostConfig: OAuthHttpHostRuntimeConfi
     };
 }
 
+/** Browser clients discover OAuth metadata from the MCP host origin — endpoints must point at the real IdP. */
+function oauthAuthorizationServerMetadataDocument(httpHostConfig: OAuthHttpHostRuntimeConfig): Record<string, unknown> {
+    const idp = httpHostConfig.oauthIdpUrl;
+    return {
+        issuer: idp,
+        authorization_endpoint: idp + '/authorize',
+        token_endpoint: idp + '/token',
+        jwks_uri: idp + '/jwks',
+        registration_endpoint: idp + '/register',
+        response_types_supported: ['code'],
+        grant_types_supported: ['authorization_code', 'refresh_token'],
+        code_challenge_methods_supported: ['S256'],
+        token_endpoint_auth_methods_supported: ['none'],
+        scopes_supported: [httpHostConfig.oauthScope]
+    };
+}
+
+/**
+ * Browser CORS for oauth HTTP host. Set MCP_HTTP_CORS_ORIGIN for a fixed origin; otherwise reflect Origin when present.
+ */
+function applyMcpHttpCors(req: IncomingMessage, res: ServerResponse, env: NodeJS.ProcessEnv = process.env): void {
+    const configured = env.MCP_HTTP_CORS_ORIGIN?.trim();
+    if (configured) {
+        res.setHeader('Access-Control-Allow-Origin', configured);
+    } else {
+        const origin = req.headers.origin;
+        if (typeof origin === 'string' && origin.length > 0) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Vary', 'Origin');
+        }
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization, mcp-session-id');
+}
+
 function sendOAuthUnauthorized(res: ServerResponse, httpHostConfig: OAuthHttpHostRuntimeConfig): void {
     const resource = 'http://' + httpHostConfig.listenHost + ':' + httpHostConfig.port + httpHostConfig.mcpPath;
     const metadataUrl =
@@ -771,7 +806,23 @@ async function runOAuthHttpMcpStandaloneFromArgv(argv: string[]): Promise<void> 
     });
 
     const httpServer = http.createServer(async (req, res) => {
+        applyMcpHttpCors(req, res);
+        if (req.method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+
         const url = new URL(req.url ?? '/', 'http://' + (req.headers.host ?? 'localhost'));
+        if (
+            (url.pathname === '/.well-known/oauth-authorization-server' ||
+                url.pathname === '/.well-known/openid-configuration') &&
+            req.method === 'GET'
+        ) {
+            res.writeHead(200, { 'content-type': 'application/json' });
+            res.end(JSON.stringify(oauthAuthorizationServerMetadataDocument(httpHostConfig)));
+            return;
+        }
         if (url.pathname === '/.well-known/oauth-protected-resource') {
             res.writeHead(200, { 'content-type': 'application/json' });
             res.end(JSON.stringify(oauthResourceMetadataDocument(httpHostConfig)));
