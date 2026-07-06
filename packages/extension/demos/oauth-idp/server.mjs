@@ -57,6 +57,27 @@ function isAllowedRedirectUri(redirectUri) {
 function registeredRedirectUris() {
     return REDIRECT_RULES.filter((rule) => !rule.endsWith('*'));
 }
+
+/**
+ * Browser CORS for demo IdP. Set MCP_HTTP_CORS_ORIGIN for a fixed origin; otherwise reflect Origin when present.
+ * @param {import('node:http').IncomingMessage} req
+ * @param {import('node:http').ServerResponse} res
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+function applyMcpHttpCors(req, res, env = process.env) {
+    const configured = env.MCP_HTTP_CORS_ORIGIN?.trim();
+    if (configured) {
+        res.setHeader('Access-Control-Allow-Origin', configured);
+    } else {
+        const origin = req.headers.origin;
+        if (typeof origin === 'string' && origin.length > 0) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Vary', 'Origin');
+        }
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
+}
 const DEMO_USERS = [
     { customerId: 'alice', role: 'user' },
     { customerId: 'bob', role: 'user' },
@@ -131,8 +152,9 @@ function openIdConfigurationDocument(base) {
         authorization_endpoint: `${base}/authorize`,
         token_endpoint: `${base}/token`,
         jwks_uri: `${base}/jwks`,
+        registration_endpoint: `${base}/register`,
         response_types_supported: ['code'],
-        grant_types_supported: ['authorization_code'],
+        grant_types_supported: ['authorization_code', 'refresh_token'],
         code_challenge_methods_supported: ['S256'],
         token_endpoint_auth_methods_supported: ['none']
     };
@@ -274,6 +296,13 @@ async function handleToken(req, res) {
 }
 
 const server = createServer(async (req, res) => {
+    applyMcpHttpCors(req, res);
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
     const url = new URL(req.url ?? '/', issuerUrl(req));
     loggingAdapter.debug(`${req.method ?? 'GET'} ${url.pathname}`);
 
@@ -302,7 +331,7 @@ const server = createServer(async (req, res) => {
             client_id: CLIENT_ID,
             client_id_issued_at: Math.floor(Date.now() / 1000),
             redirect_uris: registeredRedirectUris(),
-            grant_types: ['authorization_code'],
+            grant_types: ['authorization_code', 'refresh_token'],
             response_types: ['code'],
             token_endpoint_auth_method: 'none'
         });

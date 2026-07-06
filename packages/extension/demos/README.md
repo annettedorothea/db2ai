@@ -133,6 +133,13 @@ or:
 db2ai /test-all
 ```
 
+For HTTP transport debugging:
+
+```bash
+npm run mcp:inspect -- pagila-postgresql
+npm run mcp:inspect -- orders-postgresql --with-deps
+```
+
 Prerequisites:
 
 - databases running
@@ -144,6 +151,52 @@ The demo workspace includes the skill:
 ```text
 db2ai-test-all-mcp
 ```
+
+---
+
+## Bundling an MCP Server
+
+Generated MCP hosts can be bundled into standalone deployment packages.
+
+Example:
+
+    npm run build:generated
+    npm run build:mcp -- --host public-http animals-sqlserver
+
+This creates a distributable MCP bundle in:
+
+    dist/mcp/animals-sqlserver-public-http/
+
+Depending on the selected host type, configure environment variables before starting the server.
+
+From the bundle directory:
+
+```bash
+cd dist/mcp/animals-sqlserver-public-http
+npm install
+cp .env.example .env
+npm start
+```
+
+`npm start` runs `server.mjs` with the demo flags from `build:mcp` (`--port`, `--path`; api2ai-style hosts also pass `--base-url-env`). Database modules use `connectionEnv` from the generated tools module instead of `--base-url-env`.
+
+Edit `.env` if you need to change upstream URLs, ports, or credentials.
+
+The bundle contains:
+
+- the MCP server runtime
+- generated tools
+- a minimal `package.json`
+- `.env.example`
+- `mcp.json.example`
+
+Supported host types:
+
+- `public-http`
+- `passthrough-http`
+- `oauth-http`
+
+This feature is still evolving and may change before the final `1.0` release.
 
 ---
 

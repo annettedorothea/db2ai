@@ -43,36 +43,31 @@ function loadProductName(demosRoot) {
 
 export const HTTP_DEMOS = {
     'sakila-mysql': {
-        host: 'passthrough-http-mcp-server.js',
-        tools: 'sakila-mysql-tools.js',
+        hostKind: 'passthrough-http',
         connectionEnv: 'SAKILA_MYSQL_DATABASE_URL',
         portEnv: 'SAKILA_MYSQL_HTTP_PORT',
         mcpAuthHeaderEnv: 'MCP_AUTH_HEADER',
         authExpectedEnv: 'MCP_AUTH_EXPECTED'
     },
     'sakila-mariadb': {
-        host: 'public-http-mcp-server.js',
-        tools: 'sakila-mariadb-tools.js',
+        hostKind: 'public-http',
         connectionEnv: 'SAKILA_MARIADB_DATABASE_URL',
         portEnv: 'SAKILA_MARIADB_HTTP_PORT'
     },
     'pagila-postgresql': {
-        host: 'passthrough-http-mcp-server.js',
-        tools: 'pagila-postgresql-tools.js',
+        hostKind: 'passthrough-http',
         connectionEnv: 'PAGILA_POSTGRESQL_DATABASE_URL',
         portEnv: 'PAGILA_POSTGRESQL_HTTP_PORT',
         mcpAuthHeaderEnv: 'MCP_AUTH_HEADER',
         authExpectedEnv: 'MCP_AUTH_EXPECTED'
     },
     'animals-sqlserver': {
-        host: 'public-http-mcp-server.js',
-        tools: 'animals-sqlserver-tools.js',
+        hostKind: 'public-http',
         connectionEnv: 'ANIMALS_SQLSERVER_DATABASE_URL',
         portEnv: 'ANIMALS_SQLSERVER_HTTP_PORT'
     },
     'plants-oracle': {
-        host: 'public-http-mcp-server.js',
-        tools: 'plants-oracle-tools.js',
+        hostKind: 'public-http',
         connectionEnv: 'PLANTS_ORACLE_DATABASE_URL',
         portEnv: 'PLANTS_ORACLE_HTTP_PORT'
     }
@@ -102,9 +97,14 @@ export function buildHostLaunch(name, demosRoot, env) {
     requireEnv(demo.connectionEnv, env);
     const port = resolveHttpPort(demo.portEnv, env);
     const product = loadProductName(demosRoot);
-    const hostJs = path.join(demosRoot, 'generated', product, 'cli', demo.host);
-    const toolsJs = path.join(demosRoot, 'generated', product, 'tools', demo.tools);
-    const args = [hostJs, toolsJs, '--port', String(port), '--path', '/mcp'];
+    const serverJs = path.join(
+        demosRoot,
+        'generated',
+        product,
+        'servers',
+        `${name}-${demo.hostKind}-mcp-server.js`
+    );
+    const args = [serverJs, '--port', String(port), '--path', '/mcp'];
     const mcpUrl = `http://127.0.0.1:${port}/mcp`;
     return { demo, port, args, mcpUrl };
 }

@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { DEMO_LAUNCH_NAMES, DEMO_LAUNCH_REGISTRY } from './demo-launch-registry.mjs';
 import { buildHostLaunch } from './mcp-http-demos.mjs';
 import { buildOAuthHostLaunch } from './mcp-oauth-demos.mjs';
+import { printMcpInspectAuthHints } from './mcp-inspect-auth-hints.mjs';
 import { killListenersOnPort } from './generated/kill-listeners-on-port.mjs';
 import { requireEnvInt } from './generated/require-env.mjs';
 import { demosRoot, prepareWorkspaceEnv, waitForHttpOk, waitForTcpListen } from './start-shared.mjs';
@@ -199,15 +200,11 @@ async function main() {
     const mcpEntry = await ensureHostRunning(demoName, noStart);
     const inspectorArgs = buildInspectorArgs(mcpEntry);
 
-    if (mcpEntry.oauth) {
-        console.warn(
-            '[mcp:inspect] OAuth demo: Inspector has no Cursor Sign-in — initialize/tool calls may fail with 401. Prefer Cursor for OAuth flows.'
-        );
-    }
+    printMcpInspectAuthHints(demoName, process.env);
 
     console.log(`[mcp:inspect] opening MCP Inspector → ${mcpEntry.url}`);
     if (Object.keys(mcpEntry.headers).length > 0) {
-        console.log(`[mcp:inspect] headers: ${JSON.stringify(mcpEntry.headers)}`);
+        console.log(`[mcp:inspect] pre-filled headers (CLI): ${JSON.stringify(mcpEntry.headers)}`);
     }
 
     const onSignal = () => {
