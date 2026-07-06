@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 /**
- * Run CLI generate for one DSL file (VSIX embed or env override).
+ * Run CLI generate for one DSL file (project-generate.config.json cliPath or env override).
  *
  * Usage: node ./scripts/generate.mjs <file.dsl> <generated/{product}/tools/out.ts>
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import os from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,14 +15,7 @@ const configPath = path.join(projectRoot, 'project-generate.config.json');
 function loadConfig() {
     const raw = readFileSync(configPath, 'utf-8');
     const config = JSON.parse(raw);
-    const required = [
-        'productName',
-        'extensionIdPrefix',
-        'embedDirName',
-        'cliEnvVar',
-        'embedHomeEnvVar',
-        'dslExtension'
-    ];
+    const required = ['productName', 'embedDirName', 'cliEnvVar', 'embedHomeEnvVar', 'dslExtension', 'cliPath'];
     for (const key of required) {
         if (typeof config[key] !== 'string' || config[key].trim().length === 0) {
             throw new Error(`[generate] ${path.basename(configPath)} missing "${key}"`);
@@ -40,38 +32,8 @@ function resolveEmbedHome(cliPath, embedDirName) {
     return undefined;
 }
 
-/** Live monorepo CLI (packages/cli) — prefers linked @toolfactory.dev/core over stale extension embed. */
-function findMonorepoSourceCli() {
-    const candidate = path.join(projectRoot, '..', '..', 'cli', 'bin', 'cli.js');
-    return existsSync(candidate) ? candidate : undefined;
-}
-
-function findMonorepoEmbedCli(config) {
-    const candidate = path.join(projectRoot, '..', 'out', config.embedDirName, 'cli.cjs');
-    return existsSync(candidate) ? candidate : undefined;
-}
-
-function findInstalledExtensionCli(config) {
-    const home = os.homedir();
-    const roots = [
-        path.join(home, '.cursor', 'extensions'),
-        path.join(home, '.vscode', 'extensions'),
-        path.join(home, '.vscode-insiders', 'extensions')
-    ];
-    const candidates = [];
-    for (const root of roots) {
-        if (!existsSync(root)) {
-            continue;
-        }
-        for (const entry of readdirSync(root, { withFileTypes: true })) {
-            if (!entry.isDirectory() || !entry.name.startsWith(config.extensionIdPrefix)) {
-                continue;
-            }
-            candidates.push(path.join(root, entry.name, 'out', config.embedDirName, 'cli.cjs'));
-        }
-    }
-    candidates.sort();
-    return candidates.filter((candidate) => existsSync(candidate)).at(-1);
+function resolveConfigCliPath(cliPath) {
+    return path.isAbsolute(cliPath) ? cliPath : path.resolve(projectRoot, cliPath);
 }
 
 function resolveCliSpawn(config) {
@@ -80,35 +42,21 @@ function resolveCliSpawn(config) {
         return { scriptPath: envCli, embedHome: resolveEmbedHome(envCli, config.embedDirName) };
     }
 
-    const monorepoSourceCli = findMonorepoSourceCli();
-    if (monorepoSourceCli) {
-        return { scriptPath: monorepoSourceCli, embedHome: undefined };
+    const scriptPath = resolveConfigCliPath(config.cliPath);
+    if (!existsSync(scriptPath)) {
+        throw new Error(
+            [
+                `${config.productName} CLI not found at ${scriptPath}.`,
+                `Set ${config.cliEnvVar} or update cliPath in ${path.basename(configPath)}.`,
+                'Demo workspace: use Create Demo Workspace from the extension, or point cliPath at …/out/embed-…/cli.cjs.'
+            ].join('\n')
+        );
     }
 
-    const monorepoCli = findMonorepoEmbedCli(config);
-    if (monorepoCli) {
-        return {
-            scriptPath: monorepoCli,
-            embedHome: resolveEmbedHome(monorepoCli, config.embedDirName)
-        };
-    }
-
-    const installedCli = findInstalledExtensionCli(config);
-    if (installedCli) {
-        return {
-            scriptPath: installedCli,
-            embedHome: resolveEmbedHome(installedCli, config.embedDirName)
-        };
-    }
-
-    throw new Error(
-        [
-            `${config.productName} CLI not found.`,
-            '• Run npm run build in the ' + config.productName + ' repo (embed under packages/extension/out), or',
-            `• Install the ${config.productName} VS Code/Cursor extension (VSIX), or`,
-            `• Set ${config.cliEnvVar} to cli.cjs from the extension embed folder.`
-        ].join('\n')
-    );
+    return {
+        scriptPath,
+        embedHome: resolveEmbedHome(scriptPath, config.embedDirName)
+    };
 }
 
 function main() {

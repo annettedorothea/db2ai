@@ -7,14 +7,6 @@
  * npm run start:background — detached, terminal free after setup
  */
 import path from 'node:path';
-import { buildHostLaunch, HTTP_START_DEMO_NAMES } from './mcp-http-demos.mjs';
-import { buildOAuthHostLaunch, OAUTH_HTTP_START_DEMO_NAMES } from './mcp-oauth-demos.mjs';
-import {
-    buildHttpMcpCatalogEntries,
-    buildOAuthMcpCatalogEntries
-} from './mcp-catalog-entries.mjs';
-import { printStartMcpSummary } from './generated/print-mcp-catalog.mjs';
-import { requireEnvInt } from './generated/require-env.mjs';
 import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
 import {
     demosRoot,
@@ -27,11 +19,45 @@ import {
     waitForMcpHost
 } from './start-shared.mjs';
 
+async function loadStartModules() {
+    const [
+        { requireEnvInt },
+        { buildHostLaunch, HTTP_START_DEMO_NAMES },
+        { buildOAuthHostLaunch, OAUTH_HTTP_START_DEMO_NAMES },
+        { buildHttpMcpCatalogEntries, buildOAuthMcpCatalogEntries },
+        { printStartMcpSummary }
+    ] = await Promise.all([
+        import('./generated/require-env.mjs'),
+        import('./mcp-http-demos.mjs'),
+        import('./mcp-oauth-demos.mjs'),
+        import('./mcp-catalog-entries.mjs'),
+        import('./generated/print-mcp-catalog.mjs')
+    ]);
+    return {
+        requireEnvInt,
+        buildHostLaunch,
+        HTTP_START_DEMO_NAMES,
+        buildOAuthHostLaunch,
+        OAUTH_HTTP_START_DEMO_NAMES,
+        buildHttpMcpCatalogEntries,
+        buildOAuthMcpCatalogEntries,
+        printStartMcpSummary
+    };
+}
+
 /**
  * @param {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} httpStatus
  * @param {Map<string, { status: 'running' | 'skipped', skipReason?: string }>} oauthStatus
+ * @param {Awaited<ReturnType<typeof loadStartModules>>} modules
  */
-function printStartMcpSummaryFromStatus(httpStatus, oauthStatus) {
+function printStartMcpSummaryFromStatus(httpStatus, oauthStatus, modules) {
+    const {
+        HTTP_START_DEMO_NAMES,
+        OAUTH_HTTP_START_DEMO_NAMES,
+        buildHttpMcpCatalogEntries,
+        buildOAuthMcpCatalogEntries,
+        printStartMcpSummary
+    } = modules;
     printStartMcpSummary({
         logPrefix: '[start:all]',
         title: 'Demo MCP hosts',
@@ -58,6 +84,9 @@ async function main() {
     runNpm(['run', 'db:up:all']);
     runNpm(['run', 'generate:all']);
     runNpm(['run', 'build:generated']);
+    const modules = await loadStartModules();
+    const { requireEnvInt, buildHostLaunch, HTTP_START_DEMO_NAMES, buildOAuthHostLaunch, OAUTH_HTTP_START_DEMO_NAMES } =
+        modules;
     if (foreground) {
         console.log('[start:all] foreground — LOG_LEVEL=debug, MCP banners in this terminal.');
     } else {
@@ -112,7 +141,7 @@ async function main() {
         }
     }
 
-    printStartMcpSummaryFromStatus(httpStatus, oauthStatus);
+    printStartMcpSummaryFromStatus(httpStatus, oauthStatus, modules);
 
     if (foreground) {
         console.log('[start:all] Ctrl+C stops MCP/IDP processes started here (npm run demo:kill-all also stops Docker).');

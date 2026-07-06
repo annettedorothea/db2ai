@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const generateScript = path.join(projectRoot, 'scripts', 'generate.mjs');
+const syncScript = path.join(projectRoot, 'scripts', 'sync-generated-scripts.mjs');
 const configPath = path.join(projectRoot, 'project-generate.config.json');
 const SKIP_DIRS = new Set(['node_modules', 'generated', 'tmp', 'scripts', '.git', '.cursor']);
 
@@ -71,6 +72,13 @@ function main() {
             cwd: projectRoot
         });
     }
+
+    if (!existsSync(syncScript)) {
+        console.error('[generate-all] missing scripts/sync-generated-scripts.mjs');
+        process.exit(1);
+    }
+    console.log('[generate-all] syncing scripts/generated from @toolfactory.dev/core…');
+    execFileSync(process.execPath, [syncScript], { stdio: 'inherit', cwd: projectRoot });
 }
 
 main();

@@ -17,6 +17,7 @@
         "db:up:all": "node ./scripts/database/db-up-all.mjs",
         "db:down": "node ./scripts/database/db-down-all.mjs",
         "generate:all": "node ./scripts/generate-all.mjs && npm run format",
+        "sync:generated-scripts": "node ./scripts/sync-generated-scripts.mjs",
         "build:generated": "tsc -p tsconfig.generated.json",
         "build:mcp": "node ./scripts/build-mcp.mjs",
         "test": "vitest run",
@@ -30,6 +31,7 @@
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
+        "@toolfactory.dev/core": "^1.0.0-rc.3",
         "jose": "^6.2.3",
         "mysql2": "^3.22.5",
         "mssql": "^11.0.1",
