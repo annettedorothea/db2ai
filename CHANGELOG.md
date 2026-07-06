@@ -12,6 +12,36 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.0.0-rc.1] - 2026-07-06
+
+MCP Option B hosts, shippable `build:mcp` bundles, and resilient demo start. Pins `@toolfactory.dev/core` **1.0.0-rc.2** from npmjs.
+
+### Added
+
+- **MCP host layout (Option B):** shared `generated/db2ai/cli/*-runtime.ts` plus per-module `generated/db2ai/servers/<module>-<host>-mcp-server.ts` (stdio, public HTTP, passthrough HTTP, OAuth HTTP)
+- **`npm run build:mcp -- --host <kind> <module>`** — standalone bundle under `dist/mcp/<module>-<host>/` (`server.mjs`, `package.json`, `.env.example`, `mcp.json.example`, `npm start` with demo CLI flags)
+- **Startup UX:** catalog-style MCP banners per host; orchestrator summary when starting demos
+- **`npm run start:background`** — same stack without blocking the terminal (for `/test-all` and automation); foreground `npm run start` / `start:all` remains the default for local work
+- **Demos README:** bundling walkthrough (`animals-sqlserver` / public HTTP)
+
+### Changed
+
+- Demo launchers and `.cursor/mcp.json` use `servers/*` entrypoints (regenerate after upgrade)
+- **`npm run start`:** missing optional user secrets warn instead of exiting; each MCP host starts in its own try/catch so one failure does not stop the rest
+- **`/test-all` skill:** documents `start:background` for automated runs
+
+### Removed
+
+- Legacy generic `generated/db2ai/cli/*-mcp-server.ts` hosts — run `npm run generate:all` and `npm run build:generated` after upgrading
+
+### Upgrade notes
+
+- Regenerate and rebuild demos: `npm run generate:all`, `npm run build:generated --prefix packages/extension/demos`
+- Update `.cursor/mcp.json` / custom launchers to `servers/<module>-<host>-mcp-server.js` if you forked the old `cli/*-mcp-server` paths
+- Database demos still require Docker (or equivalent) before `/test-all`
+
+---
+
 ## [1.0.0-rc] - 2026-07-03
 
 First release-candidate: **curated MCP tools from SQL** — define queries in `.db2ai`, enrich with intent and access rules, generate executable MCP servers.

@@ -3,6 +3,7 @@
  *
  * Usage: node scripts/bump-version.mjs <X.Y.Z>
  */
+import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,3 +36,5 @@ for (const relativePath of PACKAGE_JSON_PATHS) {
 }
 
 console.log(`Version set to ${version} in ${PACKAGE_JSON_PATHS.length} package.json file(s).`);
+console.log('Running npm install to sync package-lock.json workspace versions…');
+execSync('npm install', { cwd: root, stdio: 'inherit' });
