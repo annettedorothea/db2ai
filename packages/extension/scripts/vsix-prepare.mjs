@@ -1,5 +1,5 @@
 /**
- * Release prep before `vsix:build` (guided-release CP1 verify pipeline).
+ * Release prep before `vsix:build` (guided-release CP2 verify pipeline).
  *
  * Runs from consumer workspace root via: npm run vsix:prepare
  *

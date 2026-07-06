@@ -215,7 +215,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'animals-sqlserver-tools';
-export const mcpServerVersion = '1.0.0-rc';
+export const mcpServerVersion = '1.0.0-rc.1';
 
 const prepareToolCallHooks: Record<
     string,
