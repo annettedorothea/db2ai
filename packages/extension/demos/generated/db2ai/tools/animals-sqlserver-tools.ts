@@ -3,8 +3,8 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import { prepareToolCallForListAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/listAnimals.js';
-import { prepareToolCallForSearchAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/searchAnimals.js';
+import { prepareToolCallForListAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/prepareToolCallForListAnimals.js';
+import { prepareToolCallForSearchAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/prepareToolCallForSearchAnimals.js';
 
 export const connectionEnv = 'ANIMALS_SQLSERVER_DATABASE_URL';
 
@@ -215,7 +215,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'animals-sqlserver-tools';
-export const mcpServerVersion = '1.0.0-rc.1';
+export const mcpServerVersion = '1.0.0-rc.2';
 
 const prepareToolCallHooks: Record<
     string,

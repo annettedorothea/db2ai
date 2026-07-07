@@ -22,22 +22,18 @@ npm run start:all
 
 This command starts:
 
-- all demo databases
-- OAuth identity providers
-- generated MCP hosts
+- all demo databases (background via `start:fixtures`)
+- OAuth identity providers (background)
+- generated MCP hosts (foreground — leave this terminal open)
 - supporting services required by the demos
 
-If you only want a single database, you can start it individually:
+For MCP-only restarts after DSL or codegen changes (DBs and IdP already running):
 
 ```bash
-npm run start:pagila-postgresql
+npm run start:mcp
 ```
 
-or
-
-```bash
-npm run start:sakila-mysql
-```
+(`npm run start` is an alias for `start:mcp`.)
 
 ---
 
@@ -102,21 +98,6 @@ Demos cover:
 - SQL Server
 - Oracle
 
-Start the matching database before opening a demo:
-
-```bash
-npm run start:pagila-postgresql
-npm run start:sakila-mysql
-npm run start:animals-sqlserver
-npm run start:plants-oracle
-```
-
-or simply:
-
-```bash
-npm run start:all
-```
-
 ---
 
 ## Testing
@@ -142,8 +123,8 @@ npm run mcp:inspect -- orders-postgresql --with-deps
 
 Prerequisites:
 
-- databases running
-- MCP hosts running
+- `npm run start:all`
+- MCP servers enabled in `.cursor/mcp.json`
 - OAuth login completed where required
 
 The demo workspace includes the skill:

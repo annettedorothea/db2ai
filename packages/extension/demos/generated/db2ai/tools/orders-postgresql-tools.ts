@@ -4,14 +4,14 @@
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
 import { verifyCredential } from '../../../src/hooks/db2ai/orders-postgresql-tools/verifyOrdersPostgresqlCredential.js';
-import { checkToolAccessForListCustomerOrders } from '../../../src/hooks/db2ai/orders-postgresql-tools/listCustomerOrders.js';
-import { checkToolAccessForCreateProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/createProduct.js';
-import { checkToolAccessForUpdateProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/updateProduct.js';
-import { checkToolAccessForDeleteProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/deleteProduct.js';
-import { prepareToolCallForListCustomerOrders } from '../../../src/hooks/db2ai/orders-postgresql-tools/listCustomerOrders.js';
-import { prepareToolCallForListProducts } from '../../../src/hooks/db2ai/orders-postgresql-tools/listProducts.js';
-import { prepareToolCallForListProductsWithReviews } from '../../../src/hooks/db2ai/orders-postgresql-tools/listProductsWithReviews.js';
-import { prepareToolCallForCreateOrder } from '../../../src/hooks/db2ai/orders-postgresql-tools/createOrder.js';
+import { checkToolAccessForListCustomerOrders } from '../../../src/hooks/db2ai/orders-postgresql-tools/checkToolAccessForListCustomerOrders.js';
+import { checkToolAccessForCreateProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/checkToolAccessForCreateProduct.js';
+import { checkToolAccessForUpdateProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/checkToolAccessForUpdateProduct.js';
+import { checkToolAccessForDeleteProduct } from '../../../src/hooks/db2ai/orders-postgresql-tools/checkToolAccessForDeleteProduct.js';
+import { prepareToolCallForListCustomerOrders } from '../../../src/hooks/db2ai/orders-postgresql-tools/prepareToolCallForListCustomerOrders.js';
+import { prepareToolCallForListProducts } from '../../../src/hooks/db2ai/orders-postgresql-tools/prepareToolCallForListProducts.js';
+import { prepareToolCallForListProductsWithReviews } from '../../../src/hooks/db2ai/orders-postgresql-tools/prepareToolCallForListProductsWithReviews.js';
+import { prepareToolCallForCreateOrder } from '../../../src/hooks/db2ai/orders-postgresql-tools/prepareToolCallForCreateOrder.js';
 
 export const connectionEnv = 'ORDERS_POSTGRESQL_DATABASE_URL';
 
@@ -249,7 +249,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'orders-postgresql-tools';
-export const mcpServerVersion = '1.0.0-rc.1';
+export const mcpServerVersion = '1.0.0-rc.2';
 
 const checkToolAccessHooks: Record<string, (credential: string) => void | Promise<void>> = {
     listCustomerOrders: checkToolAccessForListCustomerOrders,

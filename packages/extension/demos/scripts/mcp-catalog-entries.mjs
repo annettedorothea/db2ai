@@ -1,5 +1,5 @@
 /**
- * MCP catalog entries for db2ai demos (shared by start.mjs).
+ * MCP catalog entries for db2ai demos (shared by start-mcp / start-all).
  */
 import { requireEnv, requireEnvInt } from './generated/require-env.mjs';
 import { HTTP_DEMOS } from './mcp-http-demos.mjs';

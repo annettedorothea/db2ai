@@ -4,15 +4,15 @@
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
 import { verifyCredential } from '../../../src/hooks/db2ai/pagila-postgresql-tools/verifyPagilaPostgresqlCredential.js';
-import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listFilms.js';
-import { prepareToolCallForListActors } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listActors.js';
-import { prepareToolCallForListCustomers } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listCustomers.js';
-import { prepareToolCallForListCategories } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listCategories.js';
-import { prepareToolCallForListCountries } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listCountries.js';
-import { prepareToolCallForListInventory } from '../../../src/hooks/db2ai/pagila-postgresql-tools/listInventory.js';
-import { prepareToolCallForFilmsByMpaaRating } from '../../../src/hooks/db2ai/pagila-postgresql-tools/filmsByMpaaRating.js';
-import { prepareToolCallForFilmsWithActorLastName } from '../../../src/hooks/db2ai/pagila-postgresql-tools/filmsWithActorLastName.js';
-import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/pagila-postgresql-tools/searchFilms.js';
+import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForListFilms.js';
+import { prepareToolCallForListActors } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForListActors.js';
+import { prepareToolCallForListCustomers } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForListCustomers.js';
+import { prepareToolCallForListCategories } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForListCategories.js';
+import { prepareToolCallForListCountries } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForListCountries.js';
+import { prepareToolCallForListInventory } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForListInventory.js';
+import { prepareToolCallForFilmsByMpaaRating } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForFilmsByMpaaRating.js';
+import { prepareToolCallForFilmsWithActorLastName } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForFilmsWithActorLastName.js';
+import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/pagila-postgresql-tools/prepareToolCallForSearchFilms.js';
 
 export const connectionEnv = 'PAGILA_POSTGRESQL_DATABASE_URL';
 
@@ -436,7 +436,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'pagila-postgresql-tools';
-export const mcpServerVersion = '1.0.0-rc.1';
+export const mcpServerVersion = '1.0.0-rc.2';
 
 const prepareToolCallHooks: Record<
     string,

@@ -6,22 +6,29 @@ import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
 
 export const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function envTruthy(name) {
-    const value = process.env[name]?.trim().toLowerCase();
-    return value === '1' || value === 'true' || value === 'yes';
-}
-
-/** Detached children, stdio ignored — opt-in via START_BACKGROUND or npm run start:background. */
-export const background = envTruthy('START_BACKGROUND');
-
-/** Default: logs and MCP banners in this terminal until Ctrl+C. */
-export const foreground = !background;
-
 /** @type {import('node:child_process').ChildProcess[]} */
 export const serviceChildren = [];
 
+/** Set by start:mcp / start:all / start:fixtures entry scripts. */
+export let startLogTag = 'start';
+
+/** @param {string} tag */
+export function setStartLogTag(tag) {
+    startLogTag = tag;
+}
+
 export function runNpm(args) {
     const result = spawnSync('npm', args, { cwd: demosRoot, stdio: 'inherit', shell: process.platform === 'win32' });
+    if (result.status !== 0) {
+        process.exit(result.status ?? 1);
+    }
+}
+
+export function runNode(relativePath, args = []) {
+    const result = spawnSync(process.execPath, [path.join(demosRoot, relativePath), ...args], {
+        cwd: demosRoot,
+        stdio: 'inherit'
+    });
     if (result.status !== 0) {
         process.exit(result.status ?? 1);
     }
@@ -40,25 +47,33 @@ function logPrefix(label) {
     return label.split(/\s/)[0].trim();
 }
 
-function buildServiceEnv(label, extraEnv = {}) {
+function buildServiceEnv(label, extraEnv = {}, detached) {
     const env = { ...process.env, ...extraEnv, LOG_SERVICE_PREFIX: logPrefix(label) };
-    if (foreground) {
+    if (!detached) {
         env.LOG_LEVEL = 'debug';
     }
     return env;
 }
 
-export function startService(label, argv, extraEnv = {}, logPort) {
-    const env = buildServiceEnv(label, extraEnv);
+/**
+ * @param {string} label
+ * @param {string[]} argv
+ * @param {Record<string, string>} [extraEnv]
+ * @param {number} [logPort]
+ * @param {{ detached?: boolean }} [options] — fixtures: detached; MCP hosts: foreground (default)
+ */
+export function startService(label, argv, extraEnv = {}, logPort, options = {}) {
+    const detached = options.detached ?? false;
+    const env = buildServiceEnv(label, extraEnv, detached);
     const portHint = logPort ? ` port ${logPort}` : '';
-    if (foreground) {
+    if (!detached) {
         const child = spawn(process.execPath, argv, {
             cwd: demosRoot,
             stdio: 'inherit',
             env
         });
         serviceChildren.push(child);
-        console.log(`[start] ${label} started in foreground${portHint}`);
+        console.log(`[${startLogTag}] ${label} started in foreground${portHint}`);
         return;
     }
     const child = spawn(process.execPath, argv, {
@@ -68,7 +83,7 @@ export function startService(label, argv, extraEnv = {}, logPort) {
         env
     });
     child.unref();
-    console.log(`[start] ${label} started in background${portHint}`);
+    console.log(`[${startLogTag}] ${label} started in background${portHint}`);
 }
 
 export async function waitForHttpOk(url, { timeoutMs = 20_000, intervalMs = 200, label = url } = {}) {
@@ -120,5 +135,5 @@ export function installGenerateCompile() {
 }
 
 export function printMcpReminder() {
-    console.log('[start] Cursor Settings → Tools & MCPs: enable servers, then reload MCP.');
+    console.log(`[${startLogTag}] Cursor Settings → Tools & MCPs: enable servers, then reload MCP.`);
 }

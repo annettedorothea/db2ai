@@ -3,8 +3,8 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/listFilms.js';
-import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/searchFilms.js';
+import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/prepareToolCallForListFilms.js';
+import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/prepareToolCallForSearchFilms.js';
 
 export const connectionEnv = 'SAKILA_MARIADB_DATABASE_URL';
 
@@ -109,7 +109,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-mariadb-tools';
-export const mcpServerVersion = '1.0.0-rc.1';
+export const mcpServerVersion = '1.0.0-rc.2';
 
 const prepareToolCallHooks: Record<
     string,

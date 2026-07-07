@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Stop MCP HTTP/OAuth hosts, OAuth IDP, and all demo Docker DBs (safe to re-run).
+ * Stop fixtures and MCP hosts (safe to re-run).
  */
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { prepareWorkspaceEnv } from './start-shared.mjs';
 
@@ -22,8 +22,8 @@ function runNode(relativePath, args = []) {
 prepareWorkspaceEnv();
 console.log('[kill-all] stopping MCP hosts…');
 runNode('./scripts/kill-mcp-hosts.mjs');
-console.log('[kill-all] stopping OAuth IDP…');
-runNode('./oauth-idp/kill-server.mjs');
+console.log('[kill-all] stopping fixtures…');
+runNode('./scripts/kill-fixtures.mjs');
 console.log('[kill-all] stopping demo Docker databases…');
 runNode('./scripts/database/kill-demo-databases.mjs', ['all']);
 console.log('[kill-all] done.');

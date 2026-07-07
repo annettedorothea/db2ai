@@ -236,7 +236,9 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
             ? renderCheckToolAccessHookImports(destinationTsPath, stubPaths, checkToolAccessToolNames)
             : '';
     const prepareToolCallImports =
-        prepareToolCallToolNames.length > 0 ? renderPrepareToolCallHookImports(destinationTsPath, stubPaths) : '';
+        prepareToolCallToolNames.length > 0
+            ? renderPrepareToolCallHookImports(destinationTsPath, stubPaths, prepareToolCallToolNames)
+            : '';
     const authStubImports = [checkToolAccessImports, prepareToolCallImports].filter((s) => s.length > 0).join('\n');
     const authMapBlocks: string[] = [];
     if (authPipelineTier === 'full') {

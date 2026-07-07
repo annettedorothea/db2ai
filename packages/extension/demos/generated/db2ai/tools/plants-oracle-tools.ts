@@ -3,8 +3,8 @@
  */
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
-import { prepareToolCallForListPlants } from '../../../src/hooks/db2ai/plants-oracle-tools/listPlants.js';
-import { prepareToolCallForSearchPlants } from '../../../src/hooks/db2ai/plants-oracle-tools/searchPlants.js';
+import { prepareToolCallForListPlants } from '../../../src/hooks/db2ai/plants-oracle-tools/prepareToolCallForListPlants.js';
+import { prepareToolCallForSearchPlants } from '../../../src/hooks/db2ai/plants-oracle-tools/prepareToolCallForSearchPlants.js';
 
 export const connectionEnv = 'PLANTS_ORACLE_DATABASE_URL';
 
@@ -215,7 +215,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'plants-oracle-tools';
-export const mcpServerVersion = '1.0.0-rc.1';
+export const mcpServerVersion = '1.0.0-rc.2';
 
 const prepareToolCallHooks: Record<
     string,

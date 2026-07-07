@@ -1,5 +1,5 @@
 /**
- * Per-demo launch config — keys match .cursor/mcp.json server names (and npm run start:<name>).
+ * Per-demo launch config — keys match .cursor/mcp.json server names (and mcp:inspect).
  *
  * @typedef {object} DockerServiceSpec
  * @property {string} service compose service name

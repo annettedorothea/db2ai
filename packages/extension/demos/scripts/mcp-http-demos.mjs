@@ -73,7 +73,7 @@ export const HTTP_DEMOS = {
     }
 };
 
-/** Hosts started by `npm run start` (HTTP entries in .cursor/mcp.json). */
+/** Hosts started by `npm run start:mcp` / `start:all` (HTTP entries in .cursor/mcp.json). */
 export const HTTP_START_DEMO_NAMES = [
     'sakila-mysql',
     'sakila-mariadb',

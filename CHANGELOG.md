@@ -12,6 +12,33 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.0.0-rc.2] - 2026-07-07
+
+Hook stubs per export name, demo start script split, core **1.0.0-rc.4**. Pins `@toolfactory.dev/core` **1.0.0-rc.4** from npmjs.
+
+### Added
+
+- **Demo scripts:** `start:mcp` (foreground MCP), `start:all` (full stack), `start:fixtures` (background DBs + IdP); `demo:kill-mcp` / `demo:kill-fixtures` / `demo:kill-all`
+- **Hook stubs:** one file per `checkToolAccessFor*` / `prepareToolCallFor*` export; generator always imports from DSL
+
+### Changed
+
+- **`npm run start`** aliases `start:mcp`; `/test-all` uses `start:all`
+- **Demos README** and `/test-all` skill updated for new start workflow
+- **`mcp:inspect`:** auth hints inlined (removed `mcp-inspect-auth-hints.mjs`)
+- **OAuth:** `localhost:8787/callback` in `.env.example`; demos `.env` gitignored
+
+### Removed
+
+- `start.mjs`, `start-mcp-http*.mjs`, `start-mcp-oauth.mjs`, `start-demo.mjs`, `start:background`, per-demo `start:<name>` npm scripts
+
+### Upgrade notes
+
+- Regenerate: `npm run generate:all`, `npm run build:generated --prefix packages/extension/demos`
+- Split legacy combined hook stub files; delete orphan `${toolName}.ts` stubs
+
+---
+
 ## [1.0.0-rc.1] - 2026-07-06
 
 MCP Option B hosts, shippable `build:mcp` bundles, and resilient demo start. Pins `@toolfactory.dev/core` **1.0.0-rc.2** from npmjs.

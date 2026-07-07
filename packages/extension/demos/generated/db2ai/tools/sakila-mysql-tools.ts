@@ -4,12 +4,12 @@
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
 import { verifyCredential } from '../../../src/hooks/db2ai/sakila-mysql-tools/verifySakilaMysqlCredential.js';
-import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/sakila-mysql-tools/listFilms.js';
-import { prepareToolCallForListActors } from '../../../src/hooks/db2ai/sakila-mysql-tools/listActors.js';
-import { prepareToolCallForListCategories } from '../../../src/hooks/db2ai/sakila-mysql-tools/listCategories.js';
-import { prepareToolCallForFilmsByRating } from '../../../src/hooks/db2ai/sakila-mysql-tools/filmsByRating.js';
-import { prepareToolCallForFilmsWithActorLastName } from '../../../src/hooks/db2ai/sakila-mysql-tools/filmsWithActorLastName.js';
-import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/sakila-mysql-tools/searchFilms.js';
+import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/sakila-mysql-tools/prepareToolCallForListFilms.js';
+import { prepareToolCallForListActors } from '../../../src/hooks/db2ai/sakila-mysql-tools/prepareToolCallForListActors.js';
+import { prepareToolCallForListCategories } from '../../../src/hooks/db2ai/sakila-mysql-tools/prepareToolCallForListCategories.js';
+import { prepareToolCallForFilmsByRating } from '../../../src/hooks/db2ai/sakila-mysql-tools/prepareToolCallForFilmsByRating.js';
+import { prepareToolCallForFilmsWithActorLastName } from '../../../src/hooks/db2ai/sakila-mysql-tools/prepareToolCallForFilmsWithActorLastName.js';
+import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/sakila-mysql-tools/prepareToolCallForSearchFilms.js';
 
 export const connectionEnv = 'SAKILA_MYSQL_DATABASE_URL';
 
@@ -274,7 +274,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-mysql-tools';
-export const mcpServerVersion = '1.0.0-rc.1';
+export const mcpServerVersion = '1.0.0-rc.2';
 
 const prepareToolCallHooks: Record<
     string,

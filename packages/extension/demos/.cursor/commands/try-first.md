@@ -7,7 +7,7 @@ Prerequisites: Docker Desktop running.
 If setup is not done yet, run in the demo workspace root:
 
 ```bash
-npm run start:sakila-mysql
+npm run mcp:inspect -- sakila-mysql
 ```
 
 Then ensure only the **`sakila-mysql`** MCP server is enabled in Cursor and MCP is reloaded.

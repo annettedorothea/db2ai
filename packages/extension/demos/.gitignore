@@ -1,3 +1,6 @@
+.env
+.env.local
+
 # Emitted next to auth stubs by mistake or local tsc — keep only *.ts in src/auth/
 src/auth/**/*.js
 src/auth/**/*.js.map
