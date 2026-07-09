@@ -2,6 +2,7 @@ import type { Model } from 'db-2-ai-dsl-language';
 import {
     getAccessKind,
     isSqlQuery,
+    isVerifyCredentialEnabled,
     type ResolvedDatabaseDialect,
     type ResolvedSqlParam,
     type SqlParamType
@@ -15,6 +16,7 @@ import {
     renderVerifyCredentialReExport,
     resolveBootstrapProjectRootFromSource,
     resolveMcpServerIdentityFromDestination,
+    renderMcpBuildGeneratedAtReExport,
     type ProjectBootstrapConfig
 } from '@toolfactory.dev/core/codegen';
 import * as path from 'node:path';
@@ -139,8 +141,10 @@ export const mcpServerVersion = ${JSON.stringify(version)};
 `;
 }
 
-function authRuntimeKind(model: Model): 'none' | 'credential' {
-    return model.auth ? 'credential' : 'none';
+function renderMcpServerIdentityBlock(destinationTsPath: string, name: string, version: string): string {
+    return `${renderMcpServerIdentityExports(name, version)}
+${renderMcpBuildGeneratedAtReExport(destinationTsPath)}
+`;
 }
 
 function assembleToolsModuleSource(
@@ -221,8 +225,7 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const envName = String(model.env).trim();
     const tools = resolveToolsFromModel(model);
     const inputSchemaByTool = buildInputSchemaByTool(model, tools) as Record<string, JsonSchemaDict>;
-    const authKind = authRuntimeKind(model);
-    const hasAuth = authKind === 'credential';
+    const hasVerifyCredential = isVerifyCredentialEnabled(model);
     const hasAuthPipeline = modelHasAuthPipeline(model);
     const checkToolAccessToolNames = listCheckToolAccessToolNames(model);
     const prepareToolCallToolNames = listPrepareToolCallToolNames(model);
@@ -255,15 +258,17 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
         destinationTsPath,
         bootstrapConfig
     );
-    const mcpServerIdentityBlock = renderMcpServerIdentityExports(mcpServerName, mcpServerVersion);
+    const mcpServerIdentityBlock = renderMcpServerIdentityBlock(destinationTsPath, mcpServerName, mcpServerVersion);
     const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
     const stubMaps = {
         checkToolAccess: checkToolAccessToolNames.length > 0,
         prepareToolCall: prepareToolCallToolNames.length > 0
     };
-    const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasAuth, authPipelineTier, stubMaps);
+    const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasVerifyCredential, authPipelineTier, stubMaps);
 
-    const verifyStubPath = hasAuth ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath) : undefined;
+    const verifyStubPath = hasVerifyCredential
+        ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)
+        : undefined;
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
     const verifyCredentialImport =
         verifyStubPath !== undefined ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath) : '';

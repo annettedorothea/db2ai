@@ -14,7 +14,7 @@
         "db:down": "node ./scripts/database/db-down-all.mjs",
         "generate:all": "node ./scripts/generate-all.mjs && npm run format",
         "sync:generated-scripts": "node ./scripts/sync-generated-scripts.mjs",
-        "build:generated": "tsc -p tsconfig.generated.json",
+        "build:generated": "node ./scripts/ensure-mcp-build-stamp.mjs && tsc -p tsconfig.generated.json",
         "build:mcp": "node ./scripts/build-mcp.mjs",
         "test": "vitest run",
         "format": "prettier --write .",

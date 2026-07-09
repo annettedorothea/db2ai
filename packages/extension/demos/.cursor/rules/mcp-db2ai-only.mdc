@@ -67,7 +67,7 @@ alwaysApply: true
 ## Audit
 
 - Fuege am Ende jeder Antwort in diesem Fall einen Abschnitt `Audit` hinzu, der alle MCP-Aufrufe vollstaendig listet.
-- **Ausnahme `/test-all`:** Skill `db2ai-test-all-mcp` — nur Ergebnisbericht (Tabelle + Auffaelligkeiten), **kein** vollstaendiger Audit.
+- **Ausnahme `/test-all`:** Skill `db2ai-test-all-mcp` — Ergebnisbericht + **kompakter Audit** (Tabelle, eine Zeile pro Tool); **kein** Voll-Audit mit `###` und Roh-JSON.
 - **Pro Aufruf eine Ueberschrift (###)** — kein doppelter Toolname als Titel und als Feld.
 
 **Ueberschrift:** Kurztext aus dem **Intent** im MCP-Tool-Descriptor (`description`, Zeile direkt nach `Intent:`), vor dem Lesen des Schemas aus dem Descriptor extrahieren. Fuer die Nutzerantwort auf Deutsch: Intent sinngemaess auf Deutsch formulieren (ein kurzer Satz oder Nominalphrase). Fehlt `Intent:`, die erste kurze Zeile der Tool-Beschreibung oder den `title` nutzen.

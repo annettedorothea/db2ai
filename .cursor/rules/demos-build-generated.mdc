@@ -7,6 +7,8 @@ alwaysApply: true
 
 `packages/extension/demos/generated/**/*.js` is emitted by `tsc` (`build:generated`), not Prettier. **Do not commit** `.js` or `.js.map` — they are gitignored; commit **`generated/**/*.ts`** only.
 
+`generated/{product}/mcp-build-generated-at.ts` is the shared MCP build stamp (gitignored). Tool modules re-export it; only this file changes on every `generate:all`.
+
 After clone or `generate:all`, run **`npm run build:generated`** (or save `.db2ai` with the extension) so MCP can load `*.js` locally.
 
 **Do not** add pre-commit logic that rebuilds and `git add`s files during commit. Regenerate explicitly; the user stages the result.

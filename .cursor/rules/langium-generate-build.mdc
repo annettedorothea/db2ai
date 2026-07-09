@@ -13,6 +13,6 @@ Exception: If all changed files are inside `packages/extension/demos/` (excludin
 
 If you changed **`packages/cli/src/generator/`**, follow [codegen-generated-quality.mdc](./codegen-generated-quality.mdc): `npm run build`, `npm run generate:all`, `npm run check`.
 
-If you changed **`@toolfactory.dev/core/codegen`** (e.g. `renderStdioMcpServerSource`), rebuild in sibling **core2ai** (`npm run watch` or `npm run build`), then `generate:all`, `build:generated`, MCP restart. See `../core2ai/.cursor/rules/core2ai-build.mdc`.
+If you changed **`@toolfactory.dev/core/codegen`** (e.g. `renderStdioRuntimeTemplate`, `renderMcpHostSharedTemplate`), rebuild in sibling **core2ai** (`npm run watch` or `npm run build`), then `generate:all`, `build:generated`, MCP restart. See `../core2ai/.cursor/rules/core2ai-build.mdc`.
 
 If either command fails, fix the issue before proceeding with more implementation work.

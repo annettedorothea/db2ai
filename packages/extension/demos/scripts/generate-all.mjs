@@ -49,11 +49,31 @@ function findDslFiles(root, dslExtension) {
     return results.sort();
 }
 
+function formatCodegenBuildTimestamp(date = new Date()) {
+    const offsetMinutes = -date.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absOffset = Math.abs(offsetMinutes);
+    const offsetHours = Math.floor(absOffset / 60);
+    const offsetMins = absOffset % 60;
+    const tzLabel =
+        offsetMins === 0
+            ? `UTC${sign}${offsetHours}`
+            : `UTC${sign}${offsetHours}:${String(offsetMins).padStart(2, '0')}`;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d} ${h}:${min} (${tzLabel})`;
+}
+
 function main() {
     if (!existsSync(generateScript)) {
         console.error('[generate-all] missing scripts/generate.mjs');
         process.exit(1);
     }
+
+    process.env.TF_BUILD_GENERATED_AT = formatCodegenBuildTimestamp();
 
     const config = loadConfig();
     const dslFiles = findDslFiles(projectRoot, config.dslExtension);

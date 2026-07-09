@@ -14,6 +14,9 @@ src/utils/**/*.js.map
 generated/**/*.js
 generated/**/*.js.map
 
+# codegen build stamp — one file per product, updated on every generate
+generated/*/mcp-build-generated-at.ts
+
 tmp/
 dist/
 .cursor/plans/

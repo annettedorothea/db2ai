@@ -27,16 +27,20 @@ type ApiLikeHostContext = {
 
 type VerifyCredentialFn = (credential: string) => void | Promise<void>;
 
+type TokenExchangeFn = (idpCredential: string) => Promise<string>;
+
 type GeneratedHostModule = {
     generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
     invokeTool: (toolName: string, args?: Record<string, unknown>, hostContext?: unknown) => Promise<unknown>;
     inputZodByTool?: Record<string, unknown>;
     mcpServerName?: string;
     mcpServerVersion?: string;
+    mcpBuildGeneratedAt?: string;
     requiresAuth: boolean;
     connectionEnv?: string;
     databaseDialect?: DatabaseDialect;
     verifyCredential?: VerifyCredentialFn;
+    tokenExchange?: TokenExchangeFn;
 };
 
 function stripOptionalQuotes(value: string): string {
@@ -166,12 +170,20 @@ function readGeneratedModule(imported: Record<string, unknown>): GeneratedHostMo
     const inputZodByTool = imported.inputZodByTool;
     const mcpServerName = imported.mcpServerName;
     const mcpServerVersion = imported.mcpServerVersion;
+    const mcpBuildGeneratedAt = imported.mcpBuildGeneratedAt;
     const connectionEnv = imported.connectionEnv;
     const verifyCredential = imported.verifyCredential;
     const verifyCredentialFn =
         typeof verifyCredential === 'function' ? (verifyCredential as VerifyCredentialFn) : undefined;
+    const tokenExchange = imported.tokenExchange;
+    const tokenExchangeFn = typeof tokenExchange === 'function' ? (tokenExchange as TokenExchangeFn) : undefined;
     return {
-        generatedTools: generatedTools as Array<{ toolName: string; title?: string; description: string }>,
+        generatedTools: generatedTools as Array<{
+            toolName: string;
+            title?: string;
+            description: string;
+            access?: string;
+        }>,
         invokeTool: invokeTool as (
             toolName: string,
             args?: Record<string, unknown>,
@@ -183,10 +195,12 @@ function readGeneratedModule(imported: Record<string, unknown>): GeneratedHostMo
                 : undefined,
         mcpServerName: typeof mcpServerName === 'string' ? mcpServerName : undefined,
         mcpServerVersion: typeof mcpServerVersion === 'string' ? mcpServerVersion : undefined,
+        mcpBuildGeneratedAt: typeof mcpBuildGeneratedAt === 'string' ? mcpBuildGeneratedAt : undefined,
         requiresAuth: imported.requiresAuth === true,
         connectionEnv: typeof connectionEnv === 'string' ? connectionEnv : undefined,
         databaseDialect: parseDatabaseDialect(imported.databaseDialect),
-        verifyCredential: verifyCredentialFn
+        verifyCredential: verifyCredentialFn,
+        tokenExchange: tokenExchangeFn
     };
 }
 
@@ -202,6 +216,36 @@ function requireMcpServerIdentity(generated: GeneratedHostModule): { name: strin
     return { name, version };
 }
 
+function formatMcpBuildLine(generated: GeneratedHostModule): string | undefined {
+    const semver = generated.mcpServerVersion?.trim();
+    const buildAt = generated.mcpBuildGeneratedAt?.trim();
+    if (semver && buildAt) {
+        return semver + ' · ' + buildAt;
+    }
+    return semver ?? buildAt;
+}
+
+function formatMcpDisplayVersion(generated: GeneratedHostModule): string {
+    const line = formatMcpBuildLine(generated);
+    if (!line) {
+        throw new Error('Generated module must export "mcpServerVersion". Regenerate tool code.');
+    }
+    return line;
+}
+
+function formatMcpServerVersionFields(generated: GeneratedHostModule): { label: string; value: string }[] {
+    const semver = generated.mcpServerVersion?.trim();
+    const buildAt = generated.mcpBuildGeneratedAt?.trim();
+    const fields: { label: string; value: string }[] = [];
+    if (semver) {
+        fields.push({ label: 'Version:', value: semver });
+    }
+    if (buildAt) {
+        fields.push({ label: 'Build:', value: buildAt });
+    }
+    return fields;
+}
+
 function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefined, toolName: string): z.ZodTypeAny {
     if (!inputZodByTool) {
         throw new Error('Generated module must export "inputZodByTool". Regenerate tool code.');
@@ -211,6 +255,14 @@ function requireInputZodSchema(inputZodByTool: Record<string, unknown> | undefin
         throw new Error(`Generated module inputZodByTool has no schema for tool "${toolName}". Regenerate tool code.`);
     }
     return schema as z.ZodTypeAny;
+}
+
+function formatMcpToolDescription(generated: GeneratedHostModule, toolDescription: string): string {
+    const buildLine = formatMcpBuildLine(generated);
+    if (!buildLine) {
+        return toolDescription;
+    }
+    return 'MCP build: ' + buildLine + '\n\n---\n\n' + toolDescription;
 }
 
 /** Log when the MCP client requests tools/list (wraps SDK handler set by registerTool). */
@@ -242,7 +294,7 @@ async function registerMcpTools(
             tool.toolName,
             {
                 title: typeof tool.title === 'string' && tool.title.length > 0 ? tool.title : undefined,
-                description: tool.description,
+                description: formatMcpToolDescription(generated, tool.description),
                 inputSchema
             },
             async (args) => {
@@ -388,9 +440,14 @@ type OAuthHttpHostRuntimeConfig = {
 type McpOAuthSession = {
     sessionId: string;
     credential?: string;
+    sourceCredential?: string;
     verifiedAt?: number;
+    exchangedAt?: number;
     createdAt: number;
 };
+
+/** IdP Bearer → portal/API credential (shared by gate + session resolver). */
+const oauthCredentialByInbound = new Map<string, string>();
 
 function parseOAuthHttpHostArgv(argv: string[], envDirs: string[]): OAuthHttpHostRuntimeConfig {
     let baseUrlEnv: string | undefined;
@@ -486,10 +543,10 @@ function generatedHasProtectedTool(generated: GeneratedHostModule): boolean {
     return generated.generatedTools.some((t) => t.access === 'protected');
 }
 
-async function validateOAuthHttpHostAtStartup(
+function validateOAuthHttpHostAtStartup(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule
-): Promise<void> {
+): void {
     if (generated.connectionEnv) {
         const connectionString = process.env[generated.connectionEnv]?.trim();
         if (!connectionString) {
@@ -540,7 +597,79 @@ function oauthHostContextBaseUrlFields(
     return { baseUrl: resolveOAuthHostBaseUrl(httpHostConfig) };
 }
 
-function withDbConnectionHostContext(generated: GeneratedHostModule, context: ApiLikeHostContext): ApiLikeHostContext {
+async function resolveOAuthSessionCredential(
+    generated: GeneratedHostModule,
+    inboundIdpToken: string,
+    session: McpOAuthSession | undefined
+): Promise<string> {
+    const inbound = inboundIdpToken.trim();
+    if (session?.exchangedAt && session.credential && session.sourceCredential === inbound) {
+        return session.credential;
+    }
+
+    const cached = oauthCredentialByInbound.get(inbound);
+    if (cached) {
+        if (session) {
+            session.credential = cached;
+            session.sourceCredential = inbound;
+            session.exchangedAt = Date.now();
+            session.verifiedAt = Date.now();
+        }
+        return cached;
+    }
+
+    let credential = inbound;
+    const exchange = generated.tokenExchange;
+    if (typeof exchange === 'function') {
+        credential = String(await exchange(inbound)).trim();
+        if (!credential) {
+            throw new Error('tokenExchange returned an empty credential.');
+        }
+    }
+
+    const verify = generated.verifyCredential;
+    if (typeof verify === 'function') {
+        await verify(credential);
+    }
+
+    oauthCredentialByInbound.set(inbound, credential);
+
+    if (session) {
+        session.credential = credential;
+        session.sourceCredential = inbound;
+        session.exchangedAt = Date.now();
+        session.verifiedAt = Date.now();
+    }
+
+    return credential;
+}
+
+async function verifyCredentialForGate(
+    generated: GeneratedHostModule,
+    bearer: string | undefined,
+    session?: McpOAuthSession
+): Promise<boolean> {
+    const token = bearer?.trim();
+    if (!token) {
+        return false;
+    }
+    if (!generated.requiresAuth) {
+        return true;
+    }
+    const verify = generated.verifyCredential;
+    const exchange = generated.tokenExchange;
+    if (typeof verify !== 'function' && typeof exchange !== 'function') {
+        return true;
+    }
+    try {
+        await resolveOAuthSessionCredential(generated, token, session);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function enrichDbHostContext(generated: GeneratedHostModule, context: ApiLikeHostContext): ApiLikeHostContext {
     if (!generated.connectionEnv) {
         return context;
     }
@@ -559,26 +688,6 @@ function withDbConnectionHostContext(generated: GeneratedHostModule, context: Ap
     return { ...context, connectionString, databaseDialect: dialect };
 }
 
-async function verifyCredentialForGate(generated: GeneratedHostModule, bearer: string | undefined): Promise<boolean> {
-    const token = bearer?.trim();
-    if (!token) {
-        return false;
-    }
-    if (!generated.requiresAuth) {
-        return true;
-    }
-    const verify = generated.verifyCredential;
-    if (typeof verify !== 'function') {
-        return true;
-    }
-    try {
-        await verify(token);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
 async function resolveHostContextForOAuthSession(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule,
@@ -593,37 +702,31 @@ async function resolveHostContextForOAuthSession(
         sessionStore.set(sessionId, session);
     }
 
-    if (session?.verifiedAt && session.credential) {
-        return withDbConnectionHostContext(generated, {
+    const bearer = readBearerFromHeaders(headers);
+    const inbound = bearer?.trim();
+
+    if (session?.exchangedAt && session.credential && (!inbound || session.sourceCredential === inbound)) {
+        return enrichDbHostContext(generated, {
             ...apiFields,
             credential: session.credential
         });
     }
 
-    const bearer = readBearerFromHeaders(headers);
-    const inbound = bearer?.trim();
     if (!inbound) {
         if (session?.credential) {
-            return withDbConnectionHostContext(generated, {
+            return enrichDbHostContext(generated, {
                 ...apiFields,
                 credential: session.credential
             });
         }
-        return withDbConnectionHostContext(generated, { ...apiFields });
+        return enrichDbHostContext(generated, { ...apiFields });
     }
 
-    const verify = generated.verifyCredential;
-    if (typeof verify === 'function') {
-        await verify(inbound);
-    }
-    if (session) {
-        session.credential = inbound;
-        session.verifiedAt = Date.now();
-    }
+    const credential = await resolveOAuthSessionCredential(generated, inbound, session);
 
-    return withDbConnectionHostContext(generated, {
+    return enrichDbHostContext(generated, {
         ...apiFields,
-        credential: inbound
+        credential
     });
 }
 
@@ -704,6 +807,7 @@ function printOAuthHttpStartupBanner(generated: GeneratedHostModule, httpHostCon
         { label: 'Scope:', value: httpHostConfig.oauthScope },
         { label: 'IdP URL:', value: httpHostConfig.oauthIdpUrl }
     ];
+    fields.push(...formatMcpServerVersionFields(generated));
     const upstream = describeUpstreamEnvField(generated, httpHostConfig);
     if (upstream) {
         fields.push(upstream);
@@ -760,8 +864,8 @@ async function createMcpServerForSession(
     sessionId: string,
     headers: Record<string, string | string[] | undefined>
 ): Promise<SessionEntry> {
-    const { name, version } = requireMcpServerIdentity(generated);
-    const server = new McpServer({ name, version });
+    const { name } = requireMcpServerIdentity(generated);
+    const server = new McpServer({ name, version: formatMcpDisplayVersion(generated) });
     const session: McpOAuthSession = {
         sessionId,
         createdAt: Date.now()
@@ -801,7 +905,8 @@ async function handleOAuthMcpRequest(
 
     if (mcpRequiresBearerOnInitialize(generated)) {
         const bearer = readBearerFromHeaders(headers);
-        const verified = await verifyCredentialForGate(generated, bearer);
+        const sessionForGate = sessionIdHeader ? sessionStore.get(sessionIdHeader) : undefined;
+        const verified = await verifyCredentialForGate(generated, bearer, sessionForGate);
         if (!verified) {
             if (!sessionIdHeader && isInitializeRequestBody(parsedBody)) {
                 sendOAuthUnauthorized(res, httpHostConfig);

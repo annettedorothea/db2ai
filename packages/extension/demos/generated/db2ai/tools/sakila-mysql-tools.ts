@@ -276,6 +276,8 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'sakila-mysql-tools';
 export const mcpServerVersion = '1.0.0-rc.2';
 
+export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
+
 const prepareToolCallHooks: Record<
     string,
     (options: InvokeOptions, credential?: string) => InvokeOptions | Promise<InvokeOptions>

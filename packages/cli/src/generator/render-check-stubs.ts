@@ -8,18 +8,21 @@ import {
 } from 'db-2-ai-dsl-language';
 import {
     checkToolAccessExportName,
-    ensureToolHookStubsFromSource,
+    listCheckToolAccessToolNamesFromSpecs,
+    listPrepareToolCallHookEntriesFromSpecs,
+    listPrepareToolCallToolNamesFromSpecs,
+    prepareToolCallExportName,
+    renderCheckStubsFromSpecs,
     renderCheckToolAccessHookImports,
     renderCheckToolAccessHooksMap,
     renderPrepareToolCallHookImports,
     renderPrepareToolCallHooksMap,
-    renderInvokeAuthPipeline as renderInvokeAuthPipelineCore,
     resolveAuthPipelineTier,
-    type AuthPipelineTier,
-    type HookStubMaps,
     type ToolHookStubSpec,
-    prepareToolCallExportName
+    type AuthPipelineTier,
+    type HookStubMaps
 } from '@toolfactory.dev/core/codegen';
+import { renderInvokeAuthPipeline } from '../codegen/auth-pipeline-render.js';
 
 export {
     checkToolAccessExportName,
@@ -28,6 +31,7 @@ export {
     renderCheckToolAccessHooksMap,
     renderPrepareToolCallHookImports,
     renderPrepareToolCallHooksMap,
+    renderInvokeAuthPipeline,
     resolveAuthPipelineTier,
     type AuthPipelineTier,
     type HookStubMaps
@@ -53,9 +57,7 @@ function listToolHookSpecs(model: Model): ToolHookStubSpec[] {
 }
 
 export function listCheckToolAccessToolNames(model: Model): string[] {
-    return listToolHookSpecs(model)
-        .filter((spec) => spec.checkToolAccess)
-        .map((spec) => spec.toolName);
+    return listCheckToolAccessToolNamesFromSpecs(listToolHookSpecs(model));
 }
 
 export function listProtectedToolNames(model: Model): string[] {
@@ -73,15 +75,11 @@ export function listProtectedToolNames(model: Model): string[] {
 }
 
 export function listPrepareToolCallToolNames(model: Model): string[] {
-    return listToolHookSpecs(model)
-        .filter((spec) => spec.prepareToolCall)
-        .map((spec) => spec.toolName);
+    return listPrepareToolCallToolNamesFromSpecs(listToolHookSpecs(model));
 }
 
 export function listPrepareToolCallHookEntries(model: Model): { toolName: string; access: 'public' | 'protected' }[] {
-    return listToolHookSpecs(model)
-        .filter((spec) => spec.prepareToolCall)
-        .map(({ toolName, access }) => ({ toolName, access }));
+    return listPrepareToolCallHookEntriesFromSpecs(listToolHookSpecs(model));
 }
 
 export function modelHasAuthPipeline(model: Model): boolean {
@@ -95,17 +93,5 @@ export async function renderCheckStubs(
     model: Model,
     toolsModuleTsPath: string
 ): Promise<Map<string, string>> {
-    const specs = listToolHookSpecs(model);
-    if (specs.length === 0) {
-        return new Map();
-    }
-    return ensureToolHookStubsFromSource(source, specs, toolsModuleTsPath);
-}
-
-export function renderInvokeAuthPipeline(
-    tier: AuthPipelineTier,
-    hasVerifyCredential: boolean,
-    stubMaps: HookStubMaps
-): string {
-    return renderInvokeAuthPipelineCore('db2ai', tier, hasVerifyCredential, stubMaps);
+    return renderCheckStubsFromSpecs(source, listToolHookSpecs(model), toolsModuleTsPath);
 }

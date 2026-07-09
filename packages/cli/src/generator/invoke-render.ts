@@ -297,54 +297,28 @@ function renderPostgresClientSetup(typescript: boolean): string {
     await client.connect();`;
 }
 
-function renderInvokeToolPreamble(
-    hasAuth: boolean,
+function renderDbInvokePreamble(
+    connectBlock: string,
+    hasVerifyCredential: boolean,
     authPipelineTier: AuthPipelineTier,
     stubMaps: HookStubMaps,
     typescript: boolean
 ): string {
     const accessChecks =
-        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
+        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasVerifyCredential, stubMaps);
     return `
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
     loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}${renderPostgresClientSetup(typescript)}
-    try {
-        switch (toolName) {`;
-}
-
-function renderInvokeToolPreambleMysql(
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps,
-    typescript: boolean
-): string {
-    const accessChecks =
-        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
-    return `
-    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
-    if (!toolMeta) {
-        throw new Error('Unknown tool: ' + toolName);
-    }
-    loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}
-    const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
-    const client = await mysql.createConnection(connectionString);
+${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}${connectBlock}
     try {
         switch (toolName) {`;
 }
 
 const COMPACT_SQL_FOR_LOG_TS = `
 function compactSqlForLog(sql: string): string {
-    return sql.replace(/\\s+/g, ' ').trim();
-}
-`.trim();
-
-const COMPACT_SQL_FOR_LOG_JS = `
-function compactSqlForLog(sql) {
     return sql.replace(/\\s+/g, ' ').trim();
 }
 `.trim();
@@ -368,16 +342,6 @@ function connectionUrlForMysqlDriver(connectionUrl: string): string {
 }
 `.trim();
 
-const CONNECTION_URL_FOR_MYSQL_DRIVER_JS = `
-function connectionUrlForMysqlDriver(connectionUrl) {
-    const trimmed = connectionUrl.trim();
-    if (trimmed.startsWith('mariadb://')) {
-        return 'mysql://' + trimmed.slice('mariadb://'.length);
-    }
-    return trimmed;
-}
-`.trim();
-
 const POSTGRES_NUMERIC_HELPER_TS = `
 function normalizePostgresNumericParamValue(value: unknown): number | null {
     if (value === undefined || value === null) {
@@ -390,35 +354,6 @@ function normalizePostgresNumericParamValue(value: unknown): number | null {
 
 const POSTGRES_BOOLEAN_HELPER_TS = `
 function normalizePostgresBooleanParamValue(value: unknown): boolean | null {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    if (typeof value === 'boolean') {
-        return value;
-    }
-    const lower = String(value).trim().toLowerCase();
-    if (lower === 'true') {
-        return true;
-    }
-    if (lower === 'false') {
-        return false;
-    }
-    return null;
-}
-`.trim();
-
-const POSTGRES_NUMERIC_HELPER_JS = `
-function normalizePostgresNumericParamValue(value) {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    const n = typeof value === 'number' ? value : Number(String(value));
-    return Number.isFinite(n) ? n : null;
-}
-`.trim();
-
-const POSTGRES_BOOLEAN_HELPER_JS = `
-function normalizePostgresBooleanParamValue(value) {
     if (value === undefined || value === null) {
         return null;
     }
@@ -455,35 +390,22 @@ function normalizeMysqlBooleanParamValue(value: unknown): boolean | null {
 }
 `.trim();
 
-const MYSQL_BOOLEAN_HELPER_JS = `
-function normalizeMysqlBooleanParamValue(value) {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    if (typeof value === 'boolean') {
-        return value;
-    }
-    const lower = String(value).trim().toLowerCase();
-    if (lower === 'true') {
-        return true;
-    }
-    if (lower === 'false') {
-        return false;
-    }
-    return null;
-}
-`.trim();
-
 function renderPostgresInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
+    hasVerifyCredential: boolean,
     authPipelineTier: AuthPipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreamble(hasAuth, authPipelineTier, stubMaps, true);
+    const preamble = renderDbInvokePreamble(
+        renderPostgresClientSetup(true),
+        hasVerifyCredential,
+        authPipelineTier,
+        stubMaps,
+        true
+    );
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_TS : '',
@@ -521,61 +443,24 @@ ${toolCases}
 `.trim();
 }
 
-function renderPostgresInvokeBlockJs(
-    toolCases: string,
-    flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps,
-    hasSqlTools: boolean,
-    optionsParam: string
-): string {
-    const preamble = renderInvokeToolPreamble(hasAuth, authPipelineTier, stubMaps, false);
-    const helpers = [
-        hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
-        flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_JS : '',
-        flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_JS : ''
-    ]
-        .filter((block) => block.length > 0)
-        .join('\n\n');
-    const helperSection = `\n\n${helpers}`;
-    return `
-import pg from 'pg';
-
-function resolveConnectionString(hostContext) {
-    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
-        const cs = String(hostContext.connectionString).trim();
-        if (cs.length > 0) {
-            return cs;
-        }
-    }
-    throw new Error(
-        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
-    );
-}${helperSection}
-
-export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
-${toolCases}
-            default:
-                throw new Error('Unknown tool: ' + toolName);
-        }
-    } finally {
-        await client.end();
-    }
-}
-`.trim();
-}
-
 function renderMysqlInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
+    hasVerifyCredential: boolean,
     authPipelineTier: AuthPipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleMysql(hasAuth, authPipelineTier, stubMaps, true);
+    const preamble = renderDbInvokePreamble(
+        `
+    const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
+    const client = await mysql.createConnection(connectionString);`,
+        hasVerifyCredential,
+        authPipelineTier,
+        stubMaps,
+        true
+    );
     const mysqlHelpers = [hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '', flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_TS : '']
         .filter((block) => block.length > 0)
         .join('\n\n');
@@ -627,65 +512,6 @@ ${toolCases}
 `.trim();
 }
 
-function renderMysqlInvokeBlockJs(
-    toolCases: string,
-    flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps,
-    hasSqlTools: boolean,
-    optionsParam: string
-): string {
-    const preamble = renderInvokeToolPreambleMysql(hasAuth, authPipelineTier, stubMaps, false);
-    const mysqlHelpers = [hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '', flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_JS : '']
-        .filter((block) => block.length > 0)
-        .join('\n\n');
-    const helperSection = `\n\n${mysqlHelpers}`;
-    return `
-import mysql from 'mysql2/promise';
-
-function resolveConnectionString(hostContext) {
-    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
-        const cs = String(hostContext.connectionString).trim();
-        if (cs.length > 0) {
-            return cs;
-        }
-    }
-    throw new Error(
-        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
-    );
-}
-
-function normalizeMysqlRows(rows) {
-    return Array.isArray(rows) ? rows : [];
-}
-
-function normalizeMysqlParamValue(value) {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    const text = String(value);
-    const trimmed = text.trim();
-    if (/^-?\\d+(?:\\.\\d+)?$/.test(trimmed)) {
-        return Number(trimmed);
-    }
-    return text;
-}
-
-${CONNECTION_URL_FOR_MYSQL_DRIVER_JS}${helperSection}
-
-export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
-${toolCases}
-            default:
-                throw new Error('Unknown tool: ' + toolName);
-        }
-    } finally {
-        await client.end();
-    }
-}
-`.trim();
-}
-
 const SQLSERVER_NUMERIC_HELPER_TS = `
 function normalizeSqlserverNumericParamValue(value: unknown): number | null {
     if (value === undefined || value === null) {
@@ -698,35 +524,6 @@ function normalizeSqlserverNumericParamValue(value: unknown): number | null {
 
 const SQLSERVER_BOOLEAN_HELPER_TS = `
 function normalizeSqlserverBooleanParamValue(value: unknown): boolean | null {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    if (typeof value === 'boolean') {
-        return value;
-    }
-    const lower = String(value).trim().toLowerCase();
-    if (lower === 'true') {
-        return true;
-    }
-    if (lower === 'false') {
-        return false;
-    }
-    return null;
-}
-`.trim();
-
-const SQLSERVER_NUMERIC_HELPER_JS = `
-function normalizeSqlserverNumericParamValue(value) {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    const n = typeof value === 'number' ? value : Number(String(value));
-    return Number.isFinite(n) ? n : null;
-}
-`.trim();
-
-const SQLSERVER_BOOLEAN_HELPER_JS = `
-function normalizeSqlserverBooleanParamValue(value) {
     if (value === undefined || value === null) {
         return null;
     }
@@ -773,35 +570,6 @@ function normalizeOracleBooleanParamValue(value: unknown): boolean | null {
 }
 `.trim();
 
-const ORACLE_NUMERIC_HELPER_JS = `
-function normalizeOracleNumericParamValue(value) {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    const n = typeof value === 'number' ? value : Number(String(value));
-    return Number.isFinite(n) ? n : null;
-}
-`.trim();
-
-const ORACLE_BOOLEAN_HELPER_JS = `
-function normalizeOracleBooleanParamValue(value) {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    if (typeof value === 'boolean') {
-        return value;
-    }
-    const lower = String(value).trim().toLowerCase();
-    if (lower === 'true') {
-        return true;
-    }
-    if (lower === 'false') {
-        return false;
-    }
-    return null;
-}
-`.trim();
-
 const ORACLE_DML_RETURNING_HELPER_TS = `
 function rowsFromOracleDmlReturning(
     outBinds: Record<string, unknown[]> | undefined,
@@ -821,73 +589,24 @@ function rowsFromOracleDmlReturning(
 }
 `.trim();
 
-const ORACLE_DML_RETURNING_HELPER_JS = `
-function rowsFromOracleDmlReturning(outBinds, columns, bindNames) {
-    if (!outBinds || columns.length === 0) {
-        return [];
-    }
-    const row = {};
-    for (let index = 0; index < columns.length; index++) {
-        const values = outBinds[bindNames[index]];
-        row[columns[index].toUpperCase()] =
-            Array.isArray(values) && values.length > 0 ? values[0] : null;
-    }
-    return [row];
-}
-`.trim();
-
-function renderInvokeToolPreambleOracle(
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps,
-    typescript: boolean
-): string {
-    const accessChecks =
-        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
-    return `
-    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
-    if (!toolMeta) {
-        throw new Error('Unknown tool: ' + toolName);
-    }
-    loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}
-    const connectionString = resolveConnectionString(host);
-    const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));
-    try {
-        switch (toolName) {`;
-}
-
-function renderInvokeToolPreambleSqlserver(
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps,
-    typescript: boolean
-): string {
-    const accessChecks =
-        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasAuth, stubMaps);
-    return `
-    const toolMeta = generatedTools.find((t) => t.toolName === toolName);
-    if (!toolMeta) {
-        throw new Error('Unknown tool: ' + toolName);
-    }
-    loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}
-    const connectionString = resolveConnectionString(host);
-    const pool = await sql.connect(parseSqlserverConnectInput(connectionString));
-    try {
-        switch (toolName) {`;
-}
-
 function renderOracleInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
+    hasVerifyCredential: boolean,
     authPipelineTier: AuthPipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleOracle(hasAuth, authPipelineTier, stubMaps, true);
+    const preamble = renderDbInvokePreamble(
+        `
+    const connectionString = resolveConnectionString(host);
+    const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));`,
+        hasVerifyCredential,
+        authPipelineTier,
+        stubMaps,
+        true
+    );
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_TS : '',
@@ -945,13 +664,21 @@ ${toolCases}
 function renderSqlserverInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
+    hasVerifyCredential: boolean,
     authPipelineTier: AuthPipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
 ): string {
-    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, authPipelineTier, stubMaps, true);
+    const preamble = renderDbInvokePreamble(
+        `
+    const connectionString = resolveConnectionString(host);
+    const pool = await sql.connect(parseSqlserverConnectInput(connectionString));`,
+        hasVerifyCredential,
+        authPipelineTier,
+        stubMaps,
+        true
+    );
     const helpers = [
         hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
         flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_TS : '',
@@ -1012,140 +739,10 @@ ${toolCases}
 `.trim();
 }
 
-function renderOracleInvokeBlockJs(
-    toolCases: string,
-    flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps,
-    hasSqlTools: boolean,
-    optionsParam: string
-): string {
-    const preamble = renderInvokeToolPreambleOracle(hasAuth, authPipelineTier, stubMaps, false);
-    const helpers = [
-        hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
-        flags.oracleNumeric ? ORACLE_NUMERIC_HELPER_JS : '',
-        flags.oracleBoolean ? ORACLE_BOOLEAN_HELPER_JS : '',
-        flags.oracleDmlReturning ? ORACLE_DML_RETURNING_HELPER_JS : ''
-    ]
-        .filter((block) => block.length > 0)
-        .join('\n\n');
-    const helperSection = `\n\n${helpers}`;
-    return `
-import oracledb from 'oracledb';
-
-function resolveConnectionString(hostContext) {
-    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
-        const cs = String(hostContext.connectionString).trim();
-        if (cs.length > 0) {
-            return cs;
-        }
-    }
-    throw new Error(
-        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
-    );
-}
-
-function parseOracleConnectInput(connectionString) {
-    const trimmed = String(connectionString).trim();
-    const asHttp = trimmed.replace(/^oracle:\\/\\//i, 'http://');
-    const url = new URL(asHttp);
-    const serviceName = url.pathname.replace(/^\\//, '');
-    if (serviceName.length === 0) {
-        throw new Error('Oracle connection URL must include a service name path (e.g. oracle://user:pass@host:1521/FREEPDB1).');
-    }
-    const port = url.port.length > 0 ? url.port : '1521';
-    return {
-        user: decodeURIComponent(url.username),
-        password: decodeURIComponent(url.password),
-        connectString: url.hostname + ':' + port + '/' + serviceName
-    };
-}${helperSection}
-
-export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
-${toolCases}
-            default:
-                throw new Error('Unknown tool: ' + toolName);
-        }
-    } finally {
-        await connection.close();
-    }
-}
-`.trim();
-}
-
-function renderSqlserverInvokeBlockJs(
-    toolCases: string,
-    flags: InvokeParamHelperFlags,
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps,
-    hasSqlTools: boolean,
-    optionsParam: string
-): string {
-    const preamble = renderInvokeToolPreambleSqlserver(hasAuth, authPipelineTier, stubMaps, false);
-    const helpers = [
-        hasSqlTools ? COMPACT_SQL_FOR_LOG_JS : '',
-        flags.sqlserverNumeric ? SQLSERVER_NUMERIC_HELPER_JS : '',
-        flags.sqlserverBoolean ? SQLSERVER_BOOLEAN_HELPER_JS : ''
-    ]
-        .filter((block) => block.length > 0)
-        .join('\n\n');
-    const helperSection = `\n\n${helpers}`;
-    return `
-import sql from 'mssql';
-
-function resolveConnectionString(hostContext) {
-    if (hostContext && typeof hostContext === 'object' && hostContext.connectionString != null) {
-        const cs = String(hostContext.connectionString).trim();
-        if (cs.length > 0) {
-            return cs;
-        }
-    }
-    throw new Error(
-        'Missing database connection. MCP host must pass hostContext.connectionString (from database env in .db2ai).'
-    );
-}
-
-function parseSqlserverConnectInput(connectionString) {
-    const trimmed = String(connectionString).trim();
-    if (/^Server=/i.test(trimmed)) {
-        return trimmed;
-    }
-    const asHttp = trimmed.replace(/^mssql:\\/\\//i, 'http://').replace(/^sqlserver:\\/\\//i, 'http://');
-    const url = new URL(asHttp);
-    const database = url.pathname.replace(/^\\//, '');
-    const encryptParam = url.searchParams.get('encrypt');
-    const trustParam = url.searchParams.get('trustServerCertificate');
-    return {
-        server: url.hostname,
-        port: url.port.length > 0 ? Number.parseInt(url.port, 10) : 1433,
-        database: database.length > 0 ? database : undefined,
-        user: decodeURIComponent(url.username),
-        password: decodeURIComponent(url.password),
-        options: {
-            encrypt: encryptParam === 'false' ? false : true,
-            trustServerCertificate: trustParam === 'true' || trustParam === '1'
-        }
-    };
-}${helperSection}
-
-export async function invokeTool(toolName, ${optionsParam}, hostContext) {${preamble}
-${toolCases}
-            default:
-                throw new Error('Unknown tool: ' + toolName);
-        }
-    } finally {
-        await pool.close();
-    }
-}
-`.trim();
-}
-
 export function renderInvokeBlockTs(
     tools: ResolvedDbToolCodegen[],
     dialect: ResolvedDatabaseDialect,
-    hasAuth: boolean,
+    hasVerifyCredential: boolean,
     authPipelineTier: AuthPipelineTier,
     stubMaps: HookStubMaps
 ): string {
@@ -1158,7 +755,7 @@ export function renderInvokeBlockTs(
         return renderMysqlInvokeBlockTs(
             toolCases,
             flags,
-            hasAuth,
+            hasVerifyCredential,
             authPipelineTier,
             stubMaps,
             hasSqlTools,
@@ -1169,7 +766,7 @@ export function renderInvokeBlockTs(
         return renderSqlserverInvokeBlockTs(
             toolCases,
             flags,
-            hasAuth,
+            hasVerifyCredential,
             authPipelineTier,
             stubMaps,
             hasSqlTools,
@@ -1180,7 +777,7 @@ export function renderInvokeBlockTs(
         return renderOracleInvokeBlockTs(
             toolCases,
             flags,
-            hasAuth,
+            hasVerifyCredential,
             authPipelineTier,
             stubMaps,
             hasSqlTools,
@@ -1190,63 +787,7 @@ export function renderInvokeBlockTs(
     return renderPostgresInvokeBlockTs(
         toolCases,
         flags,
-        hasAuth,
-        authPipelineTier,
-        stubMaps,
-        hasSqlTools,
-        optionsParam
-    );
-}
-
-export function renderInvokeBlockJs(
-    tools: ResolvedDbToolCodegen[],
-    dialect: ResolvedDatabaseDialect,
-    hasAuth: boolean,
-    authPipelineTier: AuthPipelineTier,
-    stubMaps: HookStubMaps
-): string {
-    const optionsVar = authPipelineTier !== 'none' ? 'optionsResolved' : 'options';
-    const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
-    const flags = resolveInvokeParamHelperFlags(tools);
-    const hasSqlTools = tools.length > 0;
-    const optionsParam = renderInvokeOptionsParam(hasSqlTools, authPipelineTier, false);
-    if (isMysqlDialect(dialect)) {
-        return renderMysqlInvokeBlockJs(
-            toolCases,
-            flags,
-            hasAuth,
-            authPipelineTier,
-            stubMaps,
-            hasSqlTools,
-            optionsParam
-        );
-    }
-    if (dialect === 'sqlserver') {
-        return renderSqlserverInvokeBlockJs(
-            toolCases,
-            flags,
-            hasAuth,
-            authPipelineTier,
-            stubMaps,
-            hasSqlTools,
-            optionsParam
-        );
-    }
-    if (dialect === 'oracle') {
-        return renderOracleInvokeBlockJs(
-            toolCases,
-            flags,
-            hasAuth,
-            authPipelineTier,
-            stubMaps,
-            hasSqlTools,
-            optionsParam
-        );
-    }
-    return renderPostgresInvokeBlockJs(
-        toolCases,
-        flags,
-        hasAuth,
+        hasVerifyCredential,
         authPipelineTier,
         stubMaps,
         hasSqlTools,

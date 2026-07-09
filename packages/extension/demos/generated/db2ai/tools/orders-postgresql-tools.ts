@@ -251,6 +251,8 @@ export const generatedTools: GeneratedTool[] = [
 export const mcpServerName = 'orders-postgresql-tools';
 export const mcpServerVersion = '1.0.0-rc.2';
 
+export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
+
 const checkToolAccessHooks: Record<string, (credential: string) => void | Promise<void>> = {
     listCustomerOrders: checkToolAccessForListCustomerOrders,
     createProduct: checkToolAccessForCreateProduct,

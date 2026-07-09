@@ -7,14 +7,21 @@ import {
     resolveBootstrapProjectRootFromSource,
     resolveGeneratedCliDir,
     writeGeneratedDemosTestSupport,
-    writeGeneratedMcpRuntimes,
-    writeGeneratedModuleMcpServers,
     writeGeneratedScripts,
+    writeMcpBuildGeneratedAtModule,
+    writeMcpRuntimes as writeMcpRuntimesCore,
+    writeMcpServers,
     type ProjectBootstrapConfig
 } from '@toolfactory.dev/core/codegen';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as url from 'node:url';
+import { renderOAuthHttpRuntimeCompose } from './codegen/templates/oauth-http-runtime.compose.js';
+import {
+    renderPassthroughHttpRuntimeCompose,
+    renderPublicHttpRuntimeCompose
+} from './codegen/templates/http-runtime.compose.js';
+import { renderStdioRuntimeCompose } from './codegen/templates/stdio-runtime.compose.js';
 import { renderBootstrap } from './generator/render-bootstrap.js';
 import { renderCheckStubs } from './generator/render-check-stubs.js';
 import { renderToolsModule } from './generator/render-tools-module.js';
@@ -40,6 +47,17 @@ function bundleSafeGeneratorImplementationDir(): string {
 }
 
 const __generatorDirname = bundleSafeGeneratorImplementationDir();
+
+const MCP_RUNTIME_RENDERERS = {
+    renderStdioRuntime: renderStdioRuntimeCompose,
+    renderPublicHttpRuntime: renderPublicHttpRuntimeCompose,
+    renderPassthroughHttpRuntime: renderPassthroughHttpRuntimeCompose,
+    renderOAuthHttpRuntime: renderOAuthHttpRuntimeCompose
+} as const;
+
+function writeMcpRuntimes(cliDir: string, projectRoot?: string) {
+    return writeMcpRuntimesCore(cliDir, MCP_RUNTIME_RENDERERS, projectRoot);
+}
 
 function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialectFromModel>): ProjectBootstrapConfig {
     const databaseDriverDep =
@@ -99,11 +117,12 @@ export async function generateOutput(model: Model, source: string, destination: 
         databaseDialect
     });
     fs.writeFileSync(tsPath, toolsModuleSource);
+    writeMcpBuildGeneratedAtModule(tsPath);
 
     const projectRoot = resolveBootstrapProjectRootFromSource(source);
     const cliDir = resolveGeneratedCliDir(tsPath);
-    const mcpRuntimePaths = writeGeneratedMcpRuntimes(cliDir, bootstrapConfig, projectRoot);
-    const moduleMcpServerPaths = writeGeneratedModuleMcpServers(tsPath);
+    const mcpRuntimePaths = writeMcpRuntimes(cliDir, projectRoot);
+    const moduleMcpServerPaths = writeMcpServers(tsPath);
     renderBootstrap(projectRoot, bootstrapConfig);
     ensureLoggingAdapterStubFromSource(source);
     writeGeneratedDemosTestSupport(projectRoot);
