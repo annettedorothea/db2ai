@@ -12,8 +12,9 @@ import { fileURLToPath } from 'node:url';
 
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'));
-const tag = `${pkg.name}-${pkg.version}`;
-const vsixFile = `${tag}.vsix`;
+// Same vX.Y.Z tag as guided-release CP6 (triggers .github/workflows/ci.yml).
+const tag = `v${pkg.version}`;
+const vsixFile = `${pkg.name}-${pkg.version}.vsix`;
 
 if (!existsSync(path.join(extensionRoot, vsixFile))) {
     console.error(`[vsix:release] missing ${vsixFile} — run npm run vsix:build first`);
