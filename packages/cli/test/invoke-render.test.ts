@@ -56,8 +56,9 @@ describe('collectSqlBindValueExpressions', () => {
         const exprs = collectSqlBindValueExpressions(tool, 'mysql', 'options');
         expect(exprs).toHaveLength(3);
         expect(exprs[0]).toContain('options["searchText"]');
+        expect(exprs[0]).toContain('String(options["searchText"])');
         expect(exprs[1]).toContain('options["searchText"]');
-        expect(exprs[2]).toContain('normalizeMysqlParamValue');
+        expect(exprs[2]).toContain('normalizeMysqlNumericParamValue');
     });
 
     test('mariadb uses the same bind expressions as mysql', () => {

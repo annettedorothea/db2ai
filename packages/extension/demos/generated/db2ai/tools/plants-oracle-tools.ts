@@ -48,7 +48,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listPlants',
         title: 'Paginated plant catalog',
         description:
-            'list plants with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20',
+            'list plants with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows (type: integer) (example: 20)\n\nExample call: limit=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -71,7 +71,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchPlants',
         title: 'Name search in the plant catalog',
         description:
-            'search plants by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=oak, maxRows=10',
+            'search plants by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText: text matched in common or Latin name (type: string) (example: oak)\n- maxRows: max rows to return (type: integer) (example: 10)\n\nExample call: searchText=oak, maxRows=10',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -103,7 +103,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createPlant',
         title: 'Add one plant to the catalog',
         description:
-            'insert a new plant row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
+            'insert a new plant row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName: English common name (type: string) (example: Mint)\n- latinName: Latin species name (type: string) (example: Mentha spicata)\n- aboutText: short English description (type: string) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
@@ -144,7 +144,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updatePlant',
         title: 'Update one plant by id',
         description:
-            'update an existing plant row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
+            'update an existing plant row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName: English common name (type: string) (example: Mint)\n- latinName: Latin species name (type: string) (example: Mentha spicata)\n- aboutText: short English description (type: string) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)\n- plantId: plant id to update (type: integer) (example: 1)\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
@@ -194,7 +194,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'deletePlant',
         title: 'Remove one plant by id',
         description:
-            'delete a plant row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: plantId=999',
+            'delete a plant row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- plantId: plant id to delete (type: integer) (example: 999)\n\nExample call: plantId=999',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
@@ -229,42 +229,46 @@ const prepareToolCallHooks: Record<
 
 export const inputZodByTool = {
     listPlants: z
-        .object({ limit: z.union([z.number().int(), z.string()]).describe('max rows (SQL :limit) (example: 20)') })
+        .object({ limit: z.number().int().describe('max rows (SQL :limit) (type: integer) (example: 20)') })
         .strict(),
     searchPlants: z
         .object({
-            searchText: z.string().describe('text matched in common or Latin name (SQL :searchText) (example: oak)'),
-            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 10)')
+            searchText: z
+                .string()
+                .describe('text matched in common or Latin name (SQL :searchText) (type: string) (example: oak)'),
+            maxRows: z.number().int().describe('max rows to return (SQL :maxRows) (type: integer) (example: 10)')
         })
         .strict(),
     createPlant: z
         .object({
-            commonName: z.string().describe('English common name (SQL :commonName) (example: Mint)'),
-            latinName: z.string().describe('Latin species name (SQL :latinName) (example: Mentha spicata)'),
+            commonName: z.string().describe('English common name (SQL :commonName) (type: string) (example: Mint)'),
+            latinName: z
+                .string()
+                .describe('Latin species name (SQL :latinName) (type: string) (example: Mentha spicata)'),
             aboutText: z
                 .string()
                 .describe(
-                    'short English description (SQL :aboutText) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)'
+                    'short English description (SQL :aboutText) (type: string) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)'
                 )
         })
         .strict(),
     updatePlant: z
         .object({
-            commonName: z.string().describe('English common name (SQL :commonName) (example: Mint)'),
-            latinName: z.string().describe('Latin species name (SQL :latinName) (example: Mentha spicata)'),
+            commonName: z.string().describe('English common name (SQL :commonName) (type: string) (example: Mint)'),
+            latinName: z
+                .string()
+                .describe('Latin species name (SQL :latinName) (type: string) (example: Mentha spicata)'),
             aboutText: z
                 .string()
                 .describe(
-                    'short English description (SQL :aboutText) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)'
+                    'short English description (SQL :aboutText) (type: string) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)'
                 ),
-            plantId: z.union([z.number().int(), z.string()]).describe('plant id to update (SQL :plantId) (example: 1)')
+            plantId: z.number().int().describe('plant id to update (SQL :plantId) (type: integer) (example: 1)')
         })
         .strict(),
     deletePlant: z
         .object({
-            plantId: z
-                .union([z.number().int(), z.string()])
-                .describe('plant id to delete (SQL :plantId) (example: 999)')
+            plantId: z.number().int().describe('plant id to delete (SQL :plantId) (type: integer) (example: 999)')
         })
         .strict()
 };

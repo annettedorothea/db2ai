@@ -55,7 +55,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated Sakila film rows',
         description:
-            'list films from Sakila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
+            'list films from Sakila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 100)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -86,7 +86,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated Sakila actor rows',
         description:
-            'List actors from Sakila with pagination.\n        Protected: requires MCP auth header matching MCP_AUTH_EXPECTED.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
+            'List actors from Sakila with pagination.\n        Protected: requires MCP auth header matching MCP_AUTH_EXPECTED.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 100)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'protected',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -117,7 +117,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCategories',
         title: 'Paginated Sakila category rows',
         description:
-            'list film categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=100, offset=0',
+            'list film categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 100)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=100, offset=0',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -148,7 +148,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsByRating',
         title: 'Films by rating (G, PG, PG-13, R, NC-17)',
         description:
-            'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: rating=PG, maxRows=20',
+            'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating: rating (G, PG, PG-13, R, or NC-17) (type: string) (example: PG)\n- maxRows: max rows to return (type: integer) (example: 20)\n\nExample call: rating=PG, maxRows=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -180,7 +180,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsWithActorLastName',
         title: 'Actor-film cast via film_actor join',
         description:
-            'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: lastNamePrefix=GAR, maxRows=25',
+            'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix: actor last name prefix (e.g. GAR, BER, HOP) (type: string) (example: GAR)\n- maxRows: max rows to return (type: integer) (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -212,7 +212,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Film search across title and description',
         description:
-            'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=cat, maxRows=15',
+            'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText: Search text matched in title or description.\n                Example: cat, dog, academy. (type: string) (example: cat)\n- maxRows: max rows to return (type: integer) (example: 15)\n\nExample call: searchText=cat, maxRows=15',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -245,7 +245,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'insertActor',
         title: 'Insert actor with first and last name',
         description:
-            'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: firstName=MARY, lastName=SMITH',
+            'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName: actor first name (type: string) (example: MARY)\n- lastName: actor last name (type: string) (example: SMITH)\n\nExample call: firstName=MARY, lastName=SMITH',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
@@ -293,34 +293,38 @@ const prepareToolCallHooks: Record<
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.number().int().describe('max rows per page (SQL :limit) (type: integer) (example: 100)'),
+            offset: z.number().int().describe('rows to skip (SQL :offset) (type: integer) (example: 0)')
         })
         .strict(),
     listActors: z
         .object({
-            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.number().int().describe('max rows per page (SQL :limit) (type: integer) (example: 100)'),
+            offset: z.number().int().describe('rows to skip (SQL :offset) (type: integer) (example: 0)')
         })
         .strict(),
     listCategories: z
         .object({
-            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 100)'),
-            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.number().int().describe('max rows per page (SQL :limit) (type: integer) (example: 100)'),
+            offset: z.number().int().describe('rows to skip (SQL :offset) (type: integer) (example: 0)')
         })
         .strict(),
     filmsByRating: z
         .object({
-            rating: z.string().describe('rating (G, PG, PG-13, R, or NC-17) (SQL :rating) (example: PG)'),
-            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 20)')
+            rating: z
+                .string()
+                .describe('rating (G, PG, PG-13, R, or NC-17) (SQL :rating) (type: string) (example: PG)'),
+            maxRows: z.number().int().describe('max rows to return (SQL :maxRows) (type: integer) (example: 20)')
         })
         .strict(),
     filmsWithActorLastName: z
         .object({
             lastNamePrefix: z
                 .string()
-                .describe('actor last name prefix (e.g. GAR, BER, HOP) (SQL :lastNamePrefix) (example: GAR)'),
-            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 25)')
+                .describe(
+                    'actor last name prefix (e.g. GAR, BER, HOP) (SQL :lastNamePrefix) (type: string) (example: GAR)'
+                ),
+            maxRows: z.number().int().describe('max rows to return (SQL :maxRows) (type: integer) (example: 25)')
         })
         .strict(),
     searchFilms: z
@@ -328,15 +332,15 @@ export const inputZodByTool = {
             searchText: z
                 .string()
                 .describe(
-                    'Search text matched in title or description.\n                Example: cat, dog, academy.\n             (SQL :searchText) (example: cat)'
+                    'Search text matched in title or description.\n                Example: cat, dog, academy.\n             (SQL :searchText) (type: string) (example: cat)'
                 ),
-            maxRows: z.union([z.number().int(), z.string()]).describe('max rows to return (SQL :maxRows) (example: 15)')
+            maxRows: z.number().int().describe('max rows to return (SQL :maxRows) (type: integer) (example: 15)')
         })
         .strict(),
     insertActor: z
         .object({
-            firstName: z.string().describe('actor first name (SQL :firstName) (example: MARY)'),
-            lastName: z.string().describe('actor last name (SQL :lastName) (example: SMITH)')
+            firstName: z.string().describe('actor first name (SQL :firstName) (type: string) (example: MARY)'),
+            lastName: z.string().describe('actor last name (SQL :lastName) (type: string) (example: SMITH)')
         })
         .strict()
 };
@@ -357,18 +361,6 @@ function normalizeMysqlRows(rows: unknown): unknown[] {
     return Array.isArray(rows) ? rows : [];
 }
 
-function normalizeMysqlParamValue(value: unknown): string | number | null {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    const text = String(value);
-    const trimmed = text.trim();
-    if (/^-?\d+(?:\.\d+)?$/.test(trimmed)) {
-        return Number(trimmed);
-    }
-    return text;
-}
-
 function connectionUrlForMysqlDriver(connectionUrl: string): string {
     const trimmed = connectionUrl.trim();
     if (trimmed.startsWith('mariadb://')) {
@@ -379,6 +371,14 @@ function connectionUrlForMysqlDriver(connectionUrl: string): string {
 
 function compactSqlForLog(sql: string): string {
     return sql.replace(/\s+/g, ' ').trim();
+}
+
+function normalizeMysqlNumericParamValue(value: unknown): number | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
 }
 
 export async function invokeTool(
@@ -430,8 +430,8 @@ export async function invokeTool(
             case 'listFilms': {
                 const sqlText = 'SELECT * FROM film LIMIT ? OFFSET ?';
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['limit']),
-                    normalizeMysqlParamValue(optionsResolved['offset'])
+                    normalizeMysqlNumericParamValue(optionsResolved['limit']),
+                    normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listFilms',
@@ -448,8 +448,8 @@ export async function invokeTool(
             case 'listActors': {
                 const sqlText = 'SELECT * FROM actor LIMIT ? OFFSET ?';
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['limit']),
-                    normalizeMysqlParamValue(optionsResolved['offset'])
+                    normalizeMysqlNumericParamValue(optionsResolved['limit']),
+                    normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listActors',
@@ -466,8 +466,8 @@ export async function invokeTool(
             case 'listCategories': {
                 const sqlText = 'SELECT * FROM category LIMIT ? OFFSET ?';
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['limit']),
-                    normalizeMysqlParamValue(optionsResolved['offset'])
+                    normalizeMysqlNumericParamValue(optionsResolved['limit']),
+                    normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listCategories',
@@ -485,8 +485,10 @@ export async function invokeTool(
                 const sqlText =
                     '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ';
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['rating']),
-                    normalizeMysqlParamValue(optionsResolved['maxRows'])
+                    optionsResolved['rating'] !== undefined && optionsResolved['rating'] !== null
+                        ? String(optionsResolved['rating'])
+                        : null,
+                    normalizeMysqlNumericParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'filmsByRating',
@@ -504,8 +506,10 @@ export async function invokeTool(
                 const sqlText =
                     "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ";
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['lastNamePrefix']),
-                    normalizeMysqlParamValue(optionsResolved['maxRows'])
+                    optionsResolved['lastNamePrefix'] !== undefined && optionsResolved['lastNamePrefix'] !== null
+                        ? String(optionsResolved['lastNamePrefix'])
+                        : null,
+                    normalizeMysqlNumericParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'filmsWithActorLastName',
@@ -523,9 +527,13 @@ export async function invokeTool(
                 const sqlText =
                     "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ";
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['searchText']),
-                    normalizeMysqlParamValue(optionsResolved['searchText']),
-                    normalizeMysqlParamValue(optionsResolved['maxRows'])
+                    optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
+                        ? String(optionsResolved['searchText'])
+                        : null,
+                    optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
+                        ? String(optionsResolved['searchText'])
+                        : null,
+                    normalizeMysqlNumericParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchFilms',
@@ -542,8 +550,12 @@ export async function invokeTool(
             case 'insertActor': {
                 const sqlText = 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())';
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['firstName']),
-                    normalizeMysqlParamValue(optionsResolved['lastName'])
+                    optionsResolved['firstName'] !== undefined && optionsResolved['firstName'] !== null
+                        ? String(optionsResolved['firstName'])
+                        : null,
+                    optionsResolved['lastName'] !== undefined && optionsResolved['lastName'] !== null
+                        ? String(optionsResolved['lastName'])
+                        : null
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'insertActor',

@@ -14,6 +14,7 @@ import {
     rewriteNamedPlaceholdersForDialect,
     type ResolvedSqlParam
 } from 'db-2-ai-dsl-language';
+import { enrichJsonSchemaPropertyDescription, formatMcpParameterDescriptionLine } from '@toolfactory.dev/core/codegen';
 
 export type JsonSchemaDict = Record<string, unknown>;
 
@@ -64,9 +65,32 @@ function buildSqlExampleCallLine(params: ResolvedSqlParam[]): string | undefined
     return `Example call: ${parts.join(', ')}`;
 }
 
+function buildSqlParamDescriptionSection(params: ResolvedSqlParam[]): string | undefined {
+    if (params.length === 0) {
+        return undefined;
+    }
+    const lines = params.map((p) => {
+        const schema: JsonSchemaDict = { type: p.jsonSchemaType };
+        if (p.example !== undefined && p.example.trim().length > 0) {
+            schema.examples = [jsonSchemaExampleValue(p.example, p.jsonSchemaType)];
+        }
+        const enriched = formatMcpParameterDescriptionLine(p.description, schema);
+        let line = `- ${p.propertyName}`;
+        if (enriched) {
+            line += `: ${enriched}`;
+        }
+        return line;
+    });
+    return lines.join('\n');
+}
+
 function buildSqlDescription(query: SqlQuery, params: ResolvedSqlParam[]): string {
     const intent = requireIntent(query.intent, 'SQL tool');
     const lines = [intent, '', 'Runs a prepared SQL statement. Pass parameter values by name (see input schema).'];
+    const parametersText = buildSqlParamDescriptionSection(params);
+    if (parametersText) {
+        lines.push('', 'Parameters:', parametersText);
+    }
     const exampleCall = buildSqlExampleCallLine(params);
     if (exampleCall) {
         lines.push('', exampleCall);
@@ -113,13 +137,13 @@ function buildSqlInputSchema(tool: ResolvedSqlToolCodegen, optionalParams: reado
     const required: string[] = [];
     const optional = new Set(optionalParams.map((p) => p.trim()).filter((p) => p.length > 0));
     for (const p of tool.params) {
-        const prop: Record<string, unknown> = {
-            type: p.jsonSchemaType,
-            description: `${p.description} (SQL ${p.placeholder})`
+        const prop: JsonSchemaDict = {
+            type: p.jsonSchemaType
         };
         if (p.example !== undefined && p.example.trim().length > 0) {
             prop.examples = [jsonSchemaExampleValue(p.example, p.jsonSchemaType)];
         }
+        prop.description = enrichJsonSchemaPropertyDescription(`${p.description} (SQL ${p.placeholder})`, prop);
         properties[p.propertyName] = prop;
         if (!optional.has(p.propertyName)) {
             required.push(p.propertyName);

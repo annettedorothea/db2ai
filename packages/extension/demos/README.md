@@ -114,11 +114,11 @@ or:
 db2ai /test-all
 ```
 
-For HTTP transport debugging:
+For HTTP transport debugging — hosts must already be running (`npm run start:all`):
 
 ```bash
 npm run mcp:inspect -- pagila-postgresql
-npm run mcp:inspect -- orders-postgresql --with-deps
+npm run mcp:inspect -- orders-postgresql
 ```
 
 Prerequisites:

@@ -48,7 +48,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: limit=20, offset=0',
+            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 20)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=20, offset=0',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -79,7 +79,7 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Title search in Sakila',
         description:
-            'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nExample call: searchText=love, maxRows=10',
+            'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText: matched in film title (type: string) (example: love)\n- maxRows: max rows (type: integer) (example: 10)\n\nExample call: searchText=love, maxRows=10',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
@@ -124,14 +124,14 @@ const prepareToolCallHooks: Record<
 export const inputZodByTool = {
     listFilms: z
         .object({
-            limit: z.union([z.number().int(), z.string()]).describe('max rows per page (SQL :limit) (example: 20)'),
-            offset: z.union([z.number().int(), z.string()]).describe('rows to skip (SQL :offset) (example: 0)')
+            limit: z.number().int().describe('max rows per page (SQL :limit) (type: integer) (example: 20)'),
+            offset: z.number().int().describe('rows to skip (SQL :offset) (type: integer) (example: 0)')
         })
         .strict(),
     searchFilms: z
         .object({
-            searchText: z.string().describe('matched in film title (SQL :searchText) (example: love)'),
-            maxRows: z.union([z.number().int(), z.string()]).describe('max rows (SQL :maxRows) (example: 10)')
+            searchText: z.string().describe('matched in film title (SQL :searchText) (type: string) (example: love)'),
+            maxRows: z.number().int().describe('max rows (SQL :maxRows) (type: integer) (example: 10)')
         })
         .strict()
 };
@@ -152,18 +152,6 @@ function normalizeMysqlRows(rows: unknown): unknown[] {
     return Array.isArray(rows) ? rows : [];
 }
 
-function normalizeMysqlParamValue(value: unknown): string | number | null {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    const text = String(value);
-    const trimmed = text.trim();
-    if (/^-?\d+(?:\.\d+)?$/.test(trimmed)) {
-        return Number(trimmed);
-    }
-    return text;
-}
-
 function connectionUrlForMysqlDriver(connectionUrl: string): string {
     const trimmed = connectionUrl.trim();
     if (trimmed.startsWith('mariadb://')) {
@@ -174,6 +162,14 @@ function connectionUrlForMysqlDriver(connectionUrl: string): string {
 
 function compactSqlForLog(sql: string): string {
     return sql.replace(/\s+/g, ' ').trim();
+}
+
+function normalizeMysqlNumericParamValue(value: unknown): number | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
 }
 
 export async function invokeTool(
@@ -224,8 +220,8 @@ export async function invokeTool(
             case 'listFilms': {
                 const sqlText = 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ? OFFSET ?';
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['limit']),
-                    normalizeMysqlParamValue(optionsResolved['offset'])
+                    normalizeMysqlNumericParamValue(optionsResolved['limit']),
+                    normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listFilms',
@@ -243,8 +239,10 @@ export async function invokeTool(
                 const sqlText =
                     "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?";
                 const sqlValues = [
-                    normalizeMysqlParamValue(optionsResolved['searchText']),
-                    normalizeMysqlParamValue(optionsResolved['maxRows'])
+                    optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
+                        ? String(optionsResolved['searchText'])
+                        : null,
+                    normalizeMysqlNumericParamValue(optionsResolved['maxRows'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'searchFilms',

@@ -14,7 +14,10 @@ function renderOptionValueExpression(
         if (paramType === 'boolean') {
             return `normalizeMysqlBooleanParamValue(${optionAccess})`;
         }
-        return `normalizeMysqlParamValue(${optionAccess})`;
+        if (paramType === 'integer' || paramType === 'number') {
+            return `normalizeMysqlNumericParamValue(${optionAccess})`;
+        }
+        return `${optionAccess} !== undefined && ${optionAccess} !== null ? String(${optionAccess}) : null`;
     }
     if (dialect === 'sqlserver') {
         if (paramType === 'integer' || paramType === 'number') {
@@ -213,6 +216,7 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
 type InvokeParamHelperFlags = {
     postgresNumeric: boolean;
     postgresBoolean: boolean;
+    mysqlNumeric: boolean;
     mysqlBoolean: boolean;
     sqlserverNumeric: boolean;
     sqlserverBoolean: boolean;
@@ -225,6 +229,7 @@ function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokePa
     const flags: InvokeParamHelperFlags = {
         postgresNumeric: false,
         postgresBoolean: false,
+        mysqlNumeric: false,
         mysqlBoolean: false,
         sqlserverNumeric: false,
         sqlserverBoolean: false,
@@ -239,6 +244,7 @@ function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokePa
         for (const param of tool.params) {
             if (param.jsonSchemaType === 'integer' || param.jsonSchemaType === 'number') {
                 flags.postgresNumeric = true;
+                flags.mysqlNumeric = true;
                 flags.sqlserverNumeric = true;
                 flags.oracleNumeric = true;
             }
@@ -390,6 +396,16 @@ function normalizeMysqlBooleanParamValue(value: unknown): boolean | null {
 }
 `.trim();
 
+const MYSQL_NUMERIC_HELPER_TS = `
+function normalizeMysqlNumericParamValue(value: unknown): number | null {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const n = typeof value === 'number' ? value : Number(String(value));
+    return Number.isFinite(n) ? n : null;
+}
+`.trim();
+
 function renderPostgresInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
@@ -461,7 +477,11 @@ function renderMysqlInvokeBlockTs(
         stubMaps,
         true
     );
-    const mysqlHelpers = [hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '', flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_TS : '']
+    const mysqlHelpers = [
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
+        flags.mysqlNumeric ? MYSQL_NUMERIC_HELPER_TS : '',
+        flags.mysqlBoolean ? MYSQL_BOOLEAN_HELPER_TS : ''
+    ]
         .filter((block) => block.length > 0)
         .join('\n\n');
     const helperSection = `\n\n${mysqlHelpers}`;
@@ -480,18 +500,6 @@ function resolveConnectionString(hostContext: DbHostContext): string {
 
 function normalizeMysqlRows(rows: unknown): unknown[] {
     return Array.isArray(rows) ? rows : [];
-}
-
-function normalizeMysqlParamValue(value: unknown): string | number | null {
-    if (value === undefined || value === null) {
-        return null;
-    }
-    const text = String(value);
-    const trimmed = text.trim();
-    if (/^-?\\d+(?:\\.\\d+)?$/.test(trimmed)) {
-        return Number(trimmed);
-    }
-    return text;
 }
 
 ${CONNECTION_URL_FOR_MYSQL_DRIVER_TS}${helperSection}
