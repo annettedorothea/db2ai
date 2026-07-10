@@ -16,6 +16,9 @@ package-lock.json
 # Langium-generated parser/AST only (not demo tools under packages/extension/demos/generated/)
 packages/language/src/generated/
 
+# Gitignored MCP build stamp (regenerated each generate:all; see demos/.gitignore)
+packages/extension/demos/generated/*/mcp-build-generated-at.ts
+
 # Demo runtime folders
 packages/cli/tmp/
 packages/extension/demos/node_modules/

@@ -5,11 +5,11 @@
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
+import { prepareWorkspaceEnv } from './start-shared.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-loadProjectEnvLocal();
+prepareWorkspaceEnv();
 console.log('[kill-fixtures] stopping OAuth IDP…');
 const result = spawnSync(process.execPath, [path.join(demosRoot, 'oauth-idp', 'kill-server.mjs')], {
     cwd: demosRoot,

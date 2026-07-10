@@ -215,7 +215,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'plants-oracle-tools';
-export const mcpServerVersion = '1.0.0-rc.2';
+export const mcpServerVersion = '1.0.0-rc.3';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

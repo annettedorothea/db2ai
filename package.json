@@ -1,7 +1,7 @@
 {
     "name": "db-2-ai-dsl-workspace",
     "description": "Langium workspace for db2ai — relational DB to MCP tools",
-    "version": "1.0.0-rc.2",
+    "version": "1.0.0-rc.3",
     "license": "MIT",
     "type": "module",
     "private": true,
@@ -10,7 +10,7 @@
         "postinstall": "husky",
         "install:demos": "npm install --prefix packages/extension/demos",
         "watch": "tsc -b tsconfig.build.json --watch",
-        "build": "tsc -b tsconfig.build.json && npm run build --workspaces",
+        "build": "node packages/extension/demos/scripts/ensure-mcp-build-stamp.mjs && tsc -b tsconfig.build.json && npm run build --workspaces",
         "build:clean": "npm run clean && npm run build",
         "vsix:version": "node scripts/bump-version.mjs",
         "sync:core2ai-pin": "node scripts/sync-core2ai-pin.mjs",

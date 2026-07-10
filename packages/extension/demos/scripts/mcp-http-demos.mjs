@@ -5,37 +5,6 @@ import path from 'node:path';
 import { readFileSync } from 'node:fs';
 import { requireEnv, requireEnvInt } from './generated/require-env.mjs';
 
-/** Default ports when omitted from .env — must match .cursor/mcp.json URLs. */
-const DEFAULT_HTTP_PORTS = {
-    SAKILA_MYSQL_HTTP_PORT: 4852,
-    PAGILA_POSTGRESQL_HTTP_PORT: 4853,
-    SAKILA_MARIADB_HTTP_PORT: 4854,
-    ANIMALS_SQLSERVER_HTTP_PORT: 4855,
-    PLANTS_ORACLE_HTTP_PORT: 4856
-};
-
-/**
- * @param {string} portEnv
- * @param {NodeJS.ProcessEnv} [env]
- * @returns {number}
- */
-function resolveHttpPort(portEnv, env = process.env) {
-    const raw = env[portEnv]?.trim();
-    if (raw) {
-        const port = Number.parseInt(raw, 10);
-        if (!Number.isFinite(port) || port <= 0) {
-            console.error(`[env] Invalid ${portEnv}: ${raw}`);
-            process.exit(1);
-        }
-        return port;
-    }
-    const fallback = DEFAULT_HTTP_PORTS[portEnv];
-    if (fallback !== undefined) {
-        return fallback;
-    }
-    return requireEnvInt(portEnv, env);
-}
-
 function loadProductName(demosRoot) {
     const config = JSON.parse(readFileSync(path.join(demosRoot, 'project-generate.config.json'), 'utf-8'));
     return config.productName;
@@ -95,7 +64,7 @@ export function buildHostLaunch(name, demosRoot, env) {
         throw new Error(`Unknown http demo: ${name}`);
     }
     requireEnv(demo.connectionEnv, env);
-    const port = resolveHttpPort(demo.portEnv, env);
+    const port = requireEnvInt(demo.portEnv, env);
     const product = loadProductName(demosRoot);
     const serverJs = path.join(
         demosRoot,
@@ -110,5 +79,5 @@ export function buildHostLaunch(name, demosRoot, env) {
 }
 
 export function listHttpPorts(env = process.env) {
-    return HTTP_DEMO_NAMES.map((name) => resolveHttpPort(HTTP_DEMOS[name].portEnv, env));
+    return HTTP_DEMO_NAMES.map((name) => requireEnvInt(HTTP_DEMOS[name].portEnv, env));
 }

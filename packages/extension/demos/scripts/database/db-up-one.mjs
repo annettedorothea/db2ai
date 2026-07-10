@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEMO_LAUNCH_REGISTRY } from '../demo-launch-registry.mjs';
-import { loadProjectEnvLocal } from '../generated/load-env-local.mjs';
+import { prepareWorkspaceEnv } from '../start-shared.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const databaseDir = path.dirname(fileURLToPath(import.meta.url));
@@ -21,7 +21,7 @@ if (!spec) {
     process.exit(1);
 }
 
-loadProjectEnvLocal(projectRoot);
+prepareWorkspaceEnv();
 
 function runDocker(args) {
     const result = spawnSync('docker', ['compose', ...args], { cwd: projectRoot, stdio: 'inherit' });

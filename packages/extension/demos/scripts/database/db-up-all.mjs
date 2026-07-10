@@ -9,12 +9,12 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadProjectEnvLocal } from '../generated/load-env-local.mjs';
+import { prepareWorkspaceEnv } from '../start-shared.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const databaseDir = path.dirname(fileURLToPath(import.meta.url));
 
-loadProjectEnvLocal(projectRoot);
+prepareWorkspaceEnv();
 
 function runDocker(args) {
     const result = spawnSync('docker', ['compose', ...args], { cwd: projectRoot, stdio: 'inherit' });

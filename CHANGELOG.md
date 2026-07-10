@@ -12,7 +12,25 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
-## [1.0.0-rc.2] - 2026-07-07
+## [1.0.0-rc.3] - 2026-07-10
+
+Composed MCP codegen, build-stamp fingerprint, slimmer `/test-all` trust model, demo kill env workflow, tag-only CI quality gate. Pins `@toolfactory.dev/core` **1.0.0-rc.7** from npmjs.
+
+### Changed
+
+- **Codegen:** consumer `compose` templates/fragments; slimmer check-stub renderer
+- **Build stamp:** central `mcp-build-generated-at.ts`; MCP banner and tool descriptions show build fingerprint
+- **`/test-all`:** trust terminal `start:all` banner; MCP required in Cursor
+- **Demos:** `prepareWorkspaceEnv` before kill; `optionalEnvInt` skips missing ports; no hardcoded HTTP port defaults
+- **`sync:core2ai-pin`:** updates CLI + demos lockfiles; registry verify step
+- **CI:** quality gate on tag `v*` only; `npm run build` ensures build stamp before `tsc`
+- **`vsix:release`:** Git tag `vX.Y.Z` (same as api2ai)
+
+### Upgrade notes
+
+- After install: `generate:all` + `build:generated`; restart MCP servers in Cursor
+
+---
 
 Hook stubs per export name, demo start script split, core **1.0.0-rc.4**. Pins `@toolfactory.dev/core` **1.0.0-rc.4** from npmjs.
 
