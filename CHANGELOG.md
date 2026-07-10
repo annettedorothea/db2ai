@@ -12,6 +12,23 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.0.0-rc.4] - 2026-07-10
+
+Strict MCP arg validation, LLM-facing type hints, MySQL string param fix, inspector-only `mcp:inspect`. Pins `@toolfactory.dev/core` **1.0.0-rc.8** from npmjs.
+
+### Changed
+
+- **Invoke (MySQL):** string SQL params pass through without numeric coercion (aligned with PostgreSQL)
+- **Codegen:** `(type: …)` and `(example: …)` in SQL parameter descriptions and tool `Parameters:` sections
+- **`mcp:inspect`:** opens MCP Inspector only — prerequisite `npm run start:all` (removed host/DB startup)
+
+### Upgrade notes
+
+- Regenerate after pin refresh: `generate:all` + `build:generated`; restart MCP servers in Cursor
+- Strict Zod at MCP boundary: integer/number/boolean args must match schema types
+
+---
+
 ## [1.0.0-rc.3] - 2026-07-10
 
 Composed MCP codegen, build-stamp fingerprint, slimmer `/test-all` trust model, demo kill env workflow, tag-only CI quality gate. Pins `@toolfactory.dev/core` **1.0.0-rc.7** from npmjs.
