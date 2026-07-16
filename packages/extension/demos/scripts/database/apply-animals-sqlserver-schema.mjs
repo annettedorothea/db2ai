@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { requireEnv } from '../generated/require-env.mjs';
+import { requireEnv } from '../../generated/db2ai/scripts/require-env.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const containerName = 'db2ai-animals-sqlserver';

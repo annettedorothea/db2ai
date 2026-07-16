@@ -1,19 +1,11 @@
 #!/usr/bin/env node
 /**
- * Full demo stack: kill-all, install, fixtures (background), generate, compile, MCP hosts (foreground).
- * Use for /test-all and release checks.
+ * Full demo stack: kill-all, install, VSIX generate, compile, fixtures + MCP (foreground).
+ * Author / Create Demo Workspace path — requires installed extension CLI.
+ * Monorepo developers: use repo-root `npm run start:all:demos` instead.
  */
-import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
-import {
-    demosRoot,
-    installGenerateCompile,
-    prepareWorkspaceEnv,
-    runNpm,
-    serviceChildren,
-    setStartLogTag
-} from './start-shared.mjs';
-import { startFixtures } from './start-fixtures.mjs';
-import { startMcpHosts } from './start-mcp-hosts.mjs';
+import { installGenerateCompile, prepareWorkspaceEnv, runNpm, setStartLogTag } from './start-shared.mjs';
+import { startDemoStack } from './start-stack.mjs';
 
 const logTag = 'start:all';
 
@@ -26,12 +18,7 @@ async function main() {
 
     installGenerateCompile();
 
-    console.log(`[${logTag}] foreground — LOG_LEVEL=debug, MCP banners in this terminal.`);
-    await startFixtures(logTag);
-    await startMcpHosts(logTag);
-
-    console.log(`[${logTag}] Ctrl+C stops MCP/IDP processes started here (npm run demo:kill-all also stops Docker).`);
-    await waitForForegroundServiceShutdown({ label: logTag, serviceChildren, demosRoot });
+    await startDemoStack(logTag);
 }
 
 main().catch((error) => {

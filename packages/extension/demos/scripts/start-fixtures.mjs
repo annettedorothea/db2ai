@@ -16,8 +16,8 @@ import {
     waitForHttpOk,
     waitForTcpListen
 } from './start-shared.mjs';
-import { requireEnvInt } from './generated/require-env.mjs';
-import { killListenersOnPort } from './generated/kill-listeners-on-port.mjs';
+import { requireEnvInt } from '../generated/db2ai/scripts/require-env.mjs';
+import { killListenersOnPort } from '../generated/db2ai/scripts/kill-listeners-on-port.mjs';
 
 /**
  * @param {string} [logTag]

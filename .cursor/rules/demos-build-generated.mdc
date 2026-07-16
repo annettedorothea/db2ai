@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Demo Generated JS Sync
 
-`packages/extension/demos/generated/**/*.js` is emitted by `tsc` (`build:generated`), not Prettier. **Do not commit** `.js` or `.js.map` — they are gitignored; commit **`generated/**/*.ts`** only.
+`packages/extension/demos/generated/**/*.js` is emitted by `tsc` (`build:generated`), not Prettier. **Do not commit** `.js` or `.js.map` — they are gitignored; commit **`generated/**/*.ts`** and **`generated/{product}/scripts/*.mjs`**.
 
 `generated/{product}/mcp-build-generated-at.ts` is the shared MCP build stamp (gitignored). Tool modules re-export it; only this file changes on every `generate:all`.
 
@@ -15,17 +15,25 @@ After clone or `generate:all`, run **`npm run build:generated`** (or save `.db2a
 
 ## When to run `npm run generate:all`
 
-From the **db2ai workspace root**, when any of:
+From the **db2ai workspace root** (monorepo path — local CLI):
+
+```bash
+npm run generate:all
+```
+
+Uses `scripts/monorepo-generate-all.mjs` → `packages/cli/bin/cli.js`. **Do not** use demos `generate:all` for monorepo work (that is the VSIX extension-scan path).
+
+Run when any of:
 
 - `packages/cli/src/generator/**` changed
 - Demo DSL changed (`packages/extension/demos/*.db2ai`)
 - After `@toolfactory.dev/core` pin refresh affecting codegen or MCP host — see [core2ai-consumer-impact.mdc](./core2ai-consumer-impact.mdc)
 - `core2ai/src/codegen/**` changed (MCP host templates; run `npm run test` in core2ai after pin refresh)
-- `core2ai/src/scripts/**` changed (rewrites `packages/extension/demos/scripts/generated/**/*.mjs` utility modules via `writeGeneratedScripts` on the next generate run)
+- `core2ai/src/scripts/**` changed (rewrites `packages/extension/demos/generated/{product}/scripts/**/*.mjs` via `writeGeneratedScripts`)
 
 Always run `build:generated` afterward (below).
 
-`scripts/generated/*.mjs` holds utility modules only; `scripts/generate.mjs` and `scripts/generate-all.mjs` are hand-maintained.
+`generated/{product}/scripts/*.mjs` holds VSIX utility modules. Hand start/kill catalogs stay under `scripts/`.
 
 ## When to run `build:generated` only
 
@@ -36,12 +44,12 @@ From workspace root:
 After:
 
 - Every `generate:all`
-- Edits to `packages/extension/demos/generated/**/*.ts` or `packages/extension/demos/src/auth/**/*.ts`
-- Fresh clone before MCP (`.cursor/mcp.json` points at `.js`)
+- Edits to `packages/extension/demos/generated/**/*.ts` or hooks stubs
+- Fresh clone before MCP
 
 ## Commit
 
-Include regenerated **`generated/**/*.ts`** (and `scripts/generated/**/*.mjs` when utility templates change). Do not hand-edit `.js`.
+Include regenerated **`generated/**/*.ts`** (and `generated/{product}/scripts/**/*.mjs` when utility templates change). Do not hand-edit `.js`.
 
 ## Verify
 

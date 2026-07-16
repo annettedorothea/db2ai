@@ -7,12 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { HTTP_DEMOS } from './mcp-http-demos.mjs';
 import { OAUTH_HTTP_DEMOS } from './mcp-oauth-demos.mjs';
-import { buildMcpPackage, db2aiExtraRuntimeDeps } from './generated/build-mcp-lib.mjs';
+import { buildMcpPackage, db2aiExtraRuntimeDeps } from '../generated/db2ai/scripts/build-mcp-lib.mjs';
+import { productName } from '../generated/db2ai/scripts/project-meta.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const productName = JSON.parse(
-    readFileSync(path.join(demosRoot, 'project-generate.config.json'), 'utf-8')
-).productName;
 const rootDeps = JSON.parse(readFileSync(path.join(demosRoot, 'package.json'), 'utf-8')).dependencies ?? {};
 
 const argv = process.argv.slice(2);

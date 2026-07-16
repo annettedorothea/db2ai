@@ -1,10 +1,29 @@
 {
     "name": "vscode-db2ai",
     "displayName": "db2ai",
-    "description": "Language support and code generation for the .db2ai DSL (PostgreSQL, MySQL, MariaDB, SQL Server, Oracle → MCP tools).",
+    "description": "Tool Factory — language support and code generation for the .db2ai DSL (PostgreSQL, MySQL, MariaDB, SQL Server, Oracle → MCP tools).",
     "version": "1.0.0-rc.4",
-    "publisher": "db2ai",
+    "publisher": "toolfactory-dev",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/annettedorothea/db2ai.git"
+    },
+    "homepage": "https://toolfactory.dev",
+    "bugs": "https://github.com/annettedorothea/db2ai/issues",
+    "keywords": [
+        "mcp",
+        "sql",
+        "database",
+        "cursor",
+        "tool factory",
+        "code generation",
+        "langium"
+    ],
+    "galleryBanner": {
+        "color": "#1e1e2e",
+        "theme": "dark"
+    },
     "icon": "icon.png",
     "author": {
         "name": "Annette Pohl"

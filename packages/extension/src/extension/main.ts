@@ -2,7 +2,7 @@ import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient
 import * as vscode from 'vscode';
 import { DiagnosticSeverity } from 'vscode';
 import * as path from 'node:path';
-import { cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node.js';
 import demoBundleRequired from '../../demo-bundle-required.json' with { type: 'json' };
@@ -166,7 +166,6 @@ function registerCreateDemoWorkspaceCommand(context: vscode.ExtensionContext): v
                 recursive: true,
                 filter: (src) => shouldCopyDemoPath(sourceDir, src)
             });
-            patchDemoWorkspaceCliPath(targetDir, context);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             void vscode.window.showErrorMessage(`db2ai: Failed to create demo workspace: ${message}`);
@@ -206,38 +205,15 @@ async function pickDemoWorkspaceTarget(): Promise<vscode.Uri | undefined> {
     return undefined;
 }
 
-function patchDemoWorkspaceCliPath(targetDir: string, context: vscode.ExtensionContext): void {
-    const configPath = path.join(targetDir, 'project-generate.config.json');
-    if (!existsSync(configPath)) {
-        return;
-    }
-    let config: { embedDirName?: string; cliPath?: string };
-    try {
-        config = JSON.parse(readFileSync(configPath, 'utf-8')) as typeof config;
-    } catch {
-        return;
-    }
-    const embedDirName = config.embedDirName ?? 'embed-db2ai';
-    const bundledCliPath = context.asAbsolutePath(path.join('out', embedDirName, 'cli.cjs'));
-    if (!existsSync(bundledCliPath)) {
-        void vscode.window.showWarningMessage(
-            'db2ai: Could not set cliPath — extension embed missing. Set cliPath in project-generate.config.json manually.'
-        );
-        return;
-    }
-    config.cliPath = bundledCliPath;
-    writeFileSync(configPath, `${JSON.stringify(config, null, 4)}\n`);
-}
-
 function shouldCopyDemoPath(sourceDir: string, src: string): boolean {
     const relative = path.relative(sourceDir, src);
     if (!relative || relative === '') {
         return true;
     }
     const parts = relative.split(path.sep);
-    // Skip compiled MCP tools at demos/generated/, not utility scripts under scripts/generated/.
+    // Copy generated/{product}/scripts/** only (VSIX bootstrap); skip tools/cli/servers output.
     if (parts[0] === 'generated') {
-        return false;
+        return parts.length >= 3 && parts[2] === 'scripts';
     }
     if (parts.some((part) => DEMO_COPY_SKIP_DIRS.has(part))) {
         return false;
@@ -314,7 +290,7 @@ async function generateForSourceFile(
                 }
             );
         });
-        const compiled = await runBuildGenerated(PRODUCT_LABEL, sourcePath);
+        const compiled = await runBuildGenerated(PRODUCT_LABEL, sourcePath, HOST_PRODUCT);
         if (reportSuccess) {
             const baseName = path.basename(sourcePath);
             const suffix = compiled.ok ? ' and compiled' : '';

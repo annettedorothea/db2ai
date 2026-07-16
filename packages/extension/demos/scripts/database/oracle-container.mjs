@@ -3,7 +3,7 @@
  * Shared helpers for the plants-oracle Docker demo (sqlplus via /nolog + CONNECT).
  */
 import { execFileSync } from 'node:child_process';
-import { requireEnv } from '../generated/require-env.mjs';
+import { requireEnv } from '../../generated/db2ai/scripts/require-env.mjs';
 
 export const PLANTS_ORACLE_CONTAINER = 'db2ai-plants-oracle';
 const CONNECT_HOST = '127.0.0.1';

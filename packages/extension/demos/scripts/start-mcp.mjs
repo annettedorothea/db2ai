@@ -3,8 +3,15 @@
  * MCP hosts only: kill MCP → generate → build → start all MCP hosts (foreground).
  * Databases/IdP must already be running (start:all or start:fixtures).
  */
-import { waitForForegroundServiceShutdown } from './foreground-lifecycle.mjs';
-import { demosRoot, prepareWorkspaceEnv, runNpm, serviceChildren, setStartLogTag } from './start-shared.mjs';
+import { waitForForegroundServiceShutdown } from '../generated/db2ai/scripts/foreground-lifecycle.mjs';
+import {
+    demosRoot,
+    generateAndCompile,
+    prepareWorkspaceEnv,
+    runNpm,
+    serviceChildren,
+    setStartLogTag
+} from './start-shared.mjs';
 import { startMcpHosts } from './start-mcp-hosts.mjs';
 
 const logTag = 'start:mcp';
@@ -17,8 +24,7 @@ async function main() {
     runNpm(['run', 'demo:kill-mcp']);
 
     console.log(`[${logTag}] generate + compile…`);
-    runNpm(['run', 'generate:all']);
-    runNpm(['run', 'build:generated']);
+    generateAndCompile();
 
     console.log(`[${logTag}] foreground — LOG_LEVEL=debug, MCP banners in this terminal.`);
     await startMcpHosts(logTag);

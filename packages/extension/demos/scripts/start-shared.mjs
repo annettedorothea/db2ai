@@ -1,139 +1,22 @@
-import path from 'node:path';
-import { spawn, spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { ensureEnvFromExample } from './copy-env.mjs';
-import { loadProjectEnvLocal } from './generated/load-env-local.mjs';
-
-export const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-
-/** @type {import('node:child_process').ChildProcess[]} */
-export const serviceChildren = [];
-
-/** Set by start:mcp / start:all / start:fixtures entry scripts. */
-export let startLogTag = 'start';
-
-/** @param {string} tag */
-export function setStartLogTag(tag) {
-    startLogTag = tag;
-}
-
-export function runNpm(args) {
-    const result = spawnSync('npm', args, { cwd: demosRoot, stdio: 'inherit', shell: process.platform === 'win32' });
-    if (result.status !== 0) {
-        process.exit(result.status ?? 1);
-    }
-}
-
-export function runNode(relativePath, args = []) {
-    const result = spawnSync(process.execPath, [path.join(demosRoot, relativePath), ...args], {
-        cwd: demosRoot,
-        stdio: 'inherit'
-    });
-    if (result.status !== 0) {
-        process.exit(result.status ?? 1);
-    }
-}
-
-export function prepareWorkspaceEnv() {
-    ensureEnvFromExample();
-    loadProjectEnvLocal();
-}
-
-function logPrefix(label) {
-    const m = label.match(/^(mcp-(?:http|oauth):[^\s(]+)/);
-    if (m) {
-        return m[1];
-    }
-    return label.split(/\s/)[0].trim();
-}
-
-function buildServiceEnv(label, extraEnv = {}, detached) {
-    const env = { ...process.env, ...extraEnv, LOG_SERVICE_PREFIX: logPrefix(label) };
-    if (!detached) {
-        env.LOG_LEVEL = 'debug';
-    }
-    return env;
-}
-
+#!/usr/bin/env node
 /**
- * @param {string} label
- * @param {string[]} argv
- * @param {Record<string, string>} [extraEnv]
- * @param {number} [logPort]
- * @param {{ detached?: boolean }} [options] — fixtures: detached; MCP hosts: foreground (default)
+ * Thin re-export of generated start helpers (VSIX/author demos workspace).
+ * Monorepo developers: use repo-root `npm run start:all:demos` (not demos start:all).
  */
-export function startService(label, argv, extraEnv = {}, logPort, options = {}) {
-    const detached = options.detached ?? false;
-    const env = buildServiceEnv(label, extraEnv, detached);
-    const portHint = logPort ? ` port ${logPort}` : '';
-    if (!detached) {
-        const child = spawn(process.execPath, argv, {
-            cwd: demosRoot,
-            stdio: 'inherit',
-            env
-        });
-        serviceChildren.push(child);
-        console.log(`[${startLogTag}] ${label} started in foreground${portHint}`);
-        return;
-    }
-    const child = spawn(process.execPath, argv, {
-        cwd: demosRoot,
-        detached: true,
-        stdio: 'ignore',
-        env
-    });
-    child.unref();
-    console.log(`[${startLogTag}] ${label} started in background${portHint}`);
-}
-
-export async function waitForHttpOk(url, { timeoutMs = 20_000, intervalMs = 200, label = url } = {}) {
-    const deadline = Date.now() + timeoutMs;
-    let lastError = 'unknown';
-    while (Date.now() < deadline) {
-        try {
-            const response = await fetch(url);
-            if (response.ok) {
-                return;
-            }
-            lastError = `HTTP ${response.status}`;
-        } catch (error) {
-            lastError = error instanceof Error ? error.message : String(error);
-        }
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-    }
-    throw new Error(`Timed out waiting for ${label} (${lastError})`);
-}
-
-export async function waitForTcpListen(port, { timeoutMs = 15_000, intervalMs = 200, label = `port ${port}` } = {}) {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-        try {
-            const raw = spawnSync('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'], { encoding: 'utf8' });
-            if (raw.status === 0 && raw.stdout.trim().length > 0) {
-                return;
-            }
-        } catch {
-            /* retry */
-        }
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-    }
-    throw new Error(`Timed out waiting for TCP listener on ${label}`);
-}
-
-export async function waitForMcpHost(label, port, mcpUrl) {
-    await waitForTcpListen(port, { label: mcpUrl });
-}
-
-export function generateAndCompile() {
-    runNpm(['run', 'generate:all']);
-    runNpm(['run', 'build:generated']);
-}
-
-export function installGenerateCompile() {
-    runNpm(['install']);
-    generateAndCompile();
-}
-
-export function printMcpReminder() {
-    console.log(`[${startLogTag}] Cursor Settings → Tools & MCPs: enable servers, then reload MCP.`);
-}
+export {
+    demosRoot,
+    serviceChildren,
+    startLogTag,
+    setStartLogTag,
+    runNpm,
+    runNode,
+    prepareWorkspaceEnv,
+    startService,
+    waitForHttpOk,
+    waitForTcpListen,
+    waitForMcpHost,
+    waitForBackend,
+    generateAndCompile,
+    installGenerateCompile,
+    printMcpReminder
+} from '../generated/db2ai/scripts/start-service-lib.mjs';

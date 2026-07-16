@@ -22,8 +22,10 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 ## Voraussetzungen
 
 - Demos-Workspace-Root mit `.cursor/mcp.json`
-- `npm run start:all` oder `npm run start:mcp` (foreground — **MCP-Banner in diesem Terminal**)
-- DBs/IdP laufen (`start:all` oder `start:fixtures`)
+- Stack laeuft (HTTP-MCP-Ports erreichbar; Hook prueft das):
+  - **Monorepo:** Repo-Root `npm run start:all:demos` (lokale CLI; Stop: `npm run kill:all:demos`) — oft in einem anderen Fenster/Terminal als `/test-all`
+  - **Author / Create Demo Workspace:** `npm run start:all` oder `npm run start:mcp` (VSIX-CLI; ohne installierte Extension schlaegt Generate fehl)
+- DBs/IdP laufen (Teil von `start:all` / `start:all:demos`, oder `start:fixtures`)
 - Alle benötigten MCP-Server in Cursor aktiviert
 - Keine `.env`-Dateien lesen oder ändern (siehe `db2ai-env-auth-policy`)
 
@@ -32,10 +34,10 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 | Was | Quelle | Sicher? |
 |-----|--------|---------|
 | **Tool-Aufrufe** | Live MCP `tools/call` in Cursor | **Ja** — nicht der `mcps/`-Cache |
-| **Parameter-Schema** | `mcps/.../tools/*.json` | Nur fuer Argumente — **nicht** fuer Build |
-| **Build-Referenz** | `start:mcp`/`start:all`-Terminal (Banner pro Server) | **Ja** — gleicher Prozess wie die HTTP-Hosts |
+| **Parameter-Schema** | `mcps/.../tools/*.json` | Nur fuer Argumente — kann **veraltet** sein (Cursor-Cache) |
+| **Build (optional)** | Nur wenn Start-Terminal **in dieser Session** sichtbar (selten) | Sonst weglassen |
 
-**Nicht** fuer Build: `serverInfo.version` (Agent sieht Initialize nicht), Cursor Settings-Tooltip, `mcps/`-Cache-Descriptions.
+**Nicht** fuer Build: Terminal in anderen Fenstern suchen, Repo, `generated/**`, `mcps/`-Cache, `serverInfo.version`, Cursor Settings-Tooltip.
 
 ## Geltende Regeln
 
@@ -44,6 +46,8 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 - **Kein Workaround bei Fehlern:** Kein CLI, kein SQL, kein Retry mit anderen Credentials.
 - **Kein Ersatz-Transport:** Wenn MCP-Tool-Aufrufe in dieser Session nicht verfuegbar sind → **sofort abbrechen** (Schritt 0). Nicht HTTP/curl/WebFetch zu URLs aus `mcp.json`, nicht `scripts/mcp-inspect.mjs`, nicht `generated/**`.
 - **Ausnahme zu „ein Aufruf“:** Bei diesem Skill genau **ein Aufruf pro Tool** — insgesamt alle Tools aller Server. Fehler pro Tool dokumentieren, mit naechstem Tool fortfahren (Server komplett down: Rest des Servers ueberspringen, Fehler melden).
+- **Kein Terminal-Hunt:** Nicht nach `start:all`/`start:all:demos`-Terminals suchen, wenn sie nicht offensichtlich in dieser Session liegen. Sofort mit Tool-Tests starten.
+- **Stale Cursor-Cache (nicht DSL-Bug):** Wenn die **Live**-Antwort (Zod/Validierung, fehlendes Pflichtfeld, unerwartetes Schema) ein Feld verlangt oder ablehnt, das im `mcps/.../tools/*.json`-Descriptor **fehlt bzw. anders** ist → **veralteter Cursor-Tool-Cache**. In Auffaelligkeiten + Audit so melden. **Nicht** DSL aendern, **nicht** `generated/**` hand-editen, **nicht** Parameter „erraten“ aus dem Repo. Nutzer: MCP-Server togglen/reloaden (ggf. Hosts neu starten), dann `/test-all` erneut.
 
 ## Ablauf
 
@@ -70,16 +74,13 @@ MCP-Server sind in Cursor nicht aktiviert oder nicht verbunden. `/test-all` laeu
 
 Der Hook prueft Ports und Dateien — **nicht**, ob Cursor die MCP-Server eingeschaltet hat.
 
-### 1. Build-Referenz (einmal pro Server)
+### 1. Build-Referenz (optional — ueberspringen ist Normalfall)
 
-Aus dem **Foreground-Terminal** von `npm run start:mcp` oder `npm run start:all` (IDE-Terminal oder `terminals/*.txt` in dieser Session) — **pro HTTP-Server** die Banner-Zeilen `Version:` und `Build:` lesen und als eine Spalte notieren:
+**Standard:** Schritt ueberspringen. Kein Terminal lesen, keine Banner suchen. In der Zusammenfassung Build-Spalte weglassen oder `—`.
 
-`1.0.0-rc.2 · 2026-07-09 07:45 (UTC+2)`
+**Nur wenn** in **dieser** Cursor-Session ein Foreground-`start:all` / `start:mcp` (typisch Author/VSIX im gleichen Fenster) klar sichtbar ist: Banner `Version:` / `Build:` pro Server notieren.
 
-- **Nicht** aus Repo, `generated/**`, `mcps/`-Cache oder `serverInfo.version` (nicht lesbar).
-- Fehlt das Terminal oder ein Banner fuer einen Server → in der Zusammenfassung `Build unbekannt (Terminal fehlt — start:mcp neu?)` — trotzdem Tool-Aufrufe starten, wenn MCP verbunden.
-
-Alle db2ai-Demo-MCPs sind HTTP — jedes Banner gehoert zum **live** Host auf dem Port aus `mcp.json`.
+Monorepo `start:all:demos` laeuft oft woanders — **nicht** danach suchen.
 
 ### 2. Server und Tools entdecken
 
@@ -98,28 +99,30 @@ Alle db2ai-Demo-MCPs sind HTTP — jedes Banner gehoert zum **live** Host auf de
 
 - Pro Tool: **ein live MCP-Aufruf**; Ergebnis in **Zusammenfassung** (Abschnitt 5) und **kompaktem Audit** (Abschnitt 6).
 - **Kein** voller Audit mit `###`-Block und Roh-JSON pro Tool.
+- Schema-Mismatch Descriptor vs. Live-Fehler → Regel **Stale Cursor-Cache** (nicht als Generator-/DSL-Fehler verkaufen).
 
 ### 5. Ergebnisbericht
 
 ```markdown
 ## Ergebnis: X/Y Tools erfolgreich
 
-| Server | Build (Terminal) | Tools | Status |
-|--------|------------------|-------|--------|
-| sakila-mariadb | 1.0.0-rc.2 · 2026-07-09 07:45 … | 3 | ✅ / ❌ |
-
-- **Build (Terminal):** aus Schritt 1 — Banner des laufenden `start:mcp`/`start:all`-Prozesses, nicht Cache.
+| Server | Tools | Status |
+|--------|-------|--------|
+| sakila-mariadb | 3 | ✅ / ❌ |
 
 ### Auffaelligkeiten
 - …
 ```
 
+Optional eine Spalte **Build**, nur wenn Schritt 1 etwas geliefert hat.
+
 - Leere Listen (`rowCount: 0`) = OK, wenn kein Fehler.
 - Schreib-Tests: temporaere Datensaetze wieder loeschen; verbleibende Test-Orders erwaehnen.
+- Stale-Cache-Verdacht z. B.: `listFilms: Live verlangt offset, Descriptor ohne offset — Cursor MCP reload`.
 
 ### 6. Audit (kompakt)
 
-Eine Zeile **pro MCP-Aufruf** — **ohne** Build-Spalte (steht oben pro Server):
+Eine Zeile **pro MCP-Aufruf**:
 
 ```markdown
 ## Audit (kompakt)
@@ -142,10 +145,11 @@ Eine Zeile **pro MCP-Aufruf** — **ohne** Build-Spalte (steht oben pro Server):
 
 ```
 - [ ] Schritt 0: MCP-Tools in Cursor verfuegbar (sonst Abbruch)
-- [ ] Schritt 1: Build (Terminal) pro Server notiert
+- [ ] Schritt 1: Build nur wenn Start-Terminal in dieser Session (sonst skip)
 - [ ] mcp.json gelesen
-- [ ] Alle Tool-Schemas gelesen (nur Parameter)
+- [ ] Tool-Schemas gelesen (nur Parameter, kurz)
 - [ ] Read-Tools aller Server aufgerufen (live MCP)
 - [ ] Write-Tools (create/update/delete) getestet
+- [ ] Schema-Mismatch Live vs. Descriptor → stale Cache gemeldet (kein DSL-Fix)
 - [ ] Zusammenfassungstabelle + kompakter Audit
 ```

@@ -10,7 +10,7 @@ export async function loadStartModules() {
         import('./mcp-http-demos.mjs'),
         import('./mcp-oauth-demos.mjs'),
         import('./mcp-catalog-entries.mjs'),
-        import('./generated/print-mcp-catalog.mjs')
+        import('../generated/db2ai/scripts/print-mcp-catalog.mjs')
     ]);
     return {
         buildHostLaunch,

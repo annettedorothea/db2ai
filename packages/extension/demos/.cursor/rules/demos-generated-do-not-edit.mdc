@@ -5,23 +5,26 @@ alwaysApply: true
 
 # Demos — generated/** nicht editieren
 
-**Niemals** Dateien unter `packages/extension/demos/generated/**` per Hand ändern — weder `.ts` noch `.js` / `.js.map` (gitignored).
+**Niemals** Dateien unter `packages/extension/demos/generated/**` per Hand ändern — weder `.ts` noch `.js` / `.js.map` (gitignored) noch `scripts/*.mjs` unter `generated/{product}/scripts/`.
 
 Das betrifft u. a.:
 
 - `generated/db2ai/tools/*-tools.ts`
 - `generated/db2ai/cli/*-mcp-server.ts`
+- `generated/db2ai/scripts/*.mjs`
 - kompilierte `.js` daneben (nur über `build:generated`)
 
 ## Stattdessen
 
 1. **Quelle** anpassen: `*.db2ai`, `packages/cli/src/generator/**`, `@toolfactory.dev/core/codegen`, oder `src/hooks/**`.
-2. **Regenerieren** (lokale CLI, nicht nur VSIX-Embed):
+2. **Regenerieren** (Monorepo — lokale CLI):
 
     ```bash
-    DB2AI_CLI="$(pwd)/packages/cli/bin/cli.js" npm run generate:all --prefix packages/extension/demos
-    npm run build:generated --prefix packages/extension/demos
+    npm run generate:all
+    npm run build:generated
     ```
+
+    (Repo-Root `generate:all` → `scripts/monorepo-generate-all.mjs`. Nicht demos `generate:all` — das ist der VSIX-Pfad.)
 
 3. Ergebnis prüfen (`npm run check` im db2ai-Workspace-Root).
 

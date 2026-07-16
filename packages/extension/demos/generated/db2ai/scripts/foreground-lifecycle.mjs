@@ -1,8 +1,8 @@
-#!/usr/bin/env node
+// @generated from @toolfactory.dev/core — do not edit; regenerated when running project generate.
+
 /**
  * Foreground start scripts: stop MCP child processes on Ctrl+C or when a child exits.
  */
-import { spawnSync } from 'node:child_process';
 
 /** @typedef {import('node:child_process').ChildProcess} ChildProcess */
 
@@ -51,16 +51,14 @@ function allServiceChildrenExited(serviceChildren) {
 }
 
 /**
- * Wait for SIGINT/SIGTERM or for all children to exit (stdio-inherit MCP often receives Ctrl+C alone).
- *
  * @param {{
  *   label: string;
  *   serviceChildren: ChildProcess[];
- *   demosRoot: string;
+ *   demosRoot?: string;
  * }} options
  * @returns {Promise<void>}
  */
-export function waitForForegroundServiceShutdown({ label, serviceChildren, demosRoot }) {
+export function waitForForegroundServiceShutdown({ label, serviceChildren }) {
     let shuttingDown = false;
 
     const shutdown = async (reason) => {
@@ -70,7 +68,7 @@ export function waitForForegroundServiceShutdown({ label, serviceChildren, demos
         shuttingDown = true;
         console.log(`[${label}] ${reason} — stopping foreground services…`);
         await stopServiceChildren(serviceChildren);
-        console.log(`[${label}] stopped (npm run demo:kill-all to stop MCP hosts and Docker).`);
+        console.log(`[${label}] stopped (npm run demo:kill-all to stop remaining demo processes).`);
         process.exit(0);
     };
 

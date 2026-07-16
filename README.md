@@ -2,9 +2,6 @@
 
 > Generate curated MCP tools from relational databases.
 
-> **Pre-release**
-> APIs, the DSL, and generated output may change before v1.0.
-
 ## Ecosystem
 
 | Repository                                            | Purpose                                                |
@@ -104,7 +101,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and upgrade notes.
 
 ## Feedback
 
-**1.0.0-rc** — we welcome feedback on onboarding, documentation, DSL ergonomics, and MCP integration. Share your experience in [GitHub Discussions](https://github.com/annettedorothea/db2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/db2ai/issues).
+We welcome feedback on onboarding, documentation, DSL ergonomics, and MCP integration. Share your experience in [GitHub Discussions](https://github.com/annettedorothea/db2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/db2ai/issues).
 
 ---
 

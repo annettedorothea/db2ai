@@ -1,9 +1,0 @@
-{
-    "productName": "db2ai",
-    "extensionIdPrefix": "db2ai.vscode-db2ai-",
-    "embedDirName": "embed-db2ai",
-    "cliPath": "../../cli/bin/cli.js",
-    "cliEnvVar": "DB2AI_CLI",
-    "embedHomeEnvVar": "DB2AI_EMBED_HOME",
-    "dslExtension": ".db2ai"
-}

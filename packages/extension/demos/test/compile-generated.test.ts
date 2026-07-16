@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tscBin = path.join(demosRoot, 'node_modules', 'typescript', 'bin', 'tsc');
-const ensureStampScript = path.join(demosRoot, 'scripts', 'ensure-mcp-build-stamp.mjs');
+const ensureStampScript = path.join(demosRoot, 'generated', 'db2ai', 'scripts', 'ensure-mcp-build-stamp.mjs');
 
 describe('committed generated output compiles', () => {
     it('compiles generated/**/*.ts (+ auth stubs) in demos workspace', () => {

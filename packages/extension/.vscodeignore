@@ -7,7 +7,9 @@ scripts/**
 **/*.map
 demos/node_modules/**
 demos/generated/**
-# Keep demos/scripts/** and demos/project-generate.config.json in the VSIX (demo workspace copy)
+!demos/generated/*/scripts/
+!demos/generated/*/scripts/**
+# Keep demos/scripts/** and demos/generated/*/scripts/** in the VSIX (demo workspace copy)
 demos/package-lock.json
 demos/dist/**
 demos/**/.env

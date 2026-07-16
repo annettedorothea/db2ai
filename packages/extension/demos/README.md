@@ -114,7 +114,7 @@ or:
 db2ai /test-all
 ```
 
-For HTTP transport debugging — hosts must already be running (`npm run start:all`):
+For HTTP transport debugging — hosts must already be running (`npm run start:all`). Prefer this as the **manual verify** for generated HTTP MCP tools:
 
 ```bash
 npm run mcp:inspect -- pagila-postgresql
@@ -196,7 +196,7 @@ This feature is still evolving and may change before the final `1.0` release.
 
 ## Feedback
 
-**1.0.0-rc** — share onboarding and integration feedback in [GitHub Discussions](https://github.com/annettedorothea/db2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/db2ai/issues).
+Share onboarding and integration feedback in [GitHub Discussions](https://github.com/annettedorothea/db2ai/discussions/1). For bugs, open an [Issue](https://github.com/annettedorothea/db2ai/issues).
 
 ---
 
