@@ -12,6 +12,28 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.0.0] - 2026-07-16
+
+Stable VSIX release. Pins `@toolfactory.dev/core` **1.0.0** from npmjs.
+
+### Changed
+
+- **Demo scripts:** utility modules live under `generated/db2ai/scripts/` (synced from core); hand copies under `scripts/generated/` removed
+- **Monorepo helpers:** `scripts/monorepo-generate-all.mjs` and `scripts/monorepo-start-all-demos.mjs` for local CLI / demos start
+- README: remove pre-release / `1.0.0-rc` feedback label
+
+### Fixed
+
+- **Create demo workspace:** copy filter now recurses into `generated/{product}/scripts/` (previously skipped the whole `generated/` tree)
+
+### Upgrade notes
+
+- After VSIX upgrade: run `generate:all` and `build:generated`; restart MCP servers in Cursor
+- Pin refresh: `npm run sync:core2ai-pin:npm` (or install VSIX), then regenerate so `generated/db2ai/scripts/**` is current
+- Existing Test workspaces created with a broken copy: recreate via **Create demo workspace**, or copy `generated/db2ai/scripts/` from the extension demos bundle
+
+---
+
 ## [1.0.0-rc.4] - 2026-07-10
 
 Strict MCP arg validation, LLM-facing type hints, MySQL string param fix, inspector-only `mcp:inspect`. Pins `@toolfactory.dev/core` **1.0.0-rc.8** from npmjs.

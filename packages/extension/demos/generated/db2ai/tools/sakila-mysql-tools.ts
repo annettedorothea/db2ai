@@ -274,7 +274,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-mysql-tools';
-export const mcpServerVersion = '1.0.0-rc.4';
+export const mcpServerVersion = '1.0.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

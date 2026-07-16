@@ -212,8 +212,9 @@ function shouldCopyDemoPath(sourceDir: string, src: string): boolean {
     }
     const parts = relative.split(path.sep);
     // Copy generated/{product}/scripts/** only (VSIX bootstrap); skip tools/cli/servers output.
+    // cpSync filter is also called on parent dirs — allow `generated` and `generated/{product}` to recurse.
     if (parts[0] === 'generated') {
-        return parts.length >= 3 && parts[2] === 'scripts';
+        return parts.length < 3 || parts[2] === 'scripts';
     }
     if (parts.some((part) => DEMO_COPY_SKIP_DIRS.has(part))) {
         return false;
