@@ -12,6 +12,22 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.0.1] - 2026-07-17
+
+Pins `@toolfactory.dev/core` **1.0.1** from npmjs.
+
+### Changed
+
+- **Extension icon:** updated Marketplace / VSIX icon for Tool Factory branding
+- **MCP demo icons:** optional `icon` in catalogs → `--icon` for animals/plants; omit for Tool Factory core fallback (no product `fallback.png`)
+
+### Upgrade notes
+
+- Reinstall the VSIX (or update from Marketplace); run `generate:all` / `build:generated` and restart MCP hosts to pick up `--icon` / core fallback icons
+- Pin refresh: `npm run sync:core2ai-pin:npm` (core **1.0.1**)
+
+---
+
 ## [1.0.0] - 2026-07-16
 
 Stable VSIX release. Pins `@toolfactory.dev/core` **1.0.0** from npmjs.

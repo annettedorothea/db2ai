@@ -5,6 +5,15 @@ import path from 'node:path';
 import { requireEnv, requireEnvInt } from '../generated/db2ai/scripts/require-env.mjs';
 import { productName } from '../generated/db2ai/scripts/project-meta.mjs';
 
+/** @param {string[]} args @param {string} demosRoot @param {string | undefined} iconRel */
+function appendIconArg(args, demosRoot, iconRel) {
+    const rel = iconRel?.trim();
+    if (!rel) {
+        return;
+    }
+    args.push('--icon', path.resolve(demosRoot, rel));
+}
+
 export const HTTP_DEMOS = {
     'sakila-mysql': {
         hostKind: 'passthrough-http',
@@ -28,12 +37,14 @@ export const HTTP_DEMOS = {
     'animals-sqlserver': {
         hostKind: 'public-http',
         connectionEnv: 'ANIMALS_SQLSERVER_DATABASE_URL',
-        portEnv: 'ANIMALS_SQLSERVER_HTTP_PORT'
+        portEnv: 'ANIMALS_SQLSERVER_HTTP_PORT',
+        icon: 'icons/animals-sqlserver.png'
     },
     'plants-oracle': {
         hostKind: 'public-http',
         connectionEnv: 'PLANTS_ORACLE_DATABASE_URL',
-        portEnv: 'PLANTS_ORACLE_HTTP_PORT'
+        portEnv: 'PLANTS_ORACLE_HTTP_PORT',
+        icon: 'icons/plants-oracle.png'
     }
 };
 
@@ -69,6 +80,7 @@ export function buildHostLaunch(name, demosRoot, env) {
         `${name}-${demo.hostKind}-mcp-server.js`
     );
     const args = [serverJs, '--port', String(port), '--path', '/mcp'];
+    appendIconArg(args, demosRoot, demo.icon);
     const mcpUrl = `http://127.0.0.1:${port}/mcp`;
     return { demo, port, args, mcpUrl };
 }

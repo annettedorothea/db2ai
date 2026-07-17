@@ -5,6 +5,15 @@ import path from 'node:path';
 import { requireEnv, requireEnvInt } from '../generated/db2ai/scripts/require-env.mjs';
 import { productName } from '../generated/db2ai/scripts/project-meta.mjs';
 
+/** @param {string[]} args @param {string} demosRoot @param {string | undefined} iconRel */
+function appendIconArg(args, demosRoot, iconRel) {
+    const rel = iconRel?.trim();
+    if (!rel) {
+        return;
+    }
+    args.push('--icon', path.resolve(demosRoot, rel));
+}
+
 export const OAUTH_HTTP_DEMOS = {
     'orders-postgresql': {
         connectionEnv: 'ORDERS_POSTGRESQL_DATABASE_URL',
@@ -52,6 +61,7 @@ export function buildOAuthHostLaunch(name, demosRoot, env) {
         '--path',
         '/mcp'
     ];
+    appendIconArg(args, demosRoot, demo.icon);
     const mcpUrl = `http://127.0.0.1:${port}/mcp`;
     return { demo, port, args, mcpUrl };
 }

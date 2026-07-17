@@ -1,7 +1,7 @@
 {
     "name": "db-2-ai-dsl-workspace",
     "description": "Langium workspace for db2ai — relational DB to MCP tools",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "type": "module",
     "private": true,
@@ -24,7 +24,6 @@
         "build:generated": "npm run build:generated --prefix packages/extension/demos",
         "start:all:demos": "node ./scripts/monorepo-start-all-demos.mjs",
         "kill:all:demos": "npm run demo:kill-all --prefix packages/extension/demos",
-        "start:demos": "npm run start --prefix packages/extension/demos",
         "test": "tsc -b tsconfig.build.json && npm run test --workspace packages/language && npm run test --workspace packages/cli && npm run test --prefix packages/extension/demos",
         "format": "prettier --write .",
         "format:check": "prettier --check .",

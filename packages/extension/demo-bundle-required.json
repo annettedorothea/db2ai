@@ -31,6 +31,8 @@
     "sakila-mariadb.db2ai",
     "animals-sqlserver.db2ai",
     "plants-oracle.db2ai",
+    "icons/animals-sqlserver.png",
+    "icons/plants-oracle.png",
     "README.md",
     "scripts/copy-env.mjs",
     "scripts/build-mcp.mjs",
