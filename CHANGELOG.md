@@ -10,6 +10,10 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ## [Unreleased]
 
+### Changed
+
+- **`vsix:release`:** GitHub releases are stable (no longer `--prerelease`)
+
 ---
 
 ## [1.0.1] - 2026-07-17

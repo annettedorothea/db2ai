@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Uploads the local `.vsix` to GitHub as a prerelease (same file you tested after `vsix:build`).
+ * Uploads the local `.vsix` to a GitHub Release (same file you tested after `vsix:build`).
  *
  * Called by: repo root and `packages/extension/package.json` — `vsix:release`
  * Requires: `gh` CLI and `packages/extension/<name>-<version>.vsix`
@@ -31,8 +31,7 @@ const result = spawnSync(
         '--title',
         `${pkg.name} ${pkg.version}`,
         '--notes',
-        'Internal test build of the Cursor/VS Code extension (prerelease on GitHub).',
-        '--prerelease'
+        'Cursor/VS Code extension release. Install the attached `.vsix`, or update from the Marketplace when published.'
     ],
     { cwd: extensionRoot, stdio: 'inherit' }
 );
