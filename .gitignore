@@ -17,4 +17,3 @@ packages/extension/demos/.env.local
 packages/extension/demos/node_modules/
 packages/extension/demos/tmp/
 packages/cli/tmp/
-packages/extension/demos/src/db/db2ai/sales-report-tools/initDatabase.js

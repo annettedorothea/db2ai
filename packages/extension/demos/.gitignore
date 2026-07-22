@@ -6,6 +6,12 @@ src/auth/**/*.js
 src/auth/**/*.js.map
 src/auth/**/*.mjs
 
+# tsc emit from build:generated — keep only *.ts stubs in src/hooks and src/db/
+src/hooks/**/*.js
+src/hooks/**/*.js.map
+src/db/**/*.js
+src/db/**/*.js.map
+
 # tsc emit from build:generated — keep only logging-adapter.ts in src/utils/
 src/utils/**/*.js
 src/utils/**/*.js.map
