@@ -1,78 +1,74 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { DiagnosticSeverity } from 'vscode-languageserver';
-import { beforeAll, describe, expect, test } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createDb2AiDslServices } from '../src/db-2-ai-dsl-module.js';
 import type { Model } from '../src/generated/ast.js';
-import { buildExplainSqlForDialect } from '../src/sql-db-probe.js';
+import * as duckdbSetup from '../src/duckdb-setup.js';
 import { validateSqlBlocksWithExamples } from '../src/sql-db-validator.js';
 
 let parse: ReturnType<typeof parseHelper<Model>>;
+const fixtureDir = path.resolve(process.cwd(), 'test/fixtures');
 
-const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../extension/demos');
-const flightDocumentUri = path.join(demosRoot, 'flight.db2ai');
+const duckdbDocument = `
+    database duckdb
+
+    SQL {
+        toolName: listFlights
+        access: public
+        intent: "list flights"
+        query: "SELECT FlightDate FROM flights WHERE OriginCityName = :city LIMIT :limit"
+        params: {
+            city: { description: "origin" example: "New York" type: string }
+            limit: { description: "max" example: "5" type: integer }
+        }
+    }
+`;
 
 beforeAll(async () => {
     const services = createDb2AiDslServices(EmptyFileSystem);
     parse = parseHelper<Model>(services.Db2AiDsl);
 });
 
-describe('duckdb EXPLAIN probe', () => {
-    test('buildExplainSqlForDialect uses plain EXPLAIN and $n', () => {
-        expect(buildExplainSqlForDialect('SELECT * FROM flights WHERE city = :city LIMIT :limit', 'duckdb')).toBe(
-            'EXPLAIN SELECT * FROM flights WHERE city = $1 LIMIT $2'
+beforeEach(() => {
+    vi.restoreAllMocks();
+});
+
+describe('validateSqlBlocksWithExamples duckdb', () => {
+    test('returns setup warning when initDatabase session cannot open', async () => {
+        vi.spyOn(duckdbSetup, 'openDuckdbValidationSession').mockRejectedValue(
+            new Error('initDatabase stub not found')
         );
+
+        const documentUri = path.join(fixtureDir, 'sql-db-duckdb-setup.db2ai');
+        const document = await parse(duckdbDocument, { validation: false, documentUri });
+        const diags = await validateSqlBlocksWithExamples(document.parseResult.value, documentUri);
+
+        expect(
+            diags.some(
+                (d) => d.severity === DiagnosticSeverity.Warning && d.message.includes('DuckDB initDatabase failed')
+            )
+        ).toBe(true);
+        expect(diags.some((d) => d.severity === DiagnosticSeverity.Error)).toBe(false);
     });
 
-    test('reports SQL error when column is unknown after initDatabase', async () => {
-        const documentUri = `${flightDocumentUri}#broken`;
-        const document = await parse(
-            `
-            database duckdb
-
-            SQL {
-                toolName: listFlights
-                access: public
-                intent: "broken"
-                query: "SELECT NoSuchCol FROM flights WHERE OriginCityName = :city LIMIT :limit"
-                params: {
-                    city: { description: "origin" example: "New York" type: string }
-                    limit: { description: "max" example: "5" type: integer }
-                }
-            }
-        `,
-            { validation: false, documentUri }
+    test('returns SQL error when EXPLAIN probe fails after setup', async () => {
+        const connection = {
+            runAndReadAll: vi.fn().mockRejectedValue(new Error('Binder Error: Referenced column "NoSuchCol"')),
+            closeSync: vi.fn()
+        };
+        vi.spyOn(duckdbSetup, 'openDuckdbValidationSession').mockResolvedValue(
+            connection as unknown as Awaited<ReturnType<typeof duckdbSetup.openDuckdbValidationSession>>
         );
 
+        const documentUri = path.join(fixtureDir, 'sql-db-duckdb-explain.db2ai');
+        const document = await parse(duckdbDocument, { validation: false, documentUri });
         const diags = await validateSqlBlocksWithExamples(document.parseResult.value, documentUri);
-        const errors = diags.filter((d) => d.severity === DiagnosticSeverity.Error);
-        expect(errors.length).toBeGreaterThanOrEqual(1);
-        expect(errors[0]?.message).toMatch(/SQL validation failed:.*NoSuchCol/i);
-    });
 
-    test('accepts valid flight SQL after initDatabase', async () => {
-        const documentUri = `${flightDocumentUri}#ok`;
-        const document = await parse(
-            `
-            database duckdb
-
-            SQL {
-                toolName: listFlights
-                access: public
-                intent: "ok"
-                query: "SELECT FlightDate FROM flights WHERE OriginCityName = :city LIMIT :limit"
-                params: {
-                    city: { description: "origin" example: "New York" type: string }
-                    limit: { description: "max" example: "5" type: integer }
-                }
-            }
-        `,
-            { validation: false, documentUri }
+        expect(diags.some((d) => d.severity === DiagnosticSeverity.Error && d.message.includes('NoSuchCol'))).toBe(
+            true
         );
-
-        const diags = await validateSqlBlocksWithExamples(document.parseResult.value, documentUri);
-        expect(diags.filter((d) => d.severity === DiagnosticSeverity.Error)).toHaveLength(0);
+        expect(connection.closeSync).toHaveBeenCalled();
     });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+    buildExplainSqlForDialect,
     buildMysqlExplainSql,
     buildOracleExplainSql,
     buildPostgresExplainSql,
@@ -40,6 +41,12 @@ describe('sql-db-probe', () => {
             'INSERT INTO plants (common_name, latin_name, description) VALUES (:commonName, :latinName, :aboutText) RETURNING plant_id, common_name';
         expect(buildOracleExplainSql(sql)).toBe(
             'EXPLAIN PLAN FOR INSERT INTO plants (common_name, latin_name, description) VALUES (:commonName, :latinName, :aboutText)'
+        );
+    });
+
+    test('buildExplainSqlForDialect duckdb uses plain EXPLAIN and $n', () => {
+        expect(buildExplainSqlForDialect('SELECT * FROM flights WHERE city = :city LIMIT :limit', 'duckdb')).toBe(
+            'EXPLAIN SELECT * FROM flights WHERE city = $1 LIMIT $2'
         );
     });
 });
