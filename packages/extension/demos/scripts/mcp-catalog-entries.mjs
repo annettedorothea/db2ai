@@ -18,6 +18,7 @@ function resolvePort(portEnv, env) {
         ANIMALS_SQLSERVER_HTTP_PORT: 4855,
         PLANTS_ORACLE_HTTP_PORT: 4856,
         FLIGHT_HTTP_PORT: 4857,
+        SALES_REPORT_HTTP_PORT: 4858,
         ORDERS_POSTGRESQL_OAUTH_HTTP_PORT: 4872
     };
     if (defaults[portEnv] !== undefined) {

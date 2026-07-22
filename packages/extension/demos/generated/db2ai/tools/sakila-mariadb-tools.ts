@@ -219,7 +219,7 @@ export async function invokeTool(
         switch (toolName) {
             case 'listFilms': {
                 const sqlText = 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ? OFFSET ?';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizeMysqlNumericParamValue(optionsResolved['limit']),
                     normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
@@ -238,7 +238,7 @@ export async function invokeTool(
             case 'searchFilms': {
                 const sqlText =
                     "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?";
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
                         ? String(optionsResolved['searchText'])
                         : null,

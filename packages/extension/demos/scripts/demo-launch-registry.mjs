@@ -63,6 +63,11 @@ export const DEMO_LAUNCH_REGISTRY = {
         docker: [],
         mcpMode: 'http',
         httpDemo: 'flight'
+    },
+    'sales-report': {
+        docker: [],
+        mcpMode: 'http',
+        httpDemo: 'sales-report'
     }
 };
 

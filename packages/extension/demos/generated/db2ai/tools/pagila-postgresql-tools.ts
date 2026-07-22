@@ -618,7 +618,7 @@ export async function invokeTool(
         switch (toolName) {
             case 'listFilms': {
                 const sqlText = 'SELECT * FROM film LIMIT LEAST($1, 100) OFFSET $2';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
@@ -635,7 +635,7 @@ export async function invokeTool(
             }
             case 'listActors': {
                 const sqlText = 'SELECT * FROM actor LIMIT LEAST($1, 100) OFFSET $2';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
@@ -652,7 +652,7 @@ export async function invokeTool(
             }
             case 'listCustomers': {
                 const sqlText = 'SELECT * FROM customer LIMIT LEAST($1, 100) OFFSET $2';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
@@ -669,7 +669,7 @@ export async function invokeTool(
             }
             case 'listCategories': {
                 const sqlText = 'SELECT * FROM category LIMIT LEAST($1, 100) OFFSET $2';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
@@ -686,7 +686,7 @@ export async function invokeTool(
             }
             case 'listCountries': {
                 const sqlText = 'SELECT * FROM country LIMIT LEAST($1, 100) OFFSET $2';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
@@ -704,7 +704,7 @@ export async function invokeTool(
             case 'listInventory': {
                 const sqlText =
                     '\n        SELECT\n            *\n        FROM\n            inventory\n        LIMIT\n            LEAST($1, 100)\n        OFFSET\n            $2\n    ';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizePostgresNumericParamValue(optionsResolved['limit']),
                     normalizePostgresNumericParamValue(optionsResolved['offset'])
                 ];
@@ -722,7 +722,7 @@ export async function invokeTool(
             case 'filmsByMpaaRating': {
                 const sqlText =
                     '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating::text = $1\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['rating'] !== undefined && optionsResolved['rating'] !== null
                         ? String(optionsResolved['rating'])
                         : null,
@@ -742,7 +742,7 @@ export async function invokeTool(
             case 'filmsWithActorLastName': {
                 const sqlText =
                     "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name ILIKE $1 || '%'\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            $2\n    ";
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['lastNamePrefix'] !== undefined && optionsResolved['lastNamePrefix'] !== null
                         ? String(optionsResolved['lastNamePrefix'])
                         : null,
@@ -762,7 +762,7 @@ export async function invokeTool(
             case 'searchFilms': {
                 const sqlText =
                     "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title ILIKE '%' || $1 || '%'\n            OR description ILIKE '%' || $1 || '%'\n        ORDER BY\n            title\n        LIMIT\n            $2\n    ";
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
                         ? String(optionsResolved['searchText'])
                         : null,
@@ -782,7 +782,7 @@ export async function invokeTool(
             case 'createActor': {
                 const sqlText =
                     'INSERT INTO actor (first_name, last_name, last_update) VALUES ($1, $2, NOW()) RETURNING actor_id, first_name, last_name, last_update';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['firstName'] !== undefined && optionsResolved['firstName'] !== null
                         ? String(optionsResolved['firstName'])
                         : null,
@@ -804,7 +804,7 @@ export async function invokeTool(
             case 'updateActor': {
                 const sqlText =
                     'UPDATE actor SET first_name = $1, last_name = $2, last_update = NOW() WHERE actor_id = $3 RETURNING actor_id, first_name, last_name, last_update';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['firstName'] !== undefined && optionsResolved['firstName'] !== null
                         ? String(optionsResolved['firstName'])
                         : null,
@@ -827,7 +827,7 @@ export async function invokeTool(
             case 'deleteActor': {
                 const sqlText =
                     'DELETE FROM actor WHERE actor_id = $1 RETURNING actor_id, first_name, last_name, last_update';
-                const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['actorId'])];
+                const sqlValues: unknown[] = [normalizePostgresNumericParamValue(optionsResolved['actorId'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'deleteActor',
                     sql: compactSqlForLog(sqlText),

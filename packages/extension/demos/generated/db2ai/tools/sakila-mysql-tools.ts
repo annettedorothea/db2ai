@@ -429,7 +429,7 @@ export async function invokeTool(
         switch (toolName) {
             case 'listFilms': {
                 const sqlText = 'SELECT * FROM film LIMIT ? OFFSET ?';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizeMysqlNumericParamValue(optionsResolved['limit']),
                     normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
@@ -447,7 +447,7 @@ export async function invokeTool(
             }
             case 'listActors': {
                 const sqlText = 'SELECT * FROM actor LIMIT ? OFFSET ?';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizeMysqlNumericParamValue(optionsResolved['limit']),
                     normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
@@ -465,7 +465,7 @@ export async function invokeTool(
             }
             case 'listCategories': {
                 const sqlText = 'SELECT * FROM category LIMIT ? OFFSET ?';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     normalizeMysqlNumericParamValue(optionsResolved['limit']),
                     normalizeMysqlNumericParamValue(optionsResolved['offset'])
                 ];
@@ -484,7 +484,7 @@ export async function invokeTool(
             case 'filmsByRating': {
                 const sqlText =
                     '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['rating'] !== undefined && optionsResolved['rating'] !== null
                         ? String(optionsResolved['rating'])
                         : null,
@@ -505,7 +505,7 @@ export async function invokeTool(
             case 'filmsWithActorLastName': {
                 const sqlText =
                     "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ";
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['lastNamePrefix'] !== undefined && optionsResolved['lastNamePrefix'] !== null
                         ? String(optionsResolved['lastNamePrefix'])
                         : null,
@@ -526,7 +526,7 @@ export async function invokeTool(
             case 'searchFilms': {
                 const sqlText =
                     "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ";
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['searchText'] !== undefined && optionsResolved['searchText'] !== null
                         ? String(optionsResolved['searchText'])
                         : null,
@@ -549,7 +549,7 @@ export async function invokeTool(
             }
             case 'insertActor': {
                 const sqlText = 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['firstName'] !== undefined && optionsResolved['firstName'] !== null
                         ? String(optionsResolved['firstName'])
                         : null,

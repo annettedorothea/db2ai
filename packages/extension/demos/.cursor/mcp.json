@@ -29,6 +29,9 @@
         },
         "flight": {
             "url": "http://127.0.0.1:4857/mcp"
+        },
+        "sales-report": {
+            "url": "http://127.0.0.1:4858/mcp"
         }
     }
 }

@@ -404,7 +404,7 @@ export async function invokeTool(
             case 'listCustomerOrders': {
                 const sqlText =
                     '\n        SELECT\n            order_id,\n            customer_id,\n            product_id,\n            quantity\n        FROM\n            orders\n        WHERE\n            customer_id = $1\n        ORDER BY\n            order_id\n    ';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['customerId'] !== undefined && optionsResolved['customerId'] !== null
                         ? String(optionsResolved['customerId'])
                         : null
@@ -422,7 +422,7 @@ export async function invokeTool(
             }
             case 'listProducts': {
                 const sqlText = 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1';
-                const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
+                const sqlValues: unknown[] = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listProducts',
                     sql: compactSqlForLog(sqlText),
@@ -437,7 +437,7 @@ export async function invokeTool(
             case 'listProductsWithReviews': {
                 const sqlText =
                     '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 100)\n    ';
-                const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
+                const sqlValues: unknown[] = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listProductsWithReviews',
                     sql: compactSqlForLog(sqlText),
@@ -452,7 +452,7 @@ export async function invokeTool(
             case 'createOrder': {
                 const sqlText =
                     'INSERT INTO orders (customer_id, product_id, quantity) VALUES ($1, $2, 1) RETURNING order_id, customer_id, product_id, quantity';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['customerId'] !== undefined && optionsResolved['customerId'] !== null
                         ? String(optionsResolved['customerId'])
                         : null,
@@ -471,7 +471,7 @@ export async function invokeTool(
             }
             case 'createProduct': {
                 const sqlText = 'INSERT INTO products (name, price) VALUES ($1, $2) RETURNING product_id, name, price';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['productName'] !== undefined && optionsResolved['productName'] !== null
                         ? String(optionsResolved['productName'])
                         : null,
@@ -491,7 +491,7 @@ export async function invokeTool(
             case 'updateProduct': {
                 const sqlText =
                     'UPDATE products SET name = $1, price = $2 WHERE product_id = $3 RETURNING product_id, name, price';
-                const sqlValues = [
+                const sqlValues: unknown[] = [
                     optionsResolved['productName'] !== undefined && optionsResolved['productName'] !== null
                         ? String(optionsResolved['productName'])
                         : null,
@@ -511,7 +511,7 @@ export async function invokeTool(
             }
             case 'deleteProduct': {
                 const sqlText = 'DELETE FROM products WHERE product_id = $1 RETURNING product_id, name, price';
-                const sqlValues = [normalizePostgresNumericParamValue(optionsResolved['productId'])];
+                const sqlValues: unknown[] = [normalizePostgresNumericParamValue(optionsResolved['productId'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'deleteProduct',
                     sql: compactSqlForLog(sqlText),

@@ -183,7 +183,7 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
     if (isMysqlDialect(dialect)) {
         return `        case ${JSON.stringify(tool.toolName)}: {
             const sqlText = ${JSON.stringify(tool.sqlText)};
-            const sqlValues = [${valueExprs}];
+            const sqlValues: unknown[] = [${valueExprs}];
             loggingAdapter.debug('executeSql', {
                 toolName: ${JSON.stringify(tool.toolName)},
                 sql: compactSqlForLog(sqlText),
@@ -200,7 +200,7 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
     if (dialect === 'duckdb') {
         return `        case ${JSON.stringify(tool.toolName)}: {
             const sqlText = ${JSON.stringify(tool.sqlText)};
-            const sqlValues = [${valueExprs}];
+            const sqlValues: DuckDBValue[] = [${valueExprs}];
             loggingAdapter.debug('executeSql', {
                 toolName: ${JSON.stringify(tool.toolName)},
                 sql: compactSqlForLog(sqlText),
@@ -216,7 +216,7 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
     }
     return `        case ${JSON.stringify(tool.toolName)}: {
             const sqlText = ${JSON.stringify(tool.sqlText)};
-            const sqlValues = [${valueExprs}];
+            const sqlValues: unknown[] = [${valueExprs}];
             loggingAdapter.debug('executeSql', {
                 toolName: ${JSON.stringify(tool.toolName)},
                 sql: compactSqlForLog(sqlText),
@@ -508,7 +508,7 @@ function renderDuckdbInvokeBlockTs(
         .join('\n\n');
     const helperSection = helpers.length > 0 ? `\n\n${helpers}` : '';
     return `
-import { DuckDBConnection } from '@duckdb/node-api';
+import { DuckDBConnection, type DuckDBValue } from '@duckdb/node-api';
 ${helperSection}
 
 export async function invokeTool(

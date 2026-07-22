@@ -49,6 +49,10 @@ export const HTTP_DEMOS = {
     flight: {
         hostKind: 'public-http',
         portEnv: 'FLIGHT_HTTP_PORT'
+    },
+    'sales-report': {
+        hostKind: 'public-http',
+        portEnv: 'SALES_REPORT_HTTP_PORT'
     }
 };
 
@@ -59,7 +63,8 @@ export const HTTP_START_DEMO_NAMES = [
     'pagila-postgresql',
     'animals-sqlserver',
     'plants-oracle',
-    'flight'
+    'flight',
+    'sales-report'
 ];
 
 export const HTTP_DEMO_NAMES = Object.keys(HTTP_DEMOS);

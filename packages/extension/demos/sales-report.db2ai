@@ -1,0 +1,175 @@
+database duckdb
+
+SQL {
+    toolName: listSalesByRegion
+    access: public
+    intent: "list cleaned sales lines from the messy Excel Umsatz sheet filtered by region"
+    query: '''
+        SELECT
+            customer_id,
+            customer_name,
+            region,
+            product_group,
+            net_eur,
+            document_date
+        FROM
+            sales_lines
+        WHERE
+            region = :region
+        ORDER BY
+            document_date,
+            customer_id
+        LIMIT
+            :limit
+    '''
+    summary: "Sales lines for a region"
+    params: {
+        region: { description: "sales region (Nord, West, Süd, Ost)" example: "Nord" type: string }
+        limit: { description: "max rows" example: "20" type: integer }
+    }
+}
+
+SQL {
+    toolName: listSalesByProductGroup
+    access: public
+    intent: "list cleaned sales lines filtered by Warengruppe / product group"
+    query: '''
+        SELECT
+            customer_id,
+            customer_name,
+            region,
+            product_group,
+            net_eur,
+            document_date
+        FROM
+            sales_lines
+        WHERE
+            product_group = :productGroup
+        ORDER BY
+            document_date,
+            customer_id
+        LIMIT
+            :limit
+    '''
+    summary: "Sales lines for a product group"
+    params: {
+        productGroup: {
+            description: "Warengruppe (Maschinen, Ersatzteile, Software, Schulung, Sensorik, Dienstleistung)"
+            example: "Maschinen"
+            type: string
+        }
+        limit: { description: "max rows" example: "20" type: integer }
+    }
+}
+
+SQL {
+    toolName: summarizeSalesByRegion
+    access: public
+    intent: "sum net sales and line counts by region from the cleaned Excel Umsatz view"
+    query: '''
+        SELECT
+            region,
+            COUNT(*) AS line_count,
+            COUNT(DISTINCT customer_id) AS customer_count,
+            ROUND(SUM(net_eur), 2) AS net_eur_total
+        FROM
+            sales_lines
+        GROUP BY
+            region
+        ORDER BY
+            net_eur_total DESC
+    '''
+    summary: "Net sales totals by region"
+}
+
+SQL {
+    toolName: summarizeSalesByProductGroup
+    access: public
+    intent: "sum net sales and line counts by Warengruppe / product group from the cleaned Excel Umsatz view"
+    query: '''
+        SELECT
+            product_group,
+            COUNT(*) AS line_count,
+            COUNT(DISTINCT customer_id) AS customer_count,
+            ROUND(SUM(net_eur), 2) AS net_eur_total
+        FROM
+            sales_lines
+        GROUP BY
+            product_group
+        ORDER BY
+            net_eur_total DESC
+    '''
+    summary: "Net sales totals by product group"
+}
+
+SQL {
+    toolName: summarizeSalesByRegionAndProductGroup
+    access: public
+    intent: "cross-tab net sales by region and Warengruppe for regional product mix analysis"
+    query: '''
+        SELECT
+            region,
+            product_group,
+            COUNT(*) AS line_count,
+            ROUND(SUM(net_eur), 2) AS net_eur_total
+        FROM
+            sales_lines
+        GROUP BY
+            region,
+            product_group
+        ORDER BY
+            region,
+            net_eur_total DESC
+    '''
+    summary: "Net sales by region and product group"
+}
+
+SQL {
+    toolName: summarizeSalesBySegment
+    access: public
+    intent: "sum net sales by customer segment using Excel sales lines joined to Kunden stamm"
+    query: '''
+        SELECT
+            c.segment,
+            COUNT(*) AS line_count,
+            ROUND(SUM(s.net_eur), 2) AS net_eur_total
+        FROM
+            sales_lines s
+            INNER JOIN customers c ON c.customer_id = s.customer_id
+        GROUP BY
+            c.segment
+        ORDER BY
+            net_eur_total DESC
+    '''
+    summary: "Net sales totals by customer segment"
+}
+
+SQL {
+    toolName: topCustomersByRevenue
+    access: public
+    intent: "rank customers by total net revenue from the cleaned Excel sales view"
+    query: '''
+        SELECT
+            s.customer_id,
+            s.customer_name,
+            c.city,
+            c.segment,
+            ROUND(SUM(s.net_eur), 2) AS net_eur_total
+        FROM
+            sales_lines s
+            INNER JOIN customers c ON c.customer_id = s.customer_id
+        GROUP BY
+            s.customer_id,
+            s.customer_name,
+            c.city,
+            c.segment
+        ORDER BY
+            net_eur_total DESC
+        LIMIT
+            :limit
+    '''
+    summary: "Top customers by revenue"
+    params: {
+        limit: { description: "max customers" example: "5" type: integer }
+    }
+}

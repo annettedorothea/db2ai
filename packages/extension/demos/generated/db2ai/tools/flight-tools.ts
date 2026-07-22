@@ -90,7 +90,7 @@ export const inputZodByTool = {
         .strict()
 };
 
-import { DuckDBConnection } from '@duckdb/node-api';
+import { DuckDBConnection, type DuckDBValue } from '@duckdb/node-api';
 
 function compactSqlForLog(sql: string): string {
     return sql.replace(/\s+/g, ' ').trim();
@@ -127,7 +127,7 @@ export async function invokeTool(
             case 'listFlights': {
                 const sqlText =
                     '\n        SELECT\n            FlightDate,\n            UniqueCarrier,\n            OriginCityName,\n            DestCityName,\n            FlightNum\n        FROM\n            flights\n        WHERE\n            OriginCityName = $1\n        LIMIT\n            $2\n    ';
-                const sqlValues = [
+                const sqlValues: DuckDBValue[] = [
                     options['city'] !== undefined && options['city'] !== null ? String(options['city']) : null,
                     normalizePostgresNumericParamValue(options['limit'])
                 ];
