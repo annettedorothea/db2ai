@@ -6,7 +6,9 @@ src/auth/**/*.js
 src/auth/**/*.js.map
 src/auth/**/*.mjs
 
-# tsc emit under src/utils (if any)
+# tsc emit from build:generated — commit *.ts only under src/hooks and src/utils
+src/hooks/**/*.js
+src/hooks/**/*.js.map
 src/utils/**/*.js
 src/utils/**/*.js.map
 
