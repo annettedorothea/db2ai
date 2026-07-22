@@ -67,7 +67,9 @@ function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialec
               ? 'mssql'
               : databaseDialect === 'oracle'
                 ? 'oracledb'
-                : 'pg';
+                : databaseDialect === 'duckdb'
+                  ? '@duckdb/node-api'
+                  : 'pg';
     return {
         hostProduct: 'db2ai',
         generatorImplementationDir: __generatorDirname,
@@ -80,7 +82,8 @@ function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialec
             pg: '^8.16.0',
             mysql2: '^3.22.3',
             mssql: '^11.0.1',
-            oracledb: '^6.10.0'
+            oracledb: '^6.10.0',
+            '@duckdb/node-api': '1.5.4-r.1'
         },
         resolvePackageRoot(dir) {
             const oneUp = path.resolve(dir, '..');

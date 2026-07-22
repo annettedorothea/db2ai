@@ -58,6 +58,11 @@ export const DEMO_LAUNCH_REGISTRY = {
         ],
         mcpMode: 'http',
         httpDemo: 'plants-oracle'
+    },
+    flight: {
+        docker: [],
+        mcpMode: 'http',
+        httpDemo: 'flight'
     }
 };
 

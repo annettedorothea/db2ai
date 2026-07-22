@@ -18,7 +18,7 @@ AuthHooks:
     '{' 'verifyCredential' ':' verifyCredential=Boolean '}';
 
 DatabaseDialect returns string:
-    'postgres' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlserver' | 'mssql' | 'oracle';
+    'postgres' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlserver' | 'mssql' | 'oracle' | 'duckdb';
 
 SqlQuery:
     'SQL' '{'

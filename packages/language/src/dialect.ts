@@ -1,6 +1,6 @@
 import type { Model } from './generated/ast.js';
 
-export type ResolvedDatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
+export type ResolvedDatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'duckdb';
 
 export const DEFAULT_DATABASE_DIALECT: ResolvedDatabaseDialect = 'postgres';
 
@@ -37,6 +37,9 @@ export function normalizeDatabaseDialect(value: string | undefined): ResolvedDat
     if (normalized === 'oracle') {
         return 'oracle';
     }
+    if (normalized === 'duckdb') {
+        return 'duckdb';
+    }
     return DEFAULT_DATABASE_DIALECT;
 }
 
@@ -54,6 +57,8 @@ export function databaseDialectDisplayName(dialect: ResolvedDatabaseDialect): st
             return 'SQL Server';
         case 'oracle':
             return 'Oracle';
+        case 'duckdb':
+            return 'DuckDB';
         default:
             return 'PostgreSQL';
     }
@@ -68,6 +73,8 @@ export function databaseSchemaDescription(dialect: ResolvedDatabaseDialect): str
             return 'dbo schema';
         case 'oracle':
             return 'current user schema';
+        case 'duckdb':
+            return 'main schema (in-memory)';
         default:
             return 'public schema';
     }
@@ -84,6 +91,8 @@ export function isSupportedConnectionUrlForDialect(dialect: ResolvedDatabaseDial
             return trimmed.startsWith('sqlserver://') || trimmed.startsWith('mssql://');
         case 'oracle':
             return trimmed.startsWith('oracle://');
+        case 'duckdb':
+            return false;
         default:
             return trimmed.startsWith('postgresql://') || trimmed.startsWith('postgres://');
     }
@@ -99,6 +108,8 @@ export function expectedConnectionUrlDescription(dialect: ResolvedDatabaseDialec
             return 'sqlserver:// or mssql:// URL';
         case 'oracle':
             return 'oracle:// URL';
+        case 'duckdb':
+            return 'no connection URL (in-memory DuckDB)';
         default:
             return 'postgresql:// or postgres:// URL';
     }

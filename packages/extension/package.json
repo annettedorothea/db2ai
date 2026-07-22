@@ -83,6 +83,7 @@
         "vsix:release": "node scripts/vsix-release.mjs"
     },
     "dependencies": {
+        "@duckdb/node-api": "1.5.4-r.1",
         "db-2-ai-dsl-language": "*",
         "vscode-languageclient": "~9.0.1",
         "vscode-languageserver": "~9.0.1"

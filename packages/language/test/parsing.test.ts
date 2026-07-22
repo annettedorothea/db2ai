@@ -57,6 +57,26 @@ describe('Parsing tests', () => {
         expect(document.parseResult.value.env).toBeUndefined();
     });
 
+    test('parses database duckdb without env', async () => {
+        document = await parse(`
+            database duckdb
+
+            SQL {
+                toolName: listFlights
+                access: public
+                intent: "list flights"
+                query: "SELECT * FROM flights LIMIT :limit"
+                params: {
+                    limit: { description: "max rows" example: "10" type: integer }
+                }
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+        expect(document.parseResult.value.dialect).toBe('duckdb');
+        expect(document.parseResult.value.env).toBeUndefined();
+    });
+
     test('parses multiline intent and param description', async () => {
         document = await parse(`
             database postgres env "PAGILA_POSTGRESQL_DATABASE_URL"

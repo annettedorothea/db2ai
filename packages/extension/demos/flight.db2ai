@@ -1,0 +1,26 @@
+database duckdb
+
+SQL {
+    toolName: listFlights
+    access: public
+    intent: "list flights from CSV-backed DuckDB view by origin city"
+    query: '''
+        SELECT
+            FlightDate,
+            UniqueCarrier,
+            OriginCityName,
+            DestCityName,
+            FlightNum
+        FROM
+            flights
+        WHERE
+            OriginCityName = :city
+        LIMIT
+            :limit
+    '''
+    summary: "Flights matching origin city"
+    params: {
+        city: { description: "origin city" example: "New York" type: string }
+        limit: { description: "max rows" example: "20" type: integer }
+    }
+}

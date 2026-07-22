@@ -21,6 +21,8 @@ function validateOAuthHttpHostAtStartup(
                     '".'
             );
         }
+    } else if (generated.databaseDialect === 'duckdb') {
+        // In-memory DuckDB — no connection URL or base URL required.
     } else {
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     if (!baseUrlKey) {
@@ -42,7 +44,7 @@ function oauthHostContextBaseUrlFields(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule
 ): Pick<ApiLikeHostContext, 'baseUrl'> {
-    if (generated.connectionEnv) {
+    if (generated.connectionEnv || generated.databaseDialect === 'duckdb') {
         return {};
     }
     return { baseUrl: resolveOAuthHostBaseUrl(httpHostConfig) };
@@ -53,6 +55,9 @@ function enrichDbHostContextFragment(): string {
     return `
 function enrichDbHostContext(generated: GeneratedHostModule, context: ApiLikeHostContext): ApiLikeHostContext {
     if (!generated.connectionEnv) {
+        if (generated.databaseDialect === 'duckdb') {
+            return { ...context, databaseDialect: 'duckdb' };
+        }
         return context;
     }
     const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -122,7 +127,7 @@ async function resolveHostContextForOAuthSession(
 }
 
 export function requireBaseUrlEnvArgvCheckFragment(hostConfigExpr: string): string {
-    return `if (!generated.connectionEnv && !${hostConfigExpr}) {
+    return `if (!generated.connectionEnv && !${hostConfigExpr} && generated.databaseDialect !== 'duckdb') {
         throw new Error(
             'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
         );

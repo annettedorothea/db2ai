@@ -197,6 +197,23 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
             };
         }`;
     }
+    if (dialect === 'duckdb') {
+        return `        case ${JSON.stringify(tool.toolName)}: {
+            const sqlText = ${JSON.stringify(tool.sqlText)};
+            const sqlValues = [${valueExprs}];
+            loggingAdapter.debug('executeSql', {
+                toolName: ${JSON.stringify(tool.toolName)},
+                sql: compactSqlForLog(sqlText),
+                values: sqlValues
+            });
+            const reader = await connection.runAndReadAll(sqlText, sqlValues);
+            const rows = reader.getRowObjectsJson();
+            return {
+                rows,
+                rowCount: rows.length
+            };
+        }`;
+    }
     return `        case ${JSON.stringify(tool.toolName)}: {
             const sqlText = ${JSON.stringify(tool.sqlText)};
             const sqlValues = [${valueExprs}];
@@ -301,6 +318,13 @@ function renderPostgresClientSetup(typescript: boolean): string {
     const connectionString = resolveConnectionString(host);
     const client = new pg.Client({ connectionString });
     await client.connect();`;
+}
+
+function renderDuckdbClientSetup(): string {
+    return `
+    void host;
+    const connection = await DuckDBConnection.create();
+    await initDatabase(connection);`;
 }
 
 function renderDbInvokePreamble(
@@ -454,6 +478,50 @@ ${toolCases}
         }
     } finally {
         await client.end();
+    }
+}
+`.trim();
+}
+
+function renderDuckdbInvokeBlockTs(
+    toolCases: string,
+    flags: InvokeParamHelperFlags,
+    hasVerifyCredential: boolean,
+    authPipelineTier: AuthPipelineTier,
+    stubMaps: HookStubMaps,
+    hasSqlTools: boolean,
+    optionsParam: string
+): string {
+    const preamble = renderDbInvokePreamble(
+        renderDuckdbClientSetup(),
+        hasVerifyCredential,
+        authPipelineTier,
+        stubMaps,
+        true
+    );
+    const helpers = [
+        hasSqlTools ? COMPACT_SQL_FOR_LOG_TS : '',
+        flags.postgresNumeric ? POSTGRES_NUMERIC_HELPER_TS : '',
+        flags.postgresBoolean ? POSTGRES_BOOLEAN_HELPER_TS : ''
+    ]
+        .filter((block) => block.length > 0)
+        .join('\n\n');
+    const helperSection = helpers.length > 0 ? `\n\n${helpers}` : '';
+    return `
+import { DuckDBConnection } from '@duckdb/node-api';
+${helperSection}
+
+export async function invokeTool(
+    toolName: string,
+    ${optionsParam},
+    hostContext?: DbHostContext
+): Promise<unknown> {${preamble}
+${toolCases}
+            default:
+                throw new Error('Unknown tool: ' + toolName);
+        }
+    } finally {
+        connection.closeSync();
     }
 }
 `.trim();
@@ -783,6 +851,17 @@ export function renderInvokeBlockTs(
     }
     if (dialect === 'oracle') {
         return renderOracleInvokeBlockTs(
+            toolCases,
+            flags,
+            hasVerifyCredential,
+            authPipelineTier,
+            stubMaps,
+            hasSqlTools,
+            optionsParam
+        );
+    }
+    if (dialect === 'duckdb') {
+        return renderDuckdbInvokeBlockTs(
             toolCases,
             flags,
             hasVerifyCredential,

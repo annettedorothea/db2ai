@@ -45,6 +45,10 @@ export const HTTP_DEMOS = {
         connectionEnv: 'PLANTS_ORACLE_DATABASE_URL',
         portEnv: 'PLANTS_ORACLE_HTTP_PORT',
         icon: 'icons/plants-oracle.png'
+    },
+    flight: {
+        hostKind: 'public-http',
+        portEnv: 'FLIGHT_HTTP_PORT'
     }
 };
 
@@ -54,7 +58,8 @@ export const HTTP_START_DEMO_NAMES = [
     'sakila-mariadb',
     'pagila-postgresql',
     'animals-sqlserver',
-    'plants-oracle'
+    'plants-oracle',
+    'flight'
 ];
 
 export const HTTP_DEMO_NAMES = Object.keys(HTTP_DEMOS);
@@ -69,7 +74,9 @@ export function buildHostLaunch(name, demosRoot, env) {
     if (!demo) {
         throw new Error(`Unknown http demo: ${name}`);
     }
-    requireEnv(demo.connectionEnv, env);
+    if (demo.connectionEnv) {
+        requireEnv(demo.connectionEnv, env);
+    }
     const port = requireEnvInt(demo.portEnv, env);
     const product = productName;
     const serverJs = path.join(

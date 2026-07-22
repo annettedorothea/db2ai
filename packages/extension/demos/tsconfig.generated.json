@@ -7,6 +7,6 @@
         "outDir": ".",
         "types": ["node"]
     },
-    "include": ["generated/**/*.ts", "src/hooks/**/*.ts", "src/utils/**/*.ts", "types/**/*.d.ts"],
+    "include": ["generated/**/*.ts", "src/hooks/**/*.ts", "src/db/**/*.ts", "src/utils/**/*.ts", "types/**/*.d.ts"],
     "exclude": ["node_modules", "tmp"]
 }

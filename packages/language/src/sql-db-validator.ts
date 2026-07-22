@@ -2,6 +2,7 @@ import pg from 'pg';
 import mysql from 'mysql2/promise';
 import sql from 'mssql';
 import oracledb from 'oracledb';
+import type { DuckDBConnection } from '@duckdb/node-api';
 import type { Diagnostic } from 'vscode-languageserver';
 import { DiagnosticSeverity } from 'vscode-languageserver';
 import { GrammarUtils } from 'langium';
@@ -23,6 +24,7 @@ import {
 } from './sql-params.js';
 import { probeDatabaseConnectivity } from './sql-db-connectivity.js';
 import { formatDatabaseUnreachableReason, isDatabaseUnreachableError } from './sql-connection-error.js';
+import { openDuckdbValidationSession } from './duckdb-setup.js';
 
 const SQL_DB_DIAGNOSTIC_SOURCE = 'db2ai-sql';
 const DB_UNREACHABLE_QUERY_MESSAGE = 'DB validation skipped: database unreachable.';
@@ -185,7 +187,82 @@ function querySqlErrorDiagnostic(entry: SqlQuery, err: unknown): Diagnostic {
     };
 }
 
+async function explainDuckdbProbe(connection: DuckDBConnection, sqlText: string, values: unknown[]): Promise<void> {
+    await connection.runAndReadAll(
+        buildExplainSqlForDialect(sqlText, 'duckdb'),
+        values as Parameters<DuckDBConnection['runAndReadAll']>[1]
+    );
+}
+
+function duckdbSetupDiagnostic(model: Model, err: unknown): Diagnostic {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+        range: envRange(model),
+        severity: DiagnosticSeverity.Warning,
+        source: SQL_DB_DIAGNOSTIC_SOURCE,
+        message: `DB validation skipped: DuckDB initDatabase failed: ${message}`
+    };
+}
+
+async function validateDuckdbSqlBlocksWithExamples(model: Model, documentUri: string): Promise<Diagnostic[]> {
+    const diagnostics: Diagnostic[] = [];
+    let connection: DuckDBConnection | undefined;
+    let setupFailed = false;
+
+    try {
+        connection = await openDuckdbValidationSession(documentUri);
+    } catch (err) {
+        setupFailed = true;
+        diagnostics.push(duckdbSetupDiagnostic(model, err));
+    }
+
+    try {
+        for (const entry of model.entries) {
+            if (!isSqlQuery(entry)) {
+                continue;
+            }
+            const sqlText = entry.query !== undefined ? String(entry.query) : '';
+            const placeholders = extractUniqueNamedPlaceholders(sqlText);
+            if (placeholders.length === 0) {
+                continue;
+            }
+
+            const { missingExample, valueByName } = buildExampleValueByName(entry);
+            if (missingExample.length > 0) {
+                diagnostics.push({
+                    range: queryRange(entry),
+                    severity: DiagnosticSeverity.Warning,
+                    source: SQL_DB_DIAGNOSTIC_SOURCE,
+                    message: `DB validation skipped: missing example for ${missingExample.join(', ')}.`
+                });
+                continue;
+            }
+
+            if (setupFailed || connection === undefined) {
+                diagnostics.push(queryUnreachableDiagnostic(entry));
+                continue;
+            }
+
+            try {
+                const values = postgresBindValues(sqlText, valueByName);
+                await explainDuckdbProbe(connection, sqlText, values);
+            } catch (err) {
+                diagnostics.push(querySqlErrorDiagnostic(entry, err));
+            }
+        }
+    } finally {
+        connection?.closeSync();
+    }
+
+    return diagnostics;
+}
+
 export async function validateSqlBlocksWithExamples(model: Model, documentUri: string): Promise<Diagnostic[]> {
+    const dialect = databaseDialectFromModel(model);
+    if (dialect === 'duckdb') {
+        return validateDuckdbSqlBlocksWithExamples(model, documentUri);
+    }
+
     const diagnostics: Diagnostic[] = [];
     const envName = model.env;
     if (envName === undefined || !isValidEnvVarName(String(envName))) {
@@ -193,7 +270,6 @@ export async function validateSqlBlocksWithExamples(model: Model, documentUri: s
     }
 
     const connectionUrl = resolveDatabaseUrlFromEnvForDocument(String(envName), documentUri);
-    const dialect = databaseDialectFromModel(model);
     if (connectionUrl === undefined || !isSupportedConnectionUrlForDialect(dialect, connectionUrl)) {
         return diagnostics;
     }

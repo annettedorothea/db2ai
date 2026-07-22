@@ -15,7 +15,7 @@ import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 
-type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
+type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'duckdb';
 
 /** Host context inside MCP server templates. Tool modules use DbHostContext; this wider shape is shared across stdio/HTTP hosts. */
 type ApiLikeHostContext = {
@@ -126,12 +126,16 @@ function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
         value === 'mysql' ||
         value === 'mariadb' ||
         value === 'sqlserver' ||
-        value === 'oracle'
+        value === 'oracle' ||
+        value === 'duckdb'
         ? value
         : undefined;
 }
 
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
+    if (dialect === 'duckdb') {
+        return false;
+    }
     if (dialect === 'mysql') {
         return connectionString.startsWith('mysql://');
     }
@@ -624,6 +628,8 @@ function validateOAuthHttpHostAtStartup(
                     '".'
             );
         }
+    } else if (generated.databaseDialect === 'duckdb') {
+        // In-memory DuckDB — no connection URL or base URL required.
     } else {
         const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
         if (!baseUrlKey) {
@@ -651,7 +657,7 @@ function oauthHostContextBaseUrlFields(
     httpHostConfig: OAuthHttpHostRuntimeConfig,
     generated: GeneratedHostModule
 ): Pick<ApiLikeHostContext, 'baseUrl'> {
-    if (generated.connectionEnv) {
+    if (generated.connectionEnv || generated.databaseDialect === 'duckdb') {
         return {};
     }
     return { baseUrl: resolveOAuthHostBaseUrl(httpHostConfig) };
@@ -731,6 +737,9 @@ async function verifyCredentialForGate(
 
 function enrichDbHostContext(generated: GeneratedHostModule, context: ApiLikeHostContext): ApiLikeHostContext {
     if (!generated.connectionEnv) {
+        if (generated.databaseDialect === 'duckdb') {
+            return { ...context, databaseDialect: 'duckdb' };
+        }
         return context;
     }
     const connectionString = process.env[generated.connectionEnv]?.trim();
@@ -1085,7 +1094,7 @@ export async function runOAuthHttpMcp(
     loadLocalEnvFiles(envDirs);
     const generated = readGeneratedModule(toolsModule);
     const httpHostConfig = parseOAuthHttpHostArgv(argv, envDirs);
-    if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey) {
+    if (!generated.connectionEnv && !httpHostConfig.baseUrlEnvKey && generated.databaseDialect !== 'duckdb') {
         throw new Error(
             'Required: --base-url-env <ENV_VAR_NAME> for HTTP/OpenAPI tools, or export connectionEnv from a .db2ai module.'
         );

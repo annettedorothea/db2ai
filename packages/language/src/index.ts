@@ -14,6 +14,7 @@ export * from './oracle-connection.js';
 export * from './oracle-dml-returning.js';
 export * from './schema.js';
 export { loadLocalEnvFiles, workspaceDirsForDocumentUri } from './env.js';
+export * from './duckdb-setup.js';
 export * from './generated/ast.js';
 export * from './generated/grammar.js';
 export * from './generated/module.js';

@@ -26,6 +26,9 @@
         },
         "plants-oracle": {
             "url": "http://127.0.0.1:4856/mcp"
+        },
+        "flight": {
+            "url": "http://127.0.0.1:4857/mcp"
         }
     }
 }

@@ -32,6 +32,16 @@ describe('dialect', () => {
         );
     });
 
+    test('normalizes duckdb dialect (no URL)', () => {
+        expect(normalizeDatabaseDialect('duckdb')).toBe('duckdb');
+        expect(
+            databaseDialectFromModel({
+                dialect: 'duckdb'
+            })
+        ).toBe('duckdb');
+        expect(isSupportedConnectionUrlForDialect('duckdb', 'postgresql://localhost/db')).toBe(false);
+    });
+
     test('normalizes oracle dialect and accepts oracle:// URLs', () => {
         expect(normalizeDatabaseDialect('oracle')).toBe('oracle');
         expect(

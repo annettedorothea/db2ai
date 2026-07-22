@@ -23,6 +23,15 @@ function padZeroes(i) {
 
 const plugins = [
     {
+        name: 'external-duckdb-native',
+        setup(build) {
+            build.onResolve({ filter: /^@duckdb\// }, (args) => ({
+                path: args.path,
+                external: true
+            }));
+        }
+    },
+    {
         name: 'watch-plugin',
         setup(build) {
             build.onEnd((result) => {

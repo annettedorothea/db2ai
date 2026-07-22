@@ -26,6 +26,7 @@
         "mcp:inspect": "node ./scripts/mcp-inspect.mjs"
     },
     "dependencies": {
+        "@duckdb/node-api": "1.5.4-r.1",
         "@modelcontextprotocol/sdk": "^1.29.0",
         "@toolfactory.dev/core": "^1.0.1",
         "jose": "^6.2.3",

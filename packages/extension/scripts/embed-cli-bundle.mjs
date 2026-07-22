@@ -40,6 +40,17 @@ await esbuild.build({
         'empty-import-meta': 'silent'
     },
     external: ['esbuild'],
+    plugins: [
+        {
+            name: 'external-duckdb-native',
+            setup(build) {
+                build.onResolve({ filter: /^@duckdb\// }, (args) => ({
+                    path: args.path,
+                    external: true
+                }));
+            }
+        }
+    ],
     define: {
         __DB2AI_CLI_BUNDLE_VERSION__: JSON.stringify(cliVersion)
     }

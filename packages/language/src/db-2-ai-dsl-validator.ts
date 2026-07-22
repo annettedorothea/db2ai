@@ -101,6 +101,17 @@ export class Db2AiDslValidator {
 
     private checkDatabaseEnv(model: Model, accept: ValidationAcceptor): void {
         const env = model.env;
+        const dialect = databaseDialectFromModel(model);
+        if (dialect === 'duckdb') {
+            if (env !== undefined && env !== null && String(env).trim().length > 0) {
+                accept(
+                    'error',
+                    'database duckdb is in-memory and must not declare `env` (use initDatabase for file sources).',
+                    { node: model, property: 'env' }
+                );
+            }
+            return;
+        }
         if (env === undefined || env === null) {
             return;
         }

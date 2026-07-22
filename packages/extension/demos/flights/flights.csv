@@ -1,0 +1,11 @@
+FlightDate,UniqueCarrier,OriginCityName,DestCityName,FlightNum
+2024-01-15,AA,New York,Los Angeles,1001
+2024-01-15,UA,Chicago,Denver,2205
+2024-01-16,DL,New York,Atlanta,890
+2024-01-16,AA,Chicago,New York,441
+2024-01-17,B6,Boston,New York,612
+2024-01-17,UA,Denver,San Francisco,1580
+2024-01-18,DL,Atlanta,Chicago,332
+2024-01-18,AA,New York,Miami,1205
+2024-01-19,WN,Chicago,Phoenix,2840
+2024-01-19,UA,San Francisco,New York,15

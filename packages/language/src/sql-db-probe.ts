@@ -41,6 +41,9 @@ export function buildExplainSqlForDialect(sqlText: string, dialect: ResolvedData
             return buildSqlserverExplainSql(sqlText);
         case 'oracle':
             return buildOracleExplainSql(sqlText);
+        case 'duckdb':
+            // DuckDB rejects EXPLAIN (VERBOSE); plain EXPLAIN + $n binds.
+            return `EXPLAIN ${rewriteNamedPlaceholdersForDialect(sqlText, 'duckdb')}`;
         default:
             return buildPostgresExplainSql(sqlText);
     }

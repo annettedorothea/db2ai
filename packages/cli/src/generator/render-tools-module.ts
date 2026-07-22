@@ -27,6 +27,7 @@ import {
     type ResolvedDbToolCodegen
 } from '../db-query-codegen.js';
 import { renderInvokeBlockTs } from './invoke-render.js';
+import { ensureInitDatabaseStubFromSource, renderInitDatabaseImport } from './init-database-stub.js';
 import {
     listCheckToolAccessToolNames,
     listPrepareToolCallHookEntries,
@@ -106,13 +107,17 @@ function renderGeneratedImports(
     projectRoot: string,
     authStubImports: string,
     verifyCredentialImport: string,
-    hasZodSchemas: boolean
+    hasZodSchemas: boolean,
+    initDatabaseImport = ''
 ): string {
     const loggingSpec = relativeImportToLoggingAdapter(destinationTsPath, projectRoot);
     const loggingImport = `import { loggingAdapter } from '${loggingSpec}';`;
     const parts = [loggingImport];
     if (hasZodSchemas) {
         parts.push(emitGeneratedZodPreamble().trimEnd());
+    }
+    if (initDatabaseImport.length > 0) {
+        parts.push(initDatabaseImport);
     }
     if (verifyCredentialImport.length > 0) {
         parts.push(verifyCredentialImport);
@@ -149,7 +154,7 @@ ${renderMcpBuildGeneratedAtReExport(destinationTsPath)}
 
 function assembleToolsModuleSource(
     tools: ResolvedDbToolCodegen[],
-    connectionEnv: string,
+    connectionEnv: string | undefined,
     databaseDialect: ResolvedDatabaseDialect,
     mcpServerIdentityBlock: string,
     toolRuntimeBlock: string,
@@ -160,6 +165,7 @@ function assembleToolsModuleSource(
     authStubImports: string,
     verifyStubPath: string | undefined,
     verifyCredentialImport: string,
+    initDatabaseImport: string,
     hasZodSchemas: boolean
 ): string {
     const toolsLiteral = serializeToolsForModule(tools);
@@ -169,14 +175,16 @@ function assembleToolsModuleSource(
         projectRoot,
         authStubImports,
         verifyCredentialImport,
-        hasZodSchemas
+        hasZodSchemas,
+        initDatabaseImport
     );
     const verifyExportBlock =
         verifyStubPath !== undefined ? `\n${renderVerifyCredentialReExport(destinationTsPath, verifyStubPath)}\n` : '';
+    const connectionEnvLiteral = connectionEnv === undefined ? 'undefined' : JSON.stringify(connectionEnv);
     return `/**
  * Generated from: ${sourceRef}
  */
-${importPrefix}export const connectionEnv = ${JSON.stringify(connectionEnv)};
+${importPrefix}export const connectionEnv = ${connectionEnvLiteral};
 
 export const databaseDialect = ${JSON.stringify(databaseDialect)};
 
@@ -207,8 +215,8 @@ export type GeneratedTool = {
 export type InvokeOptions = Record<string, unknown>;
 
 export type DbHostContext = {
-    connectionString: string;
-    databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
+    connectionString?: string;
+    databaseDialect: 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'duckdb';
     credential?: string;
 };
 
@@ -222,7 +230,11 @@ ${toolRuntimeBlock}
 /** Renders `generated/{product}/tools/*-tools.ts` source text. */
 export async function renderToolsModule(input: RenderToolsModuleInput): Promise<string> {
     const { model, source, destinationTsPath, stubPaths, bootstrapConfig, databaseDialect } = input;
-    const envName = String(model.env).trim();
+    const envRaw = model.env;
+    const envName =
+        envRaw === undefined || envRaw === null || String(envRaw).trim().length === 0
+            ? undefined
+            : String(envRaw).trim();
     const tools = resolveToolsFromModel(model);
     const inputSchemaByTool = buildInputSchemaByTool(model, tools) as Record<string, JsonSchemaDict>;
     const hasVerifyCredential = isVerifyCredentialEnabled(model);
@@ -273,6 +285,11 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const verifyCredentialImport =
         verifyStubPath !== undefined ? renderVerifyCredentialImport(destinationTsPath, verifyStubPath) : '';
 
+    const initDatabaseStubPath =
+        databaseDialect === 'duckdb' ? await ensureInitDatabaseStubFromSource(source, destinationTsPath) : undefined;
+    const initDatabaseImport =
+        initDatabaseStubPath !== undefined ? renderInitDatabaseImport(destinationTsPath, initDatabaseStubPath) : '';
+
     const hasZodSchemas = Object.keys(inputSchemaByTool).length > 0;
 
     return assembleToolsModuleSource(
@@ -288,6 +305,7 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
         authStubImports,
         verifyStubPath,
         verifyCredentialImport,
+        initDatabaseImport,
         hasZodSchemas
     );
 }

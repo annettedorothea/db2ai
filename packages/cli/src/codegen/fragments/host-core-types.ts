@@ -1,7 +1,7 @@
 /** db2ai host types embedded in generated MCP runtimes. */
 export function hostCoreTypesFragment(): string {
     return `
-type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle';
+type DatabaseDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'duckdb';
 
 /** Host context inside MCP server templates. Tool modules use DbHostContext; this wider shape is shared across stdio/HTTP hosts. */
 type ApiLikeHostContext = {
@@ -37,12 +37,20 @@ type GeneratedHostModule = {
 export function dbHelperFunctionsFragment(): string {
     return `
 function parseDatabaseDialect(value: unknown): DatabaseDialect | undefined {
-    return value === 'postgres' || value === 'mysql' || value === 'mariadb' || value === 'sqlserver' || value === 'oracle'
+    return value === 'postgres' ||
+        value === 'mysql' ||
+        value === 'mariadb' ||
+        value === 'sqlserver' ||
+        value === 'oracle' ||
+        value === 'duckdb'
         ? value
         : undefined;
 }
 
 function isExpectedDatabaseUrl(connectionString: string, dialect: DatabaseDialect): boolean {
+    if (dialect === 'duckdb') {
+        return false;
+    }
     if (dialect === 'mysql') {
         return connectionString.startsWith('mysql://');
     }

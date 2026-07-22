@@ -17,6 +17,7 @@ function resolvePort(portEnv, env) {
         SAKILA_MARIADB_HTTP_PORT: 4854,
         ANIMALS_SQLSERVER_HTTP_PORT: 4855,
         PLANTS_ORACLE_HTTP_PORT: 4856,
+        FLIGHT_HTTP_PORT: 4857,
         ORDERS_POSTGRESQL_OAUTH_HTTP_PORT: 4872
     };
     if (defaults[portEnv] !== undefined) {

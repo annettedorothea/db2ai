@@ -18,6 +18,8 @@ function validateHostAtStartup(hostConfig: HostRuntimeConfig, generated: Generat
                     '".'
             );
         }
+    } else if (generated.databaseDialect === 'duckdb') {
+        // In-memory DuckDB — no connection URL or base URL required.
     } else {
     const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
     if (!baseUrlKey) {
@@ -60,6 +62,9 @@ async function resolveHostContextForCall(
         }
         return { connectionString, databaseDialect: dialect, credential: c };
     }
+    if (generated.databaseDialect === 'duckdb') {
+        return { databaseDialect: 'duckdb', credential: c };
+    }
     const baseUrlKey = hostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
@@ -92,6 +97,8 @@ function validateHttpMcpHostAtStartup(
                     '".'
             );
         }
+    } else if (generated.databaseDialect === 'duckdb') {
+        // In-memory DuckDB — no connection URL or base URL required.
     } else {
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     if (!baseUrlKey) {
@@ -132,6 +139,9 @@ async function resolveHostContextForHttpCall(
         }
         return { connectionString, databaseDialect: dialect, credential: c };
     }
+    if (generated.databaseDialect === 'duckdb') {
+        return { databaseDialect: 'duckdb', credential: c };
+    }
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;
     if (!baseUrl) {
@@ -171,6 +181,9 @@ async function resolveHostContextForHttpCall(
             );
         }
         return { connectionString, databaseDialect: dialect, credential: c };
+    }
+    if (generated.databaseDialect === 'duckdb') {
+        return { databaseDialect: 'duckdb', credential: c };
     }
     const baseUrlKey = httpHostConfig.baseUrlEnvKey?.trim();
     const baseUrl = baseUrlKey ? process.env[baseUrlKey]?.trim() : undefined;

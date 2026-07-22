@@ -34,6 +34,7 @@
         "test": "vitest run"
     },
     "dependencies": {
+        "@duckdb/node-api": "1.5.4-r.1",
         "langium": "~4.2.0",
         "mysql2": "^3.22.5",
         "mssql": "^11.0.1",

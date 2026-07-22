@@ -11,6 +11,46 @@ describe('renderInvokeBlockTs', () => {
         expect(block).not.toContain('compactSqlForLog');
         expect(block).toContain('_options: InvokeOptions = {}');
     });
+
+    test('duckdb block imports node-api and calls initDatabase', () => {
+        const tool: ResolvedSqlToolCodegen = {
+            kind: 'sql',
+            toolName: 'listFlights',
+            title: 'List flights',
+            description: '',
+            sqlText: 'SELECT * FROM flights WHERE OriginCityName = $1 LIMIT $2',
+            params: [
+                {
+                    placeholder: ':city',
+                    index: 1,
+                    name: 'city',
+                    propertyName: 'city',
+                    description: 'city',
+                    jsonSchemaType: 'string'
+                },
+                {
+                    placeholder: ':limit',
+                    index: 2,
+                    name: 'limit',
+                    propertyName: 'limit',
+                    description: 'limit',
+                    jsonSchemaType: 'integer'
+                }
+            ],
+            access: 'public',
+            hasCheckToolAccess: false,
+            hasPrepareToolCall: false
+        };
+        const block = renderInvokeBlockTs([tool], 'duckdb', false, 'none', {
+            checkToolAccess: false,
+            prepareToolCall: false
+        });
+        expect(block).toContain('@duckdb/node-api');
+        expect(block).toContain('DuckDBConnection.create()');
+        expect(block).toContain('await initDatabase(connection)');
+        expect(block).toContain('runAndReadAll');
+        expect(block).not.toContain('resolveConnectionString');
+    });
 });
 
 describe('collectSqlBindValueExpressions', () => {
