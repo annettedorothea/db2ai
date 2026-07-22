@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { HTTP_DEMOS } from './mcp-http-demos.mjs';
 import { OAUTH_HTTP_DEMOS } from './mcp-oauth-demos.mjs';
 import { db2aiExtraRuntimeDeps } from './extra-runtime-deps.mjs';
+import { copyDb2aiDistDataAssets } from './dist-data-assets.mjs';
 import { buildMcpPackage } from '../generated/db2ai/scripts/build-mcp-lib.mjs';
 import { productName } from '../generated/db2ai/scripts/project-meta.mjs';
 
@@ -42,7 +43,8 @@ const { outDir, startScript } = await buildMcpPackage({
     hostKind,
     httpDemos: HTTP_DEMOS,
     oauthDemos: OAUTH_HTTP_DEMOS,
-    extraRuntimeDeps: (name) => db2aiExtraRuntimeDeps(name, rootDeps, demosRoot)
+    extraRuntimeDeps: (name) => db2aiExtraRuntimeDeps(name, rootDeps, demosRoot),
+    copyDistAssets: copyDb2aiDistDataAssets
 });
 
 console.log(`[build:mcp] wrote ${outDir}`);

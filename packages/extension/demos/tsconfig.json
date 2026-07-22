@@ -8,6 +8,7 @@
     "include": [
         "generated/**/*.ts",
         "src/hooks/**/*.ts",
+        "src/db/**/*.ts",
         "src/utils/**/*.ts",
         "test/**/*.ts",
         "vitest.config.ts",

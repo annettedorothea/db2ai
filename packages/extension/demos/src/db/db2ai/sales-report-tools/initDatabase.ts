@@ -2,12 +2,10 @@
  * Database setup for DuckDB (write-once — customize; re-generate does not overwrite).
  * Loads a messy multi-sheet Excel sales report into clean views for tool SQL.
  */
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { DuckDBConnection } from '@duckdb/node-api';
+import { resolveDemoDataPath } from '../../resolve-demo-data-path.js';
 
-const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
-const reportXlsxPath = path.join(demosRoot, 'sales-report', 'Monatsbericht_Vertrieb_Q1_2026.xlsx');
+const reportXlsxPath = resolveDemoDataPath(import.meta.url, 'sales-report', 'Monatsbericht_Vertrieb_Q1_2026.xlsx');
 
 function sqlStringLiteral(value: string): string {
     return `'${value.replace(/'/g, "''")}'`;
