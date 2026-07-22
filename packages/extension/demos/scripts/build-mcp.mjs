@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { HTTP_DEMOS } from './mcp-http-demos.mjs';
 import { OAUTH_HTTP_DEMOS } from './mcp-oauth-demos.mjs';
-import { buildMcpPackage, db2aiExtraRuntimeDeps } from '../generated/db2ai/scripts/build-mcp-lib.mjs';
+import { db2aiExtraRuntimeDeps } from './extra-runtime-deps.mjs';
+import { buildMcpPackage } from '../generated/db2ai/scripts/build-mcp-lib.mjs';
 import { productName } from '../generated/db2ai/scripts/project-meta.mjs';
 
 const demosRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,7 +42,7 @@ const { outDir, startScript } = await buildMcpPackage({
     hostKind,
     httpDemos: HTTP_DEMOS,
     oauthDemos: OAUTH_HTTP_DEMOS,
-    extraRuntimeDeps: (name) => db2aiExtraRuntimeDeps(name, rootDeps)
+    extraRuntimeDeps: (name) => db2aiExtraRuntimeDeps(name, rootDeps, demosRoot)
 });
 
 console.log(`[build:mcp] wrote ${outDir}`);

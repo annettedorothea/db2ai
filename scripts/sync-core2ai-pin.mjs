@@ -194,6 +194,11 @@ if (fromNpm) {
         env: installEnv
     });
     restoreSemverPinIfFile(demosPkgPath, coreVersion, 'packages/extension/demos/package.json');
+    execSync('npm install', {
+        cwd: demosDir,
+        stdio: 'inherit',
+        env: installEnv
+    });
 }
 
 verifyInstalls(coreVersion, fromNpm);
