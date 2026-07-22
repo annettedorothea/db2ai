@@ -1,7 +1,7 @@
 /**
  * Generated from: sakila-mariadb.db2ai
  */
-import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '@toolfactory.dev/core/logging';
 import * as z from 'zod/v4';
 import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/prepareToolCallForListFilms.js';
 import { prepareToolCallForSearchFilms } from '../../../src/hooks/db2ai/sakila-mariadb-tools/prepareToolCallForSearchFilms.js';

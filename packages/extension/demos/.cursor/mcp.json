@@ -7,7 +7,13 @@
             }
         },
         "sakila-mariadb": {
-            "url": "http://127.0.0.1:4854/mcp"
+            "command": "node",
+            "args": [
+                "${workspaceFolder}/generated/db2ai/servers/sakila-mysql-stdio-mcp-server.js",
+                "--auth-env",
+                "MCP_AUTH_EXPECTED"
+            ],
+            "envFile": "${workspaceFolder}/.env"
         },
         "pagila-postgresql": {
             "url": "http://127.0.0.1:4853/mcp",

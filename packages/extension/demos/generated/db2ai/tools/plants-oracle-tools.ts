@@ -1,7 +1,7 @@
 /**
  * Generated from: plants-oracle.db2ai
  */
-import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '@toolfactory.dev/core/logging';
 import * as z from 'zod/v4';
 import { prepareToolCallForListPlants } from '../../../src/hooks/db2ai/plants-oracle-tools/prepareToolCallForListPlants.js';
 import { prepareToolCallForSearchPlants } from '../../../src/hooks/db2ai/plants-oracle-tools/prepareToolCallForSearchPlants.js';

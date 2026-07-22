@@ -1,7 +1,7 @@
 /**
  * Generated from: sakila-mysql.db2ai
  */
-import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '@toolfactory.dev/core/logging';
 import * as z from 'zod/v4';
 import { verifyCredential } from '../../../src/hooks/db2ai/sakila-mysql-tools/verifySakilaMysqlCredential.js';
 import { prepareToolCallForListFilms } from '../../../src/hooks/db2ai/sakila-mysql-tools/prepareToolCallForListFilms.js';

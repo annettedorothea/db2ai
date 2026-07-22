@@ -11,7 +11,6 @@ import {
     buildInputZodBlock,
     emitGeneratedZodPreamble,
     ensureVerifyCredentialStubFromSource,
-    relativeImportToLoggingAdapter,
     renderVerifyCredentialImport,
     renderVerifyCredentialReExport,
     resolveBootstrapProjectRootFromSource,
@@ -108,8 +107,9 @@ function renderGeneratedImports(
     verifyCredentialImport: string,
     hasZodSchemas: boolean
 ): string {
-    const loggingSpec = relativeImportToLoggingAdapter(destinationTsPath, projectRoot);
-    const loggingImport = `import { loggingAdapter } from '${loggingSpec}';`;
+    void destinationTsPath;
+    void projectRoot;
+    const loggingImport = `import { loggingAdapter } from '@toolfactory.dev/core/logging';`;
     const parts = [loggingImport];
     if (hasZodSchemas) {
         parts.push(emitGeneratedZodPreamble().trimEnd());

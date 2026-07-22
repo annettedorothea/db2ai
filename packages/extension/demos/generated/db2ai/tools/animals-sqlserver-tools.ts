@@ -1,7 +1,7 @@
 /**
  * Generated from: animals-sqlserver.db2ai
  */
-import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '@toolfactory.dev/core/logging';
 import * as z from 'zod/v4';
 import { prepareToolCallForListAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/prepareToolCallForListAnimals.js';
 import { prepareToolCallForSearchAnimals } from '../../../src/hooks/db2ai/animals-sqlserver-tools/prepareToolCallForSearchAnimals.js';

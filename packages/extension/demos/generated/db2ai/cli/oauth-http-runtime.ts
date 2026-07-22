@@ -11,7 +11,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema, type ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
+import { loggingAdapter } from '@toolfactory.dev/core/logging';
 
 const LOCAL_ENV_FILES = ['.env', '.env.local'];
 

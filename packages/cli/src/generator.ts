@@ -2,7 +2,6 @@ import type { Model } from 'db-2-ai-dsl-language';
 import { databaseDialectFromModel } from 'db-2-ai-dsl-language';
 import {
     assertGeneratedToolsDestinationMatchesHostProduct,
-    ensureLoggingAdapterStubFromSource,
     ensureParentDir,
     resolveBootstrapProjectRootFromSource,
     resolveGeneratedCliDir,
@@ -73,10 +72,11 @@ function createBootstrapConfig(databaseDialect: ReturnType<typeof databaseDialec
         generatorImplementationDir: __generatorDirname,
         embedHomeEnv: 'DB2AI_EMBED_HOME',
         fallbackProjectName: 'db2ai-project',
-        requiredRuntimeDeps: ['@modelcontextprotocol/sdk', 'zod', databaseDriverDep],
+        requiredRuntimeDeps: ['@modelcontextprotocol/sdk', 'zod', '@toolfactory.dev/core', databaseDriverDep],
         dependencyVersionFallbacks: {
             '@modelcontextprotocol/sdk': '^1.29.0',
             zod: '^4.4.3',
+            '@toolfactory.dev/core': '^1.0.1',
             pg: '^8.16.0',
             mysql2: '^3.22.3',
             mssql: '^11.0.1',
@@ -124,7 +124,6 @@ export async function generateOutput(model: Model, source: string, destination: 
     const mcpRuntimePaths = writeMcpRuntimes(cliDir, projectRoot);
     const moduleMcpServerPaths = writeMcpServers(tsPath);
     renderBootstrap(projectRoot, bootstrapConfig);
-    ensureLoggingAdapterStubFromSource(source);
     writeGeneratedScripts(projectRoot, 'db2ai');
     writeGeneratedDemosTestSupport(projectRoot);
 

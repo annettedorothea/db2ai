@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { renderMcpServerTemplate } from '@toolfactory.dev/core/codegen';
+import { renderMcpServerTemplate, renderThinStdioRuntime } from '@toolfactory.dev/core/codegen';
 import {
     renderPassthroughHttpRuntimeCompose,
     renderPublicHttpRuntimeCompose
 } from '../src/codegen/templates/http-runtime.compose.js';
 import { renderOAuthHttpRuntimeCompose } from '../src/codegen/templates/oauth-http-runtime.compose.js';
-import { renderStdioRuntimeCompose } from '../src/codegen/templates/stdio-runtime.compose.js';
 
-const LOGGING_IMPORT = '../../../src/utils/logging-adapter.js';
+const LOGGING_IMPORT = '@toolfactory.dev/core/logging';
 
 describe('db2ai MCP runtime compose snapshots', () => {
     it('stdio-runtime', () => {
-        expect(renderStdioRuntimeCompose(LOGGING_IMPORT)).toMatchSnapshot();
+        expect(renderThinStdioRuntime()).toMatchSnapshot();
     });
 
     it('public-http-runtime', () => {
@@ -34,7 +33,7 @@ describe('db2ai MCP server compose snapshots', () => {
                 hostKind: 'stdio',
                 moduleBasename: 'postgres',
                 toolsImport: '../tools/postgres-tools.js',
-                runtimeImport: '../cli/stdio-runtime.js'
+                runtimeImport: '@toolfactory.dev/core/mcp-host'
             })
         ).toMatchSnapshot();
     });

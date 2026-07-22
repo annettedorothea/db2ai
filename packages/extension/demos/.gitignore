@@ -6,7 +6,7 @@ src/auth/**/*.js
 src/auth/**/*.js.map
 src/auth/**/*.mjs
 
-# tsc emit from build:generated — keep only logging-adapter.ts in src/utils/
+# tsc emit under src/utils (if any)
 src/utils/**/*.js
 src/utils/**/*.js.map
 

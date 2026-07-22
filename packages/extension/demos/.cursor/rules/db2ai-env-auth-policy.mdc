@@ -13,10 +13,11 @@ Diese Regel gilt, wenn die Nutzeranfrage mit `db2ai` beginnt.
 - **Keine Tokens, DB-URLs oder JWTs** in Env-Dateien oder Cursor-Settings schreiben — auch nicht „temporaer“ oder „damit der naechste MCP-Call klappt“.
 - Der Nutzer verwaltet Credentials selbst. Du darfst hoechstens **allgemein** sagen, welche Variable betroffen ist (z. B. `MCP_AUTH_EXPECTED`, `PAGILA_POSTGRESQL_DATABASE_URL`) und dass der Nutzer sie bei Bedarf selbst setzen muss.
 
-## Transport (HTTP vs. OAuth, siehe `mcp.json`)
+## Transport (HTTP vs. OAuth vs. stdio, siehe `mcp.json`)
 
-Alle db2ai-Demo-MCPs nutzen **HTTP-URLs** in `.cursor/mcp.json` (kein stdio/`${workspaceFolder}`).
+Die meisten db2ai-Demo-MCPs nutzen **HTTP-URLs** in `.cursor/mcp.json`.
 
+- **`sakila-mysql-stdio` (stdio):** `command`/`args` mit `--auth-env MCP_AUTH_EXPECTED`; DB-URL aus `SAKILA_MYSQL_DATABASE_URL` via `connectionEnv` (kein `--base-url-env`). Credential muss `MCP_AUTH_EXPECTED` matchen.
 - **`sakila-mysql` / `pagila-postgresql` (HTTP passthrough):** `headers.x-api-token: demo` in Cursor; Validierung gegen `MCP_AUTH_EXPECTED` in `src/hooks/db2ai/*/verify*Credential.ts`.
 - **`orders-postgresql` (HTTP oauth):** Cursor OAuth Sign-in; Validierung in `verifyOrdersPostgresqlCredential.ts` — kein Token in Env schreiben.
 - **`sakila-mariadb`, `animals-sqlserver`, `plants-oracle` (HTTP public):** keine Auth-Header in `mcp.json`.

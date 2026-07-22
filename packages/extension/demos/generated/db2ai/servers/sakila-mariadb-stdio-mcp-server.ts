@@ -3,6 +3,6 @@
  * Generated MCP stdio host for sakila-mariadb (static tools import).
  */
 import * as tools from '../tools/sakila-mariadb-tools.js';
-import { runStdioMcp } from '../cli/stdio-runtime.js';
+import { defaultMcpEnvDirsFromMetaUrl, runStdioMcp } from '@toolfactory.dev/core/mcp-host';
 
-await runStdioMcp(tools, process.argv.slice(2));
+await runStdioMcp(tools, process.argv.slice(2), defaultMcpEnvDirsFromMetaUrl(import.meta.url));
