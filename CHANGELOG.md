@@ -10,9 +10,29 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] - 2026-07-23
+
+Pins `@toolfactory.dev/core` **1.0.2** from npmjs.
+
+### Added
+
+- **DuckDB dialect:** in-memory `database duckdb` (no `env`); write-once `initDatabase` for file sources
+- **Demos:** `flight.db2ai` (CSV) and `sales-report.db2ai` (messy multi-sheet Excel)
+- **`build:mcp`:** copies DuckDB CSV/Excel data dirs next to `server.mjs`; path helper for workspace + dist
+
 ### Changed
 
 - **`vsix:release`:** GitHub releases are stable (no longer `--prerelease`)
+- **Dist drivers:** dialect → npm package map in demos `extra-runtime-deps.mjs` (out of core)
+- **Demos hygiene:** stop tracking `build:generated` emit under `src/hooks` and `src/db`; typecheck includes `src/db/**`
+
+### Upgrade notes
+
+- Pin refresh: `npm run sync:core2ai-pin:npm` (core **1.0.2**)
+- After clone: `npm run build:generated --prefix packages/extension/demos` so hooks/db stubs emit locally
+- New DuckDB modules: implement `src/db/db2ai/<module>-tools/initDatabase.ts`; register data dirs in `scripts/dist-data-assets.mjs` for Option B bundles
 
 ---
 

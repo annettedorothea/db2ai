@@ -81,14 +81,16 @@ Authoring documentation: [Documentation index](https://github.com/annettedorothe
 
 ## Available Demos
 
-| Demo                      | Description                        |
-| ------------------------- | ---------------------------------- |
-| `pagila-postgresql.db2ai` | PostgreSQL demo database           |
-| `sakila-mysql.db2ai`      | MySQL demo database                |
-| `sakila-mariadb.db2ai`    | MariaDB example                    |
-| `animals-sqlserver.db2ai` | SQL Server example                 |
-| `plants-oracle.db2ai`     | Oracle example                     |
-| `orders-postgresql.db2ai` | OAuth-protected PostgreSQL example |
+| Demo                      | Description                                             |
+| ------------------------- | ------------------------------------------------------- |
+| `pagila-postgresql.db2ai` | PostgreSQL demo database                                |
+| `sakila-mysql.db2ai`      | MySQL demo database                                     |
+| `sakila-mariadb.db2ai`    | MariaDB example                                         |
+| `animals-sqlserver.db2ai` | SQL Server example                                      |
+| `plants-oracle.db2ai`     | Oracle example                                          |
+| `orders-postgresql.db2ai` | OAuth-protected PostgreSQL example                      |
+| `flight.db2ai`            | DuckDB in-memory over CSV (`flights/`) via initDatabase |
+| `sales-report.db2ai`      | DuckDB in-memory over messy Excel via initDatabase      |
 
 Demos cover:
 
@@ -97,6 +99,7 @@ Demos cover:
 - MariaDB
 - SQL Server
 - Oracle
+- DuckDB (CSV / Excel file sources; no Docker DB)
 
 ---
 
@@ -159,7 +162,7 @@ cp .env.example .env
 npm start
 ```
 
-`npm start` runs `server.mjs` with the demo flags from `build:mcp` (`--port`, `--path`; api2ai-style hosts also pass `--base-url-env`). Database modules use `connectionEnv` from the generated tools module instead of `--base-url-env`.
+`npm start` runs `server.mjs` with the demo flags from `build:mcp` (`--port`, `--path`; api2ai-style hosts also pass `--base-url-env`). Database modules use `connectionEnv` from the generated tools module instead of `--base-url-env`. DuckDB demos (`flight`, `sales-report`) copy their CSV/Excel folders next to `server.mjs` so file paths work in the bundle.
 
 Edit `.env` if you need to change upstream URLs, ports, or credentials.
 

@@ -52,11 +52,9 @@ Generated files are written to:
 generated/db2ai/
 ```
 
-Database credentials and runtime configuration belong in:
+Put database URLs and secrets in the workspace `.env` (the env name from your `database … env "…"` line). Configure Cursor MCP in `.cursor/mcp.json`: **stdio** entries typically use `envFile` pointing at that `.env`; **HTTP** entries point at a running host URL (credentials stay with the host / `.env`, not in `mcp.json`).
 
-```text
-.cursor/mcp.json
-```
+Details: [Cursor integration](https://github.com/annettedorothea/core2ai/blob/main/docs/integrations/cursor.md).
 
 You can also trigger generation manually:
 

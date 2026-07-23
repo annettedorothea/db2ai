@@ -38,7 +38,7 @@ db2ai: Create demo workspace (MCP examples)
 
 Open the generated [Demo Workspace README](packages/extension/demos/README.md) and follow the Quick Start.
 
-The demo workspace includes PostgreSQL, MySQL, MariaDB, SQL Server, and Oracle examples.
+The demo workspace includes PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, and DuckDB examples (CSV / Excel via in-memory DuckDB).
 
 ---
 
