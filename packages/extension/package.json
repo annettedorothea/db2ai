@@ -77,7 +77,7 @@
         "clean": "shx rm -fr *.tsbuildinfo out syntaxes",
         "vscode:prepublish": "npm run build",
         "build:prepare": "shx mkdir -p ./syntaxes/ && shx cp -f ../language/syntaxes/db-2-ai-dsl.tmLanguage.json ./syntaxes/db-2-ai-dsl.tmLanguage.json",
-        "build": "npm run build:prepare && tsc -b tsconfig.json && node scripts/esbuild.mjs && node scripts/embed-cli-bundle.mjs && node scripts/verify-demos-bundle.mjs",
+        "build": "npm run build:prepare && tsc -b tsconfig.json && node scripts/esbuild.mjs && node scripts/pack-duckdb-native.mjs && node scripts/embed-cli-bundle.mjs && node scripts/verify-demos-bundle.mjs",
         "vsix:prepare": "node scripts/vsix-prepare.mjs",
         "vsix:build": "node scripts/vsix-build.mjs",
         "vsix:release": "node scripts/vsix-release.mjs"

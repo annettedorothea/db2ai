@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { DuckDBConnection } from '@duckdb/node-api';
+import type { DuckDBConnection } from '@duckdb/node-api';
 
 export type DuckDbInitDatabaseFn = (db: DuckDBConnection) => void | Promise<void>;
 
@@ -35,8 +35,22 @@ export async function loadInitDatabaseFn(initDatabaseJsPath: string): Promise<Du
     return mod.initDatabase;
 }
 
+async function loadDuckdbApi(): Promise<typeof import('@duckdb/node-api')> {
+    try {
+        return await import('@duckdb/node-api');
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const wrapped = new Error(
+            `DuckDB native module (@duckdb/node-api) is not available in this environment: ${message}`
+        );
+        Object.defineProperty(wrapped, 'cause', { value: err, configurable: true, writable: true });
+        throw wrapped;
+    }
+}
+
 /** In-memory DuckDB + initDatabase (same setup as MCP invoke). */
 export async function openDuckdbValidationSession(documentUri: string): Promise<DuckDBConnection> {
+    const { DuckDBConnection } = await loadDuckdbApi();
     const projectRoot = resolveDuckdbProjectRootFromDocumentUri(documentUri);
     const initPath = resolveInitDatabaseJsPath(projectRoot, documentUri);
     const initDatabase = await loadInitDatabaseFn(initPath);

@@ -66,10 +66,19 @@ function reportGenerateFailure(
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    client = await startLanguageClient(context);
+    // Register commands before starting the language client so palette commands work even if the LSP fails
+    // (e.g. missing optional native deps in the VSIX).
     registerGenerateOnSave(context);
     registerGenerateCommand(context);
     registerCreateDemoWorkspaceCommand(context);
+    try {
+        client = await startLanguageClient(context);
+    } catch (error) {
+        const message = error instanceof Error ? error.message.trim() : String(error);
+        void vscode.window.showErrorMessage(
+            `db2ai: language server failed to start (${message}). Demo workspace / generate may still work; reload after fixing the extension install.`
+        );
+    }
 }
 
 export function deactivate(): Thenable<void> | undefined {

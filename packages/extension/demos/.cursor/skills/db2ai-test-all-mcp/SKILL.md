@@ -42,7 +42,7 @@ Hook `.cursor/hooks/before-submit-test-all.sh` prueft bei Kurzformen, ob `.curso
 ## Geltende Regeln
 
 - **Schema-only:** Parameter nur aus MCP-Tool-Descriptors (JSON Schema + Beispiele in `description`). Kein Repo-/DSL-Wissen.
-- **Nur konfigurierte Server:** Eintraege in `.cursor/mcp.json` (`sakila-mysql`, `sakila-mariadb`, `pagila-postgresql`, `orders-postgresql`, `animals-sqlserver`, `plants-oracle`).
+- **Nur konfigurierte Server:** Eintraege in `.cursor/mcp.json` (aktuell u. a. `sakila-mysql`, `sakila-mariadb`, `pagila-postgresql`, `orders-postgresql`, `animals-sqlserver`, `plants-oracle`, `flight`, `sales-report`). Keine feste Teilmenge — immer die Datei lesen.
 - **Kein Workaround bei Fehlern:** Kein CLI, kein SQL, kein Retry mit anderen Credentials.
 - **Kein Ersatz-Transport:** Wenn MCP-Tool-Aufrufe in dieser Session nicht verfuegbar sind → **sofort abbrechen** (Schritt 0). Nicht HTTP/curl/WebFetch zu URLs aus `mcp.json`, nicht `scripts/mcp-inspect.mjs`, nicht `generated/**`.
 - **Ausnahme zu „ein Aufruf“:** Bei diesem Skill genau **ein Aufruf pro Tool** — insgesamt alle Tools aller Server. Fehler pro Tool dokumentieren, mit naechstem Tool fortfahren (Server komplett down: Rest des Servers ueberspringen, Fehler melden).

@@ -28,6 +28,11 @@ Pins `@toolfactory.dev/core` **1.0.2** from npmjs.
 - **Dist drivers:** dialect → npm package map in demos `extra-runtime-deps.mjs` (out of core)
 - **Demos hygiene:** stop tracking `build:generated` emit under `src/hooks` and `src/db`; typecheck includes `src/db/**`
 
+### Fixed
+
+- **Extension activate:** register palette commands before starting the language server; lazy-load `@duckdb/node-api` so activation does not crash when the module is missing
+- **VSIX DuckDB validation:** pack `@duckdb/node-api` and **all** `@duckdb/node-bindings-*` platform packages next to the language server (`out/language/node_modules`) so IDE `EXPLAIN` works for `database duckdb` on macOS, Windows, and Linux
+
 ### Upgrade notes
 
 - Pin refresh: `npm run sync:core2ai-pin:npm` (core **1.0.2**)
