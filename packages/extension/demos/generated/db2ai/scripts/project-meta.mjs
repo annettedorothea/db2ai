@@ -5,4 +5,4 @@ export const productName = "db2ai";
 export const dslExtension = ".db2ai";
 export const embedHomeEnvVar = "DB2AI_EMBED_HOME";
 export const embedDirName = "embed-db2ai";
-export const extensionIdPrefix = "toolfactory-dev.vscode-db2ai-";
+export const extensionIdPrefix = "toolfactorydev.vscode-db2ai-";

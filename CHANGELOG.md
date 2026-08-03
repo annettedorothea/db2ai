@@ -12,6 +12,21 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.1.1] - 2026-08-03
+
+Pins `@toolfactory.dev/core` **1.0.3** from npmjs.
+
+### Changed
+
+- **Publisher:** Marketplace / VSIX / Open VSX publisher id is `toolfactorydev` (extension id `toolfactorydev.vscode-db2ai`)
+
+### Upgrade notes
+
+- Reinstall the VSIX (or update from Marketplace / Open VSX) so the installed extension id matches demo `extensionIdPrefix`
+- Pin refresh: `npm run sync:core2ai-pin:npm` (core **1.0.3**)
+
+---
+
 ## [1.1.0] - 2026-07-23
 
 Pins `@toolfactory.dev/core` **1.0.2** from npmjs.
