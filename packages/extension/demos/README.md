@@ -67,7 +67,11 @@ Save the file to generate the MCP server.
 
 ---
 
-### 3. Ask your AI assistant
+### 3. Enable MCP servers, then ask your AI assistant
+
+**Cursor:** Settings → **Tools & MCP** → enable the servers from [`.cursor/mcp.json`](.cursor/mcp.json) (reload MCP if they were already listed). HTTP hosts must be running from step 1.
+
+**VS Code:** open [`.vscode/mcp.json`](.vscode/mcp.json) (or the MCP view) and **start** the stdio servers listed there. Use **Agent** mode in Copilot Chat.
 
 Examples:
 
@@ -80,8 +84,6 @@ db2ai Which customers generated the highest revenue last month?
 ```
 
 Using the `db2ai` prefix helps the assistant focus on generated MCP tools and avoid unrelated built-in tools.
-
-In VS Code, use **Agent** mode in Copilot Chat and enable the stdio servers listed in `.vscode/mcp.json`.
 
 ---
 
