@@ -249,7 +249,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'orders-postgresql-tools';
-export const mcpServerVersion = '1.1.1';
+export const mcpServerVersion = '1.1.2';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

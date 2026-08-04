@@ -12,9 +12,11 @@ If this is your first time using `db2ai`, start with the PostgreSQL or MySQL exa
 
 ### 1. Start the demo environment
 
-Make sure Docker Desktop is running.
+Make sure Docker Desktop is running. From the demo workspace root, pick one path:
 
-To start everything:
+#### Cursor
+
+HTTP MCP hosts (leave the terminal open):
 
 ```bash
 npm run start:all
@@ -34,6 +36,23 @@ npm run start:mcp
 ```
 
 (`npm run start` is an alias for `start:mcp`.)
+
+#### VS Code
+
+stdio MCP only (see [`.vscode/mcp.json`](.vscode/mcp.json); no HTTP hosts):
+
+```bash
+npm run start:all:vscode
+```
+
+This command:
+
+- installs missing dependencies
+- generates tool code
+- compiles generated files
+- starts demo backends (background)
+
+It does **not** start HTTP MCP hosts. VS Code / Copilot spawns stdio servers from `.vscode/mcp.json`. The OAuth demo (`orders-postgresql`) is omitted there. Do not use the HTTP entries from [`.cursor/mcp.json`](.cursor/mcp.json) for Copilot.
 
 ---
 
@@ -60,7 +79,9 @@ db2ai Which actors appeared in the most films?
 db2ai Which customers generated the highest revenue last month?
 ```
 
-Using the `db2ai` prefix helps Cursor focus on generated MCP tools and avoid unrelated built-in tools.
+Using the `db2ai` prefix helps the assistant focus on generated MCP tools and avoid unrelated built-in tools.
+
+In VS Code, use **Agent** mode in Copilot Chat and enable the stdio servers listed in `.vscode/mcp.json`.
 
 ---
 
@@ -105,55 +126,35 @@ Demos cover:
 
 ## Testing
 
-Before release, run:
+### Test-All Skill in Cursor
+
+To exercise every configured MCP tool once in Cursor (after `npm run start:all` and with servers enabled in `.cursor/mcp.json`):
 
 ```text
 /test-all
 ```
 
-or:
+### MCP Inspector
 
-```text
-db2ai /test-all
-```
-
-For HTTP transport debugging — hosts must already be running (`npm run start:all`). Prefer this as the **manual verify** for generated HTTP MCP tools:
+For **HTTP** MCP hosts only (not stdio). After `npm run start:all`, you can inspect any server from `.cursor/mcp.json`, e.g.:
 
 ```bash
 npm run mcp:inspect -- pagila-postgresql
 npm run mcp:inspect -- orders-postgresql
 ```
 
-Prerequisites:
-
-- `npm run start:all`
-- MCP servers enabled in `.cursor/mcp.json`
-- OAuth login completed where required
-
-The demo workspace includes the skill:
-
-```text
-db2ai-test-all-mcp
-```
-
 ---
 
 ## Bundling an MCP Server
 
-Generated MCP hosts can be bundled into standalone deployment packages.
+Build a standalone package for a generated host, e.g.:
 
-Example:
+```bash
+npm run build:generated
+npm run build:mcp -- --host public-http animals-sqlserver
+```
 
-    npm run build:generated
-    npm run build:mcp -- --host public-http animals-sqlserver
-
-This creates a distributable MCP bundle in:
-
-    dist/mcp/animals-sqlserver-public-http/
-
-Depending on the selected host type, configure environment variables before starting the server.
-
-From the bundle directory:
+Output: `dist/mcp/animals-sqlserver-public-http/` (runtime, tools, `package.json`, `.env.example`, `mcp.json.example`).
 
 ```bash
 cd dist/mcp/animals-sqlserver-public-http
@@ -162,25 +163,9 @@ cp .env.example .env
 npm start
 ```
 
-`npm start` runs `server.mjs` with the demo flags from `build:mcp` (`--port`, `--path`; api2ai-style hosts also pass `--base-url-env`). Database modules use `connectionEnv` from the generated tools module instead of `--base-url-env`. DuckDB demos (`flight`, `sales-report`) copy their CSV/Excel folders next to `server.mjs` so file paths work in the bundle.
+`npm start` runs `server.mjs` with the flags from `build:mcp` (`--port`, `--path`). Database modules use `connectionEnv` from the generated tools (not `--base-url-env`). DuckDB demos (`flight`, `sales-report`) include their CSV/Excel folders next to `server.mjs`.
 
-Edit `.env` if you need to change upstream URLs, ports, or credentials.
-
-The bundle contains:
-
-- the MCP server runtime
-- generated tools
-- a minimal `package.json`
-- `.env.example`
-- `mcp.json.example`
-
-Supported host types:
-
-- `public-http`
-- `passthrough-http`
-- `oauth-http`
-
-This feature is still evolving and may change before the final `1.0` release.
+Host types: `public-http`, `passthrough-http`, `oauth-http`.
 
 ---
 

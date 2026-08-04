@@ -6,6 +6,7 @@
         "start": "npm run start:mcp",
         "start:mcp": "node ./scripts/start-mcp.mjs",
         "start:all": "node ./scripts/start-all.mjs",
+        "start:all:vscode": "node ./scripts/start-all-vscode.mjs",
         "start:fixtures": "node ./scripts/start-fixtures.mjs",
         "demo:kill-all": "LOG_SERVICE_PREFIX=kill-all node ./scripts/kill-all-demos.mjs",
         "demo:kill-mcp": "LOG_SERVICE_PREFIX=kill-mcp node ./scripts/kill-mcp-hosts.mjs",

@@ -1,0 +1,62 @@
+{
+    "servers": {
+        "sakila-mysql": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "${workspaceFolder}/generated/db2ai/servers/sakila-mysql-stdio-mcp-server.js",
+                "--auth-env",
+                "MCP_AUTH_EXPECTED"
+            ],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        "sakila-mariadb": {
+            "type": "stdio",
+            "command": "node",
+            "args": ["${workspaceFolder}/generated/db2ai/servers/sakila-mariadb-stdio-mcp-server.js"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        "pagila-postgresql": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "${workspaceFolder}/generated/db2ai/servers/pagila-postgresql-stdio-mcp-server.js",
+                "--auth-env",
+                "MCP_AUTH_EXPECTED"
+            ],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        "animals-sqlserver": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "${workspaceFolder}/generated/db2ai/servers/animals-sqlserver-stdio-mcp-server.js",
+                "--icon",
+                "${workspaceFolder}/icons/animals-sqlserver.png"
+            ],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        "plants-oracle": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "${workspaceFolder}/generated/db2ai/servers/plants-oracle-stdio-mcp-server.js",
+                "--icon",
+                "${workspaceFolder}/icons/plants-oracle.png"
+            ],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        "flight": {
+            "type": "stdio",
+            "command": "node",
+            "args": ["${workspaceFolder}/generated/db2ai/servers/flight-stdio-mcp-server.js"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        "sales-report": {
+            "type": "stdio",
+            "command": "node",
+            "args": ["${workspaceFolder}/generated/db2ai/servers/sales-report-stdio-mcp-server.js"],
+            "envFile": "${workspaceFolder}/.env"
+        }
+    }
+}

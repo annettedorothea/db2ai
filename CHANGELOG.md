@@ -12,6 +12,24 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.1.2] - 2026-08-04
+
+### Added
+
+- **VS Code demos:** `.vscode/mcp.json` with stdio MCP servers (no OAuth); `npm run start:all:vscode` starts fixtures/backends without HTTP MCP hosts
+
+### Changed
+
+- **Demo README:** Quick Start covers Cursor (HTTP) and VS Code (stdio); Testing and Bundling sections tightened
+- **`vsix:prepare`:** runs `npm audit` on workspace and demos before generate/check
+
+### Upgrade notes
+
+- After Create demo workspace / VSIX update: for VS Code use `npm run start:all:vscode` and enable servers in `.vscode/mcp.json` (Agent mode)
+- Cursor path unchanged: `npm run start:all` + `.cursor/mcp.json`
+
+---
+
 ## [1.1.1] - 2026-08-03
 
 Pins `@toolfactory.dev/core` **1.0.3** from npmjs.
