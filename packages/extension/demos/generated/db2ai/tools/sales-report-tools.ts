@@ -193,7 +193,10 @@ export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 
-const afterToolCallHooks: Record<string, (result: unknown, credential?: string) => unknown | Promise<unknown>> = {
+const afterToolCallHooks: Record<
+    string,
+    (result: unknown, options: InvokeOptions, credential?: string) => unknown | Promise<unknown>
+> = {
     topCustomersByRevenue: afterToolCallForTopCustomersByRevenue
 };
 
@@ -414,9 +417,9 @@ export async function invokeTool(
                 if (credential === undefined) {
                     throw new Error('afterToolCall requires credential for protected tools.');
                 }
-                invokeResult = await Promise.resolve(afterToolCall(invokeResult, credential));
+                invokeResult = await Promise.resolve(afterToolCall(invokeResult, optionsResolved, credential));
             } else {
-                invokeResult = await Promise.resolve(afterToolCall(invokeResult));
+                invokeResult = await Promise.resolve(afterToolCall(invokeResult, optionsResolved));
             }
         }
         return invokeResult;

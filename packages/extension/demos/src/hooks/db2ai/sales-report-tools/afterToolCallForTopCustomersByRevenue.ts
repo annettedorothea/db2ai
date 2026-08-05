@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import type { InvokeOptions } from '../../../../generated/db2ai/tools/sales-report-tools.js';
 
 type SqlResult = {
     rows: Record<string, unknown>[];
@@ -41,7 +42,8 @@ function rowsToCsv(rows: Record<string, unknown>[]): string {
 /**
  * afterToolCall for topCustomersByRevenue — write CSV to OS temp and return path metadata.
  */
-export function afterToolCallForTopCustomersByRevenue(result: unknown): unknown {
+export function afterToolCallForTopCustomersByRevenue(result: unknown, options: InvokeOptions): unknown {
+    void options;
     if (!isSqlResult(result)) {
         throw new Error('afterToolCallForTopCustomersByRevenue expected { rows, rowCount } from SQL invoke');
     }

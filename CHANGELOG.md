@@ -10,6 +10,11 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ## [Unreleased]
 
+### Changed
+
+- **`@toolfactory.dev/core`:** pin `^1.2.0` (registry)
+- **`afterToolCall` stubs:** receive `options` (shared core pipeline; write-once stubs updated)
+
 ---
 
 ## [1.2.0] - 2026-08-05
