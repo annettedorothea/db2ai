@@ -37,6 +37,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -54,11 +55,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'listFilms',
         title: 'Paginated Sakila film rows',
-        description:
-            'list films from Sakila with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 100)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=100, offset=0',
+        description: 'list films from Sakila with pagination\n\nExample call: limit=100, offset=0',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText: 'SELECT * FROM film LIMIT ? OFFSET ?',
         params: [
             {
@@ -86,10 +87,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listActors',
         title: 'Paginated Sakila actor rows',
         description:
-            'List actors from Sakila with pagination.\n        Protected: requires MCP auth header matching MCP_AUTH_EXPECTED.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 100)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=100, offset=0',
+            'List actors from Sakila with pagination.\n        Protected: requires MCP auth header matching MCP_AUTH_EXPECTED.\n\nExample call: limit=100, offset=0',
         access: 'protected',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText: 'SELECT * FROM actor LIMIT ? OFFSET ?',
         params: [
             {
@@ -116,11 +118,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'listCategories',
         title: 'Paginated Sakila category rows',
-        description:
-            'list film categories with pagination\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 100)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=100, offset=0',
+        description: 'list film categories with pagination\n\nExample call: limit=100, offset=0',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText: 'SELECT * FROM category LIMIT ? OFFSET ?',
         params: [
             {
@@ -147,11 +149,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'filmsByRating',
         title: 'Films by rating (G, PG, PG-13, R, NC-17)',
-        description:
-            'list films with a given rating\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- rating: rating (G, PG, PG-13, R, or NC-17) (type: string) (example: PG)\n- maxRows: max rows to return (type: integer) (example: 20)\n\nExample call: rating=PG, maxRows=20',
+        description: 'list films with a given rating\n\nExample call: rating=PG, maxRows=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            film_id,\n            title,\n            rating\n        FROM\n            film\n        WHERE\n            rating = ?\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ',
         params: [
@@ -180,10 +182,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'filmsWithActorLastName',
         title: 'Actor-film cast via film_actor join',
         description:
-            'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- lastNamePrefix: actor last name prefix (e.g. GAR, BER, HOP) (type: string) (example: GAR)\n- maxRows: max rows to return (type: integer) (example: 25)\n\nExample call: lastNamePrefix=GAR, maxRows=25',
+            'Find films featuring actors whose last name starts with a prefix.\n        Joins actor, film_actor, and film (MySQL LIKE / CONCAT).\n        Ordered by last name, then film title.\n\nExample call: lastNamePrefix=GAR, maxRows=25',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             "\n        SELECT\n            a.first_name,\n            a.last_name,\n            f.title\n        FROM\n            actor a\n        INNER JOIN\n            film_actor fa ON a.actor_id = fa.actor_id\n        INNER JOIN\n            film f ON f.film_id = fa.film_id\n        WHERE\n            a.last_name LIKE CONCAT(?, '%')\n        ORDER BY\n            a.last_name,\n            f.title\n        LIMIT\n            ?\n    ",
         params: [
@@ -212,10 +215,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchFilms',
         title: 'Film search across title and description',
         description:
-            'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText: Search text matched in title or description.\n                Example: cat, dog, academy. (type: string) (example: cat)\n- maxRows: max rows to return (type: integer) (example: 15)\n\nExample call: searchText=cat, maxRows=15',
+            'Search films by free text in title or description.\n        Case-sensitive substring match (MySQL LIKE with CONCAT).\n        Compare with Pagila searchFilms (ILIKE) when testing both servers.\n\nExample call: searchText=cat, maxRows=15',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             "\n        SELECT\n            film_id,\n            title,\n            rating,\n            LEFT(description, 120) AS description_preview\n        FROM\n            film\n        WHERE\n            title LIKE CONCAT('%', ?, '%')\n            OR description LIKE CONCAT('%', ?, '%')\n        ORDER BY\n            title\n        LIMIT\n            ?\n    ",
         params: [
@@ -245,10 +249,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'insertActor',
         title: 'Insert actor with first and last name',
         description:
-            'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- firstName: actor first name (type: string) (example: MARY)\n- lastName: actor last name (type: string) (example: SMITH)\n\nExample call: firstName=MARY, lastName=SMITH',
+            'Insert a new actor into Sakila.\n        Sets last_update to the current time.\n\nExample call: firstName=MARY, lastName=SMITH',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText: 'INSERT INTO actor (first_name, last_name, last_update) VALUES (?, ?, NOW())',
         params: [
             {
@@ -274,7 +279,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-mysql-tools';
-export const mcpServerVersion = '1.1.2';
+export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

@@ -60,7 +60,7 @@ describe('buildSqlDescription via resolveToolsFromModel', () => {
         const schema = buildInputSchemaByTool(model, tools);
         const props = schema.listFilms?.properties as Record<string, { description?: string }>;
         expect(props.limit.description).toBe('max rows (SQL :limit) (type: integer) (example: 10)');
-        expect(tools[0]?.description).toContain('Parameters:\n- limit: max rows (type: integer) (example: 10)');
-        expect(tools[0]?.description).toContain('- offset: skip rows (type: integer) (example: 0)');
+        expect(tools[0]?.description).not.toContain('Parameters:');
+        expect(tools[0]?.description).toContain('Example call: limit=10, offset=0');
     });
 });

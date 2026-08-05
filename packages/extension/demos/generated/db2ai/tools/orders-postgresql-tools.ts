@@ -39,6 +39,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -57,10 +58,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listCustomerOrders',
         title: 'Customer order rows',
         description:
-            'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId: Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools. (type: string) (example: alice)\n\nExample call: customerId=alice',
+            'List orders for a customer.\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nExample call: customerId=alice',
         access: 'protected',
         hasCheckToolAccess: true,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            order_id,\n            customer_id,\n            product_id,\n            quantity\n        FROM\n            orders\n        WHERE\n            customer_id = $1\n        ORDER BY\n            order_id\n    ',
         params: [
@@ -79,11 +81,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'listProducts',
         title: 'Product catalog rows',
-        description:
-            'list products in the orders-postgresql catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows (type: integer) (example: 50)\n\nExample call: limit=50',
+        description: 'list products in the orders-postgresql catalog\n\nExample call: limit=50',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText: 'SELECT product_id, name, price FROM products ORDER BY product_id LIMIT $1',
         params: [
             {
@@ -102,10 +104,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listProductsWithReviews',
         title: 'Products with reviews (requires credential).\n        Join products and reviews; cap 100 rows in SQL.',
         description:
-            'List products that have at least one review, with review details.\n        Protected: requires Cursor OAuth sign-in on orders-postgresql MCP (JWT claim customerId).\n        One row per review; same product may appear multiple times.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows (type: integer) (example: 50)\n\nExample call: limit=50',
+            'List products that have at least one review, with review details.\n        Protected: requires Cursor OAuth sign-in on orders-postgresql MCP (JWT claim customerId).\n        One row per review; same product may appear multiple times.\n\nExample call: limit=50',
         access: 'protected',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            p.product_id,\n            p.name,\n            p.price,\n            r.review_id,\n            r.rating,\n            r.comment\n        FROM\n            products p\n        INNER JOIN\n            reviews r ON r.product_id = p.product_id\n        ORDER BY\n            p.product_id,\n            r.review_id\n        LIMIT\n            LEAST($1, 100)\n    ',
         params: [
@@ -125,10 +128,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createOrder',
         title: 'Create order for customer and product',
         description:
-            'Insert a new order row (quantity defaults to 1).\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- customerId: Customer id (e.g. alice, bob).\n                Defaults from JWT when omitted on checked tools. (type: string) (example: alice)\n- productId: Product id from the catalog (type: integer) (example: 1)\n\nExample call: customerId=alice, productId=1',
+            'Insert a new order row (quantity defaults to 1).\n        When customerId is omitted, the value from the JWT is used.\n        Checked access: customerId must match the token claim when provided.\n\nExample call: customerId=alice, productId=1',
         access: 'protected',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             'INSERT INTO orders (customer_id, product_id, quantity) VALUES ($1, $2, 1) RETURNING order_id, customer_id, product_id, quantity',
         params: [
@@ -158,10 +162,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createProduct',
         title: 'Create product (admin only)',
         description:
-            'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productName: Product name (type: string) (example: Widget Pro)\n- price: Unit price (type: number) (example: 10.99)\n\nExample call: productName=Widget Pro, price=10.99',
+            'Insert a new product into the catalog.\n        Checked access: admin role required (JWT role claim).\n\nExample call: productName=Widget Pro, price=10.99',
         access: 'protected',
         hasCheckToolAccess: true,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText: 'INSERT INTO products (name, price) VALUES ($1, $2) RETURNING product_id, name, price',
         params: [
             {
@@ -189,10 +194,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updateProduct',
         title: 'Update product (admin only)',
         description:
-            'Update name and price of an existing product.\n        Checked access: admin role required (JWT role claim).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productName: New product name (type: string) (example: Widget Pro)\n- price: New unit price (type: number) (example: 12.99)\n- productId: Product id to update (type: integer) (example: 1)\n\nExample call: productName=Widget Pro, price=12.99, productId=1',
+            'Update name and price of an existing product.\n        Checked access: admin role required (JWT role claim).\n\nExample call: productName=Widget Pro, price=12.99, productId=1',
         access: 'protected',
         hasCheckToolAccess: true,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText: 'UPDATE products SET name = $1, price = $2 WHERE product_id = $3 RETURNING product_id, name, price',
         params: [
             {
@@ -229,10 +235,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'deleteProduct',
         title: 'Delete product (admin only)',
         description:
-            'Delete a product by id.\n        Checked access: admin role required (JWT role claim).\n        Fails if the product is referenced by orders or reviews (foreign key).\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productId: Product id to delete (type: integer) (example: 999)\n\nExample call: productId=999',
+            'Delete a product by id.\n        Checked access: admin role required (JWT role claim).\n        Fails if the product is referenced by orders or reviews (foreign key).\n\nExample call: productId=999',
         access: 'protected',
         hasCheckToolAccess: true,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText: 'DELETE FROM products WHERE product_id = $1 RETURNING product_id, name, price',
         params: [
             {
@@ -249,7 +256,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'orders-postgresql-tools';
-export const mcpServerVersion = '1.1.2';
+export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 
@@ -414,10 +421,10 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });
-                const result = await client.query({ text: sqlText, values: sqlValues });
+                const execResult = await client.query({ text: sqlText, values: sqlValues });
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: execResult.rows,
+                    rowCount: execResult.rowCount ?? execResult.rows.length
                 };
             }
             case 'listProducts': {
@@ -428,10 +435,10 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });
-                const result = await client.query({ text: sqlText, values: sqlValues });
+                const execResult = await client.query({ text: sqlText, values: sqlValues });
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: execResult.rows,
+                    rowCount: execResult.rowCount ?? execResult.rows.length
                 };
             }
             case 'listProductsWithReviews': {
@@ -443,10 +450,10 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });
-                const result = await client.query({ text: sqlText, values: sqlValues });
+                const execResult = await client.query({ text: sqlText, values: sqlValues });
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: execResult.rows,
+                    rowCount: execResult.rowCount ?? execResult.rows.length
                 };
             }
             case 'createOrder': {
@@ -463,10 +470,10 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });
-                const result = await client.query({ text: sqlText, values: sqlValues });
+                const execResult = await client.query({ text: sqlText, values: sqlValues });
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: execResult.rows,
+                    rowCount: execResult.rowCount ?? execResult.rows.length
                 };
             }
             case 'createProduct': {
@@ -482,10 +489,10 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });
-                const result = await client.query({ text: sqlText, values: sqlValues });
+                const execResult = await client.query({ text: sqlText, values: sqlValues });
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: execResult.rows,
+                    rowCount: execResult.rowCount ?? execResult.rows.length
                 };
             }
             case 'updateProduct': {
@@ -503,10 +510,10 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });
-                const result = await client.query({ text: sqlText, values: sqlValues });
+                const execResult = await client.query({ text: sqlText, values: sqlValues });
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: execResult.rows,
+                    rowCount: execResult.rowCount ?? execResult.rows.length
                 };
             }
             case 'deleteProduct': {
@@ -517,10 +524,10 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: sqlValues
                 });
-                const result = await client.query({ text: sqlText, values: sqlValues });
+                const execResult = await client.query({ text: sqlText, values: sqlValues });
                 return {
-                    rows: result.rows,
-                    rowCount: result.rowCount ?? result.rows.length
+                    rows: execResult.rows,
+                    rowCount: execResult.rowCount ?? execResult.rows.length
                 };
             }
             default:

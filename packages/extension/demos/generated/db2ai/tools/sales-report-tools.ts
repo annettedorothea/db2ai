@@ -4,6 +4,7 @@
 import { loggingAdapter } from '../../../src/utils/logging-adapter.js';
 import * as z from 'zod/v4';
 import { initDatabase } from '../../../src/db/db2ai/sales-report-tools/initDatabase.js';
+import { afterToolCallForTopCustomersByRevenue } from '../../../src/hooks/db2ai/sales-report-tools/afterToolCallForTopCustomersByRevenue.js';
 
 export const connectionEnv = undefined;
 
@@ -29,6 +30,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -47,10 +49,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listSalesByRegion',
         title: 'Sales lines for a region',
         description:
-            'list cleaned sales lines from the messy Excel Umsatz sheet filtered by region\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- region: sales region (Nord, West, Süd, Ost) (type: string) (example: Nord)\n- limit: max rows (type: integer) (example: 20)\n\nExample call: region=Nord, limit=20',
+            'list cleaned sales lines from the messy Excel Umsatz sheet filtered by region\n\nExample call: region=Nord, limit=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            customer_id,\n            customer_name,\n            region,\n            product_group,\n            net_eur,\n            document_date\n        FROM\n            sales_lines\n        WHERE\n            region = $1\n        ORDER BY\n            document_date,\n            customer_id\n        LIMIT\n            $2\n    ',
         params: [
@@ -79,10 +82,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listSalesByProductGroup',
         title: 'Sales lines for a product group',
         description:
-            'list cleaned sales lines filtered by Warengruppe / product group\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- productGroup: Warengruppe (Maschinen, Ersatzteile, Software, Schulung, Sensorik, Dienstleistung) (type: string) (example: Maschinen)\n- limit: max rows (type: integer) (example: 20)\n\nExample call: productGroup=Maschinen, limit=20',
+            'list cleaned sales lines filtered by Warengruppe / product group\n\nExample call: productGroup=Maschinen, limit=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            customer_id,\n            customer_name,\n            region,\n            product_group,\n            net_eur,\n            document_date\n        FROM\n            sales_lines\n        WHERE\n            product_group = $1\n        ORDER BY\n            document_date,\n            customer_id\n        LIMIT\n            $2\n    ',
         params: [
@@ -110,11 +114,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'summarizeSalesByRegion',
         title: 'Net sales totals by region',
-        description:
-            'sum net sales and line counts by region from the cleaned Excel Umsatz view\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).',
+        description: 'sum net sales and line counts by region from the cleaned Excel Umsatz view',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            region,\n            COUNT(*) AS line_count,\n            COUNT(DISTINCT customer_id) AS customer_count,\n            ROUND(SUM(net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines\n        GROUP BY\n            region\n        ORDER BY\n            net_eur_total DESC\n    ',
         params: []
@@ -123,11 +127,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'summarizeSalesByProductGroup',
         title: 'Net sales totals by product group',
-        description:
-            'sum net sales and line counts by Warengruppe / product group from the cleaned Excel Umsatz view\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).',
+        description: 'sum net sales and line counts by Warengruppe / product group from the cleaned Excel Umsatz view',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            product_group,\n            COUNT(*) AS line_count,\n            COUNT(DISTINCT customer_id) AS customer_count,\n            ROUND(SUM(net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines\n        GROUP BY\n            product_group\n        ORDER BY\n            net_eur_total DESC\n    ',
         params: []
@@ -136,11 +140,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'summarizeSalesByRegionAndProductGroup',
         title: 'Net sales by region and product group',
-        description:
-            'cross-tab net sales by region and Warengruppe for regional product mix analysis\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).',
+        description: 'cross-tab net sales by region and Warengruppe for regional product mix analysis',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            region,\n            product_group,\n            COUNT(*) AS line_count,\n            ROUND(SUM(net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines\n        GROUP BY\n            region,\n            product_group\n        ORDER BY\n            region,\n            net_eur_total DESC\n    ',
         params: []
@@ -149,11 +153,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'summarizeSalesBySegment',
         title: 'Net sales totals by customer segment',
-        description:
-            'sum net sales by customer segment using Excel sales lines joined to Kunden stamm\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).',
+        description: 'sum net sales by customer segment using Excel sales lines joined to Kunden stamm',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            c.segment,\n            COUNT(*) AS line_count,\n            ROUND(SUM(s.net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines s\n            INNER JOIN customers c ON c.customer_id = s.customer_id\n        GROUP BY\n            c.segment\n        ORDER BY\n            net_eur_total DESC\n    ',
         params: []
@@ -161,12 +165,13 @@ export const generatedTools: GeneratedTool[] = [
     {
         kind: 'sql',
         toolName: 'topCustomersByRevenue',
-        title: 'Top customers by revenue',
+        title: 'Top customers by revenue (CSV export via afterToolCall)',
         description:
-            'rank customers by total net revenue from the cleaned Excel sales view\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max customers (type: integer) (example: 5)\n\nExample call: limit=5',
+            'Rank customers by total net revenue from the cleaned Excel sales view.\n        afterToolCall writes a CSV under the OS temp dir and returns path metadata\n        (row data is not returned in the MCP result).\n        Prefer this when the user asks to export or download top customers as a file.\n\nExample call: limit=5',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: true,
         sqlText:
             '\n        SELECT\n            s.customer_id,\n            s.customer_name,\n            c.city,\n            c.segment,\n            ROUND(SUM(s.net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines s\n            INNER JOIN customers c ON c.customer_id = s.customer_id\n        GROUP BY\n            s.customer_id,\n            s.customer_name,\n            c.city,\n            c.segment\n        ORDER BY\n            net_eur_total DESC\n        LIMIT\n            $1\n    ',
         params: [
@@ -184,9 +189,13 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sales-report-tools';
-export const mcpServerVersion = '1.1.2';
+export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
+
+const afterToolCallHooks: Record<string, (result: unknown, credential?: string) => unknown | Promise<unknown>> = {
+    topCustomersByRevenue: afterToolCallForTopCustomersByRevenue
+};
 
 export const inputZodByTool = {
     listSalesByRegion: z
@@ -245,17 +254,32 @@ export async function invokeTool(
         throw new Error('invokeTool requires hostContext from the MCP host (servers/*-mcp-server).');
     }
     const host = hostContext as DbHostContext;
+    const optionsResolved = options;
+    let credential: string | undefined = host.credential?.trim() ? String(host.credential).trim() : undefined;
+
+    if (toolMeta.access === 'protected') {
+        const inbound = host.credential;
+        if (!inbound || !String(inbound).trim()) {
+            throw new Error(
+                'Missing host credential. stdio: set env for --auth-env on the MCP host; passthrough HTTP: MCP auth header (e.g. x-api-token); OAuth HTTP: complete MCP login (Authorization Bearer from Cursor).'
+            );
+        }
+        credential = String(inbound).trim();
+    }
     void host;
     const connection = await DuckDBConnection.create();
     await initDatabase(connection);
     try {
+        let invokeResult: unknown;
         switch (toolName) {
             case 'listSalesByRegion': {
                 const sqlText =
                     '\n        SELECT\n            customer_id,\n            customer_name,\n            region,\n            product_group,\n            net_eur,\n            document_date\n        FROM\n            sales_lines\n        WHERE\n            region = $1\n        ORDER BY\n            document_date,\n            customer_id\n        LIMIT\n            $2\n    ';
                 const sqlValues: DuckDBValue[] = [
-                    options['region'] !== undefined && options['region'] !== null ? String(options['region']) : null,
-                    normalizePostgresNumericParamValue(options['limit'])
+                    optionsResolved['region'] !== undefined && optionsResolved['region'] !== null
+                        ? String(optionsResolved['region'])
+                        : null,
+                    normalizePostgresNumericParamValue(optionsResolved['limit'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listSalesByRegion',
@@ -264,19 +288,20 @@ export async function invokeTool(
                 });
                 const reader = await connection.runAndReadAll(sqlText, sqlValues);
                 const rows = reader.getRowObjectsJson();
-                return {
+                invokeResult = {
                     rows,
                     rowCount: rows.length
                 };
+                break;
             }
             case 'listSalesByProductGroup': {
                 const sqlText =
                     '\n        SELECT\n            customer_id,\n            customer_name,\n            region,\n            product_group,\n            net_eur,\n            document_date\n        FROM\n            sales_lines\n        WHERE\n            product_group = $1\n        ORDER BY\n            document_date,\n            customer_id\n        LIMIT\n            $2\n    ';
                 const sqlValues: DuckDBValue[] = [
-                    options['productGroup'] !== undefined && options['productGroup'] !== null
-                        ? String(options['productGroup'])
+                    optionsResolved['productGroup'] !== undefined && optionsResolved['productGroup'] !== null
+                        ? String(optionsResolved['productGroup'])
                         : null,
-                    normalizePostgresNumericParamValue(options['limit'])
+                    normalizePostgresNumericParamValue(optionsResolved['limit'])
                 ];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'listSalesByProductGroup',
@@ -285,10 +310,11 @@ export async function invokeTool(
                 });
                 const reader = await connection.runAndReadAll(sqlText, sqlValues);
                 const rows = reader.getRowObjectsJson();
-                return {
+                invokeResult = {
                     rows,
                     rowCount: rows.length
                 };
+                break;
             }
             case 'summarizeSalesByRegion': {
                 const sqlText =
@@ -301,10 +327,11 @@ export async function invokeTool(
                 });
                 const reader = await connection.runAndReadAll(sqlText, sqlValues);
                 const rows = reader.getRowObjectsJson();
-                return {
+                invokeResult = {
                     rows,
                     rowCount: rows.length
                 };
+                break;
             }
             case 'summarizeSalesByProductGroup': {
                 const sqlText =
@@ -317,10 +344,11 @@ export async function invokeTool(
                 });
                 const reader = await connection.runAndReadAll(sqlText, sqlValues);
                 const rows = reader.getRowObjectsJson();
-                return {
+                invokeResult = {
                     rows,
                     rowCount: rows.length
                 };
+                break;
             }
             case 'summarizeSalesByRegionAndProductGroup': {
                 const sqlText =
@@ -333,10 +361,11 @@ export async function invokeTool(
                 });
                 const reader = await connection.runAndReadAll(sqlText, sqlValues);
                 const rows = reader.getRowObjectsJson();
-                return {
+                invokeResult = {
                     rows,
                     rowCount: rows.length
                 };
+                break;
             }
             case 'summarizeSalesBySegment': {
                 const sqlText =
@@ -349,15 +378,16 @@ export async function invokeTool(
                 });
                 const reader = await connection.runAndReadAll(sqlText, sqlValues);
                 const rows = reader.getRowObjectsJson();
-                return {
+                invokeResult = {
                     rows,
                     rowCount: rows.length
                 };
+                break;
             }
             case 'topCustomersByRevenue': {
                 const sqlText =
                     '\n        SELECT\n            s.customer_id,\n            s.customer_name,\n            c.city,\n            c.segment,\n            ROUND(SUM(s.net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines s\n            INNER JOIN customers c ON c.customer_id = s.customer_id\n        GROUP BY\n            s.customer_id,\n            s.customer_name,\n            c.city,\n            c.segment\n        ORDER BY\n            net_eur_total DESC\n        LIMIT\n            $1\n    ';
-                const sqlValues: DuckDBValue[] = [normalizePostgresNumericParamValue(options['limit'])];
+                const sqlValues: DuckDBValue[] = [normalizePostgresNumericParamValue(optionsResolved['limit'])];
                 loggingAdapter.debug('executeSql', {
                     toolName: 'topCustomersByRevenue',
                     sql: compactSqlForLog(sqlText),
@@ -365,14 +395,31 @@ export async function invokeTool(
                 });
                 const reader = await connection.runAndReadAll(sqlText, sqlValues);
                 const rows = reader.getRowObjectsJson();
-                return {
+                invokeResult = {
                     rows,
                     rowCount: rows.length
                 };
+                break;
             }
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
+
+        if (toolMeta.hasAfterToolCall) {
+            const afterToolCall = afterToolCallHooks[toolName];
+            if (typeof afterToolCall !== 'function') {
+                throw new Error('No afterToolCall hook for tool: ' + toolName);
+            }
+            if (toolMeta.access === 'protected') {
+                if (credential === undefined) {
+                    throw new Error('afterToolCall requires credential for protected tools.');
+                }
+                invokeResult = await Promise.resolve(afterToolCall(invokeResult, credential));
+            } else {
+                invokeResult = await Promise.resolve(afterToolCall(invokeResult));
+            }
+        }
+        return invokeResult;
     } finally {
         connection.closeSync();
     }

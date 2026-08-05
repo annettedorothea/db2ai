@@ -53,6 +53,10 @@ export function isPrepareToolCallEnabled(query: SqlQuery): boolean {
     return isPrepareToolCallTrue(spec) || isPrepareToolCallBody(spec);
 }
 
+export function isAfterToolCallEnabled(query: SqlQuery): boolean {
+    return query.hooks?.afterToolCall === true;
+}
+
 export function resolveClientMayOmitRef(ref: Reference<SqlParamEntry>): string {
     const key = ref.ref?.key;
     if (key !== undefined && String(key).trim().length > 0) {

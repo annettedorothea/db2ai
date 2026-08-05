@@ -30,6 +30,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -48,10 +49,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listFilms',
         title: 'Paginated film rows',
         description:
-            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows per page (type: integer) (example: 20)\n- offset: rows to skip (type: integer) (example: 0)\n\nExample call: limit=20, offset=0',
+            'list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)\n\nExample call: limit=20, offset=0',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText: 'SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT ? OFFSET ?',
         params: [
             {
@@ -78,11 +80,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'searchFilms',
         title: 'Title search in Sakila',
-        description:
-            'search Sakila films by title substring\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText: matched in film title (type: string) (example: love)\n- maxRows: max rows (type: integer) (example: 10)\n\nExample call: searchText=love, maxRows=10',
+        description: 'search Sakila films by title substring\n\nExample call: searchText=love, maxRows=10',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', ?, '%') ORDER BY title LIMIT ?",
         params: [
@@ -109,7 +111,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'sakila-mariadb-tools';
-export const mcpServerVersion = '1.1.2';
+export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

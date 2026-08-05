@@ -30,6 +30,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -48,10 +49,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listPlants',
         title: 'Paginated plant catalog',
         description:
-            'list plants with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows (type: integer) (example: 20)\n\nExample call: limit=20',
+            'list plants with common name, Latin name, and short English description\n\nExample call: limit=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        ORDER BY common_name\n        FETCH FIRST :limit ROWS ONLY\n    ',
         params: [
@@ -71,10 +73,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchPlants',
         title: 'Name search in the plant catalog',
         description:
-            'search plants by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- searchText: text matched in common or Latin name (type: string) (example: oak)\n- maxRows: max rows to return (type: integer) (example: 10)\n\nExample call: searchText=oak, maxRows=10',
+            'search plants by common or Latin name (substring match)\n\nExample call: searchText=oak, maxRows=10',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             "\n        SELECT\n            plant_id,\n            common_name,\n            latin_name,\n            description\n        FROM plants\n        WHERE\n            common_name LIKE '%' || :searchText || '%'\n            OR latin_name LIKE '%' || :searchText || '%'\n        ORDER BY common_name\n        FETCH FIRST :maxRows ROWS ONLY\n    ",
         params: [
@@ -103,10 +106,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createPlant',
         title: 'Add one plant to the catalog',
         description:
-            'insert a new plant row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName: English common name (type: string) (example: Mint)\n- latinName: Latin species name (type: string) (example: Mentha spicata)\n- aboutText: short English description (type: string) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
+            'insert a new plant row into the catalog\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking.',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        INSERT INTO plants (common_name, latin_name, description)\n        VALUES (:commonName, :latinName, :aboutText)\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -144,10 +148,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updatePlant',
         title: 'Update one plant by id',
         description:
-            'update an existing plant row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName: English common name (type: string) (example: Mint)\n- latinName: Latin species name (type: string) (example: Mentha spicata)\n- aboutText: short English description (type: string) (example: Aromatic herb with serrated leaves, used fresh in drinks and cooking.)\n- plantId: plant id to update (type: integer) (example: 1)\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
+            'update an existing plant row in the catalog\n\nExample call: commonName=Mint, latinName=Mentha spicata, aboutText=Aromatic herb with serrated leaves, used fresh in drinks and cooking., plantId=1',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        UPDATE plants\n        SET\n            common_name = :commonName,\n            latin_name = :latinName,\n            description = :aboutText\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -193,11 +198,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'deletePlant',
         title: 'Remove one plant by id',
-        description:
-            'delete a plant row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- plantId: plant id to delete (type: integer) (example: 999)\n\nExample call: plantId=999',
+        description: 'delete a plant row from the catalog by id\n\nExample call: plantId=999',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        DELETE FROM plants\n        WHERE plant_id = :plantId\n        RETURNING plant_id, common_name, latin_name, description\n    ',
         params: [
@@ -215,7 +220,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'plants-oracle-tools';
-export const mcpServerVersion = '1.1.2';
+export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 
@@ -387,11 +392,11 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: binds
                 });
-                const result = await connection.execute(sqlText, binds, {
+                const execResult = await connection.execute(sqlText, binds, {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
                     autoCommit: true
                 });
-                const resultRows = Array.isArray(result.rows) ? result.rows : [];
+                const resultRows = Array.isArray(execResult.rows) ? execResult.rows : [];
                 return {
                     rows: resultRows,
                     rowCount: resultRows.length
@@ -412,11 +417,11 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: binds
                 });
-                const result = await connection.execute(sqlText, binds, {
+                const execResult = await connection.execute(sqlText, binds, {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
                     autoCommit: true
                 });
-                const resultRows = Array.isArray(result.rows) ? result.rows : [];
+                const resultRows = Array.isArray(execResult.rows) ? execResult.rows : [];
                 return {
                     rows: resultRows,
                     rowCount: resultRows.length
@@ -448,12 +453,12 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: binds
                 });
-                const result = await connection.execute(sqlText, binds, {
+                const execResult = await connection.execute(sqlText, binds, {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
                     autoCommit: true
                 });
                 const resultRows = rowsFromOracleDmlReturning(
-                    result.outBinds,
+                    execResult.outBinds,
                     ['plant_id', 'common_name', 'latin_name', 'description'],
                     ['ret0', 'ret1', 'ret2', 'ret3']
                 );
@@ -489,12 +494,12 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: binds
                 });
-                const result = await connection.execute(sqlText, binds, {
+                const execResult = await connection.execute(sqlText, binds, {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
                     autoCommit: true
                 });
                 const resultRows = rowsFromOracleDmlReturning(
-                    result.outBinds,
+                    execResult.outBinds,
                     ['plant_id', 'common_name', 'latin_name', 'description'],
                     ['ret0', 'ret1', 'ret2', 'ret3']
                 );
@@ -518,12 +523,12 @@ export async function invokeTool(
                     sql: compactSqlForLog(sqlText),
                     values: binds
                 });
-                const result = await connection.execute(sqlText, binds, {
+                const execResult = await connection.execute(sqlText, binds, {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
                     autoCommit: true
                 });
                 const resultRows = rowsFromOracleDmlReturning(
-                    result.outBinds,
+                    execResult.outBinds,
                     ['plant_id', 'common_name', 'latin_name', 'description'],
                     ['ret0', 'ret1', 'ret2', 'ret3']
                 );

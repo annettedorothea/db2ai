@@ -12,6 +12,26 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ---
 
+## [1.2.0] - 2026-08-05
+
+### Added
+
+- **`afterToolCall` hook:** DSL `hooks: { afterToolCall: true }`; runs after successful SQL invoke; write-once stub `afterToolCallFor{Tool}`
+- **Demo `sales-report`:** `topCustomersByRevenue` + `afterToolCall` writes CSV under OS temp and returns path metadata
+
+### Changed
+
+- **SQL tool descriptions:** omit boilerplate + prose `Parameters:` (schema is source of truth)
+- **Completions:** `afterToolCall` in hooks snippet + value completion
+- **Invoke pipeline naming:** `InvokePipelineTier` / `renderInvokePipeline` (was AuthPipeline\*)
+- **`@toolfactory.dev/core`:** pin **1.1.0**
+
+### Upgrade notes
+
+- Regenerate after upgrade (`generate:all` / save `.db2ai`). Requires `@toolfactory.dev/core` **1.1.0**.
+
+---
+
 ## [1.1.2] - 2026-08-04
 
 ### Added

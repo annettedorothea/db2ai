@@ -4,6 +4,7 @@ import {
     getAccessKind,
     getClientMayOmit,
     isSqlQuery,
+    isAfterToolCallEnabled,
     isCheckToolAccessEnabled,
     isPrepareToolCallEnabled
 } from 'db-2-ai-dsl-language';
@@ -14,7 +15,7 @@ import {
     rewriteNamedPlaceholdersForDialect,
     type ResolvedSqlParam
 } from 'db-2-ai-dsl-language';
-import { enrichJsonSchemaPropertyDescription, formatMcpParameterDescriptionLine } from '@toolfactory.dev/core/codegen';
+import { enrichJsonSchemaPropertyDescription } from '@toolfactory.dev/core/codegen';
 
 export type JsonSchemaDict = Record<string, unknown>;
 
@@ -29,6 +30,7 @@ export type ResolvedSqlToolCodegen = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
 };
 
 export type ResolvedDbToolCodegen = ResolvedSqlToolCodegen;
@@ -65,32 +67,9 @@ function buildSqlExampleCallLine(params: ResolvedSqlParam[]): string | undefined
     return `Example call: ${parts.join(', ')}`;
 }
 
-function buildSqlParamDescriptionSection(params: ResolvedSqlParam[]): string | undefined {
-    if (params.length === 0) {
-        return undefined;
-    }
-    const lines = params.map((p) => {
-        const schema: JsonSchemaDict = { type: p.jsonSchemaType };
-        if (p.example !== undefined && p.example.trim().length > 0) {
-            schema.examples = [jsonSchemaExampleValue(p.example, p.jsonSchemaType)];
-        }
-        const enriched = formatMcpParameterDescriptionLine(p.description, schema);
-        let line = `- ${p.propertyName}`;
-        if (enriched) {
-            line += `: ${enriched}`;
-        }
-        return line;
-    });
-    return lines.join('\n');
-}
-
 function buildSqlDescription(query: SqlQuery, params: ResolvedSqlParam[]): string {
     const intent = requireIntent(query.intent, 'SQL tool');
-    const lines = [intent, '', 'Runs a prepared SQL statement. Pass parameter values by name (see input schema).'];
-    const parametersText = buildSqlParamDescriptionSection(params);
-    if (parametersText) {
-        lines.push('', 'Parameters:', parametersText);
-    }
+    const lines = [intent];
     const exampleCall = buildSqlExampleCallLine(params);
     if (exampleCall) {
         lines.push('', exampleCall);
@@ -117,7 +96,8 @@ function resolveSqlTool(query: SqlQuery, dialect: ResolvedDatabaseDialect): Reso
         mysqlBindNames: isMysqlDialect(dialect) ? mysqlBindParamNames(logicalSql) : undefined,
         access: getAccessKind(query),
         hasCheckToolAccess: isCheckToolAccessEnabled(query),
-        hasPrepareToolCall: isPrepareToolCallEnabled(query)
+        hasPrepareToolCall: isPrepareToolCallEnabled(query),
+        hasAfterToolCall: isAfterToolCallEnabled(query)
     };
 }
 

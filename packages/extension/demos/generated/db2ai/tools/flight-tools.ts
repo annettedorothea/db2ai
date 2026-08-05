@@ -29,6 +29,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -46,11 +47,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'listFlights',
         title: 'Flights matching origin city',
-        description:
-            'list flights from CSV-backed DuckDB view by origin city\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- city: origin city (type: string) (example: New York)\n- limit: max rows (type: integer) (example: 20)\n\nExample call: city=New York, limit=20',
+        description: 'list flights from CSV-backed DuckDB view by origin city\n\nExample call: city=New York, limit=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            FlightDate,\n            UniqueCarrier,\n            OriginCityName,\n            DestCityName,\n            FlightNum\n        FROM\n            flights\n        WHERE\n            OriginCityName = $1\n        LIMIT\n            $2\n    ',
         params: [
@@ -77,7 +78,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'flight-tools';
-export const mcpServerVersion = '1.1.2';
+export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

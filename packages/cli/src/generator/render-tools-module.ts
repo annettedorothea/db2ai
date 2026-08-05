@@ -29,15 +29,19 @@ import {
 import { renderInvokeBlockTs } from './invoke-render.js';
 import { ensureInitDatabaseStubFromSource, renderInitDatabaseImport } from './init-database-stub.js';
 import {
+    listAfterToolCallHookEntries,
+    listAfterToolCallToolNames,
     listCheckToolAccessToolNames,
     listPrepareToolCallHookEntries,
     listPrepareToolCallToolNames,
-    modelHasAuthPipeline,
+    modelHasInvokePipeline,
+    renderAfterToolCallHookImports,
+    renderAfterToolCallHooksMap,
     renderCheckToolAccessHookImports,
     renderCheckToolAccessHooksMap,
     renderPrepareToolCallHookImports,
     renderPrepareToolCallHooksMap,
-    resolveAuthPipelineTier
+    resolveInvokePipelineTier
 } from './render-check-stubs.js';
 
 export type GeneratedSqlParam = {
@@ -58,6 +62,7 @@ export type GeneratedToolModule = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -92,6 +97,7 @@ function toGeneratedToolModule(tool: ResolvedDbToolCodegen): GeneratedToolModule
         access: tool.access,
         hasCheckToolAccess: tool.hasCheckToolAccess,
         hasPrepareToolCall: tool.hasPrepareToolCall,
+        hasAfterToolCall: tool.hasAfterToolCall,
         sqlText: tool.sqlText,
         params: tool.params.map(serializeSqlParam)
     };
@@ -208,6 +214,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -238,13 +245,15 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const tools = resolveToolsFromModel(model);
     const inputSchemaByTool = buildInputSchemaByTool(model, tools) as Record<string, JsonSchemaDict>;
     const hasVerifyCredential = isVerifyCredentialEnabled(model);
-    const hasAuthPipeline = modelHasAuthPipeline(model);
+    const hasInvokePipeline = modelHasInvokePipeline(model);
     const checkToolAccessToolNames = listCheckToolAccessToolNames(model);
     const prepareToolCallToolNames = listPrepareToolCallToolNames(model);
-    const authPipelineTier = resolveAuthPipelineTier(
-        hasAuthPipeline,
+    const afterToolCallToolNames = listAfterToolCallToolNames(model);
+    const invokePipelineTier = resolveInvokePipelineTier(
+        hasInvokePipeline,
         checkToolAccessToolNames,
-        prepareToolCallToolNames
+        prepareToolCallToolNames,
+        afterToolCallToolNames
     );
     const checkToolAccessImports =
         checkToolAccessToolNames.length > 0
@@ -254,14 +263,23 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
         prepareToolCallToolNames.length > 0
             ? renderPrepareToolCallHookImports(destinationTsPath, stubPaths, prepareToolCallToolNames)
             : '';
-    const authStubImports = [checkToolAccessImports, prepareToolCallImports].filter((s) => s.length > 0).join('\n');
+    const afterToolCallImports =
+        afterToolCallToolNames.length > 0
+            ? renderAfterToolCallHookImports(destinationTsPath, stubPaths, afterToolCallToolNames)
+            : '';
+    const authStubImports = [checkToolAccessImports, prepareToolCallImports, afterToolCallImports]
+        .filter((s) => s.length > 0)
+        .join('\n');
     const authMapBlocks: string[] = [];
-    if (authPipelineTier === 'full') {
+    if (invokePipelineTier === 'full') {
         if (checkToolAccessToolNames.length > 0) {
             authMapBlocks.push(renderCheckToolAccessHooksMap(checkToolAccessToolNames));
         }
         if (prepareToolCallToolNames.length > 0) {
             authMapBlocks.push(renderPrepareToolCallHooksMap(listPrepareToolCallHookEntries(model)));
+        }
+        if (afterToolCallToolNames.length > 0) {
+            authMapBlocks.push(renderAfterToolCallHooksMap(listAfterToolCallHookEntries(model)));
         }
     }
     const authRuntimePrefixBlock = authMapBlocks.length > 0 ? `${authMapBlocks.join('\n\n')}\n\n` : '';
@@ -274,9 +292,16 @@ export async function renderToolsModule(input: RenderToolsModuleInput): Promise<
     const inputZodBlock = buildInputZodBlock(inputSchemaByTool);
     const stubMaps = {
         checkToolAccess: checkToolAccessToolNames.length > 0,
-        prepareToolCall: prepareToolCallToolNames.length > 0
+        prepareToolCall: prepareToolCallToolNames.length > 0,
+        afterToolCall: afterToolCallToolNames.length > 0
     };
-    const invokeBlockTs = renderInvokeBlockTs(tools, databaseDialect, hasVerifyCredential, authPipelineTier, stubMaps);
+    const invokeBlockTs = renderInvokeBlockTs(
+        tools,
+        databaseDialect,
+        hasVerifyCredential,
+        invokePipelineTier,
+        stubMaps
+    );
 
     const verifyStubPath = hasVerifyCredential
         ? await ensureVerifyCredentialStubFromSource(source, destinationTsPath)

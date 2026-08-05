@@ -36,6 +36,7 @@ ToolHooks:
     '{'
         ('checkToolAccess' ':' checkToolAccess=Boolean)?
         ('prepareToolCall' ':' prepareToolCall=PrepareToolCallSpec)?
+        ('afterToolCall' ':' afterToolCall=Boolean)?
     '}';
 
 PrepareToolCallSpec:

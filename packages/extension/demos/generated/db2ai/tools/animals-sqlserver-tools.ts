@@ -30,6 +30,7 @@ export type GeneratedTool = {
     access: 'public' | 'protected';
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
+    hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
 };
@@ -48,10 +49,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'listAnimals',
         title: 'Paginated animal catalog',
         description:
-            'list animals with common name, Latin name, and short English description\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- limit: max rows (type: integer) (example: 20)\n\nExample call: limit=20',
+            'list animals with common name, Latin name, and short English description\n\nExample call: limit=20',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             '\n        SELECT TOP (@limit)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        ORDER BY common_name\n    ',
         params: [
@@ -71,10 +73,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'searchAnimals',
         title: 'Name search in the animal catalog',
         description:
-            'search animals by common or Latin name (substring match)\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- maxRows: max rows to return (type: integer) (example: 10)\n- searchText: text matched in common or Latin name (type: string) (example: fox)\n\nExample call: maxRows=10, searchText=fox',
+            'search animals by common or Latin name (substring match)\n\nExample call: maxRows=10, searchText=fox',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: true,
+        hasAfterToolCall: false,
         sqlText:
             "\n        SELECT TOP (@maxRows)\n            animal_id,\n            common_name,\n            latin_name,\n            description\n        FROM animals\n        WHERE\n            common_name LIKE '%' + @searchText + '%'\n            OR latin_name LIKE '%' + @searchText + '%'\n        ORDER BY common_name\n    ",
         params: [
@@ -103,10 +106,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'createAnimal',
         title: 'Add one animal to the catalog',
         description:
-            'insert a new animal row into the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName: English common name (type: string) (example: European hedgehog)\n- latinName: Latin species name (type: string) (example: Erinaceus europaeus)\n- aboutText: short English description (type: string) (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.',
+            'insert a new animal row into the catalog\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows.',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        INSERT INTO animals (common_name, latin_name, description)\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        VALUES (@commonName, @latinName, @aboutText)\n    ',
         params: [
@@ -144,10 +148,11 @@ export const generatedTools: GeneratedTool[] = [
         toolName: 'updateAnimal',
         title: 'Update one animal by id',
         description:
-            'update an existing animal row in the catalog\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- commonName: English common name (type: string) (example: European hedgehog)\n- latinName: Latin species name (type: string) (example: Erinaceus europaeus)\n- aboutText: short English description (type: string) (example: Small nocturnal insectivore with spines, common in gardens and hedgerows.)\n- animalId: animal id to update (type: integer) (example: 1)\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows., animalId=1',
+            'update an existing animal row in the catalog\n\nExample call: commonName=European hedgehog, latinName=Erinaceus europaeus, aboutText=Small nocturnal insectivore with spines, common in gardens and hedgerows., animalId=1',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        UPDATE animals\n        SET\n            common_name = @commonName,\n            latin_name = @latinName,\n            description = @aboutText\n        OUTPUT INSERTED.animal_id, INSERTED.common_name, INSERTED.latin_name, INSERTED.description\n        WHERE animal_id = @animalId\n    ',
         params: [
@@ -193,11 +198,11 @@ export const generatedTools: GeneratedTool[] = [
         kind: 'sql',
         toolName: 'deleteAnimal',
         title: 'Remove one animal by id',
-        description:
-            'delete an animal row from the catalog by id\n\nRuns a prepared SQL statement. Pass parameter values by name (see input schema).\n\nParameters:\n- animalId: animal id to delete (type: integer) (example: 999)\n\nExample call: animalId=999',
+        description: 'delete an animal row from the catalog by id\n\nExample call: animalId=999',
         access: 'public',
         hasCheckToolAccess: false,
         hasPrepareToolCall: false,
+        hasAfterToolCall: false,
         sqlText:
             '\n        DELETE FROM animals\n        OUTPUT DELETED.animal_id, DELETED.common_name, DELETED.latin_name, DELETED.description\n        WHERE animal_id = @animalId\n    ',
         params: [
@@ -215,7 +220,7 @@ export const generatedTools: GeneratedTool[] = [
 ];
 
 export const mcpServerName = 'animals-sqlserver-tools';
-export const mcpServerVersion = '1.1.2';
+export const mcpServerVersion = '1.2.0';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 
@@ -381,8 +386,8 @@ export async function invokeTool(
                         limit: optionsResolved['limit']
                     }
                 });
-                const result = await request.query(sqlText);
-                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                const execResult = await request.query(sqlText);
+                const resultRows = Array.isArray(execResult.recordset) ? execResult.recordset : [];
                 return {
                     rows: resultRows,
                     rowCount: resultRows.length
@@ -408,8 +413,8 @@ export async function invokeTool(
                         searchText: optionsResolved['searchText']
                     }
                 });
-                const result = await request.query(sqlText);
-                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                const execResult = await request.query(sqlText);
+                const resultRows = Array.isArray(execResult.recordset) ? execResult.recordset : [];
                 return {
                     rows: resultRows,
                     rowCount: resultRows.length
@@ -449,8 +454,8 @@ export async function invokeTool(
                         aboutText: optionsResolved['aboutText']
                     }
                 });
-                const result = await request.query(sqlText);
-                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                const execResult = await request.query(sqlText);
+                const resultRows = Array.isArray(execResult.recordset) ? execResult.recordset : [];
                 return {
                     rows: resultRows,
                     rowCount: resultRows.length
@@ -492,8 +497,8 @@ export async function invokeTool(
                         animalId: optionsResolved['animalId']
                     }
                 });
-                const result = await request.query(sqlText);
-                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                const execResult = await request.query(sqlText);
+                const resultRows = Array.isArray(execResult.recordset) ? execResult.recordset : [];
                 return {
                     rows: resultRows,
                     rowCount: resultRows.length
@@ -511,8 +516,8 @@ export async function invokeTool(
                         animalId: optionsResolved['animalId']
                     }
                 });
-                const result = await request.query(sqlText);
-                const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
+                const execResult = await request.query(sqlText);
+                const resultRows = Array.isArray(execResult.recordset) ? execResult.recordset : [];
                 return {
                     rows: resultRows,
                     rowCount: resultRows.length

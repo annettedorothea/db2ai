@@ -2,7 +2,7 @@
     "name": "vscode-db2ai",
     "displayName": "db2ai",
     "description": "Tool Factory — language support and code generation for the .db2ai DSL (PostgreSQL, MySQL, MariaDB, SQL Server, Oracle → MCP tools).",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "publisher": "toolfactorydev",
     "license": "MIT",
     "repository": {

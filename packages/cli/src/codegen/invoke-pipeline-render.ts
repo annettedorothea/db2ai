@@ -4,7 +4,7 @@ import {
     renderPrepareToolCallBlock,
     renderVerifyCredentialBlock
 } from '@toolfactory.dev/core/codegen';
-import type { AuthPipelineTier, HookStubMaps } from '@toolfactory.dev/core/codegen';
+import type { InvokePipelineTier, HookStubMaps } from '@toolfactory.dev/core/codegen';
 
 function renderInvokeCredentialPipeline(hasVerifyCredential: boolean): string {
     const verifyBlock = renderVerifyCredentialBlock(hasVerifyCredential, 'String(inbound).trim()');
@@ -17,8 +17,8 @@ function renderInvokeCredentialPipeline(hasVerifyCredential: boolean): string {
 }
 
 /** Emits auth / hook preamble inside generated db2ai invokeTool. */
-export function renderInvokeAuthPipeline(
-    tier: AuthPipelineTier,
+export function renderInvokePipeline(
+    tier: InvokePipelineTier,
     hasVerifyCredential: boolean,
     stubMaps: HookStubMaps
 ): string {
@@ -26,7 +26,7 @@ export function renderInvokeAuthPipeline(
         return renderInvokeCredentialPipeline(hasVerifyCredential);
     }
     if (tier !== 'full') {
-        throw new Error('renderInvokeAuthPipeline: tier must be credential or full');
+        throw new Error('renderInvokePipeline: tier must be credential or full');
     }
 
     const verifyBlock = renderVerifyCredentialBlock(hasVerifyCredential, 'credential');
@@ -46,4 +46,4 @@ export function renderInvokeAuthPipeline(
     }${prepareBlock}`;
 }
 
-export type { AuthPipelineTier, HookStubMaps };
+export type { InvokePipelineTier, HookStubMaps };

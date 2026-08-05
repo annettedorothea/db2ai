@@ -147,7 +147,15 @@ SQL {
 SQL {
     toolName: topCustomersByRevenue
     access: public
-    intent: "rank customers by total net revenue from the cleaned Excel sales view"
+    hooks: {
+        afterToolCall: true
+    }
+    intent: '''
+        Rank customers by total net revenue from the cleaned Excel sales view.
+        afterToolCall writes a CSV under the OS temp dir and returns path metadata
+        (row data is not returned in the MCP result).
+        Prefer this when the user asks to export or download top customers as a file.
+    '''
     query: '''
         SELECT
             s.customer_id,
@@ -168,7 +176,7 @@ SQL {
         LIMIT
             :limit
     '''
-    summary: "Top customers by revenue"
+    summary: "Top customers by revenue (CSV export via afterToolCall)"
     params: {
         limit: { description: "max customers" example: "5" type: integer }
     }

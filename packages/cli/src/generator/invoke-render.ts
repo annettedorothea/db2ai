@@ -1,7 +1,8 @@
 import type { ResolvedDatabaseDialect, SqlParamType } from 'db-2-ai-dsl-language';
 import { isMysqlDialect, isOracleNumericReturningColumn, prepareOracleDmlReturning } from 'db-2-ai-dsl-language';
 import type { ResolvedDbToolCodegen, ResolvedSqlToolCodegen } from '../db-query-codegen.js';
-import { renderInvokeAuthPipeline, type AuthPipelineTier, type HookStubMaps } from './render-check-stubs.js';
+import { renderInvokePipeline, type InvokePipelineTier, type HookStubMaps } from './render-check-stubs.js';
+import { renderAfterToolCallBlock } from '@toolfactory.dev/core/codegen';
 
 function renderOptionValueExpression(
     propertyName: string,
@@ -125,18 +126,24 @@ function renderOracleOutBindLines(tool: ResolvedSqlToolCodegen): string {
         .join('\n');
 }
 
+function finishSqlCaseResult(objectLiteral: string, useAfterHook: boolean): string {
+    if (useAfterHook) {
+        return `            invokeResult = ${objectLiteral};
+            break;`;
+    }
+    return `            return ${objectLiteral};`;
+}
+
 function renderSqlInvokeCase(
     tool: ResolvedSqlToolCodegen,
     dialect: ResolvedDatabaseDialect,
-    optionsVar: string
+    optionsVar: string,
+    useAfterHook: boolean
 ): string {
     if (dialect === 'oracle') {
         const prepared = prepareOracleDmlReturning(tool.sqlText);
         const bindLines = renderOracleBindObjectLines(tool, optionsVar);
         const outBindLines = renderOracleOutBindLines(tool);
-        const resultRowsExpr = prepared
-            ? `rowsFromOracleDmlReturning(result.outBinds, ${JSON.stringify(prepared.returningColumns)}, ${JSON.stringify(prepared.outBindNames)})`
-            : 'Array.isArray(result.rows) ? result.rows : []';
         return `        case ${JSON.stringify(tool.toolName)}: {
             const sqlText = ${JSON.stringify(prepared?.sqlText ?? tool.sqlText)};
             const binds = {
@@ -147,15 +154,22 @@ ${bindLines}${outBindLines.length > 0 ? `\n${outBindLines}` : ''}
                 sql: compactSqlForLog(sqlText),
                 values: binds
             });
-            const result = await connection.execute(sqlText, binds, {
+            const execResult = await connection.execute(sqlText, binds, {
                 outFormat: oracledb.OUT_FORMAT_OBJECT,
                 autoCommit: true
             });
-            const resultRows = ${resultRowsExpr};
-            return {
+            const resultRows = ${
+                prepared
+                    ? `rowsFromOracleDmlReturning(execResult.outBinds, ${JSON.stringify(prepared.returningColumns)}, ${JSON.stringify(prepared.outBindNames)})`
+                    : 'Array.isArray(execResult.rows) ? execResult.rows : []'
+            };
+${finishSqlCaseResult(
+    `{
                 rows: resultRows,
                 rowCount: resultRows.length
-            };
+            }`,
+    useAfterHook
+)}
         }`;
     }
     if (dialect === 'sqlserver') {
@@ -171,12 +185,15 @@ ${inputLines}
 ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optionsVar}[${JSON.stringify(p.propertyName)}],`).join('\n')}
                 }
             });
-            const result = await request.query(sqlText);
-            const resultRows = Array.isArray(result.recordset) ? result.recordset : [];
-            return {
+            const execResult = await request.query(sqlText);
+            const resultRows = Array.isArray(execResult.recordset) ? execResult.recordset : [];
+${finishSqlCaseResult(
+    `{
                 rows: resultRows,
                 rowCount: resultRows.length
-            };
+            }`,
+    useAfterHook
+)}
         }`;
     }
     const valueExprs = collectSqlBindValueExpressions(tool, dialect, optionsVar).join(', ');
@@ -191,10 +208,13 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
             });
             const [rows] = await client.query(sqlText, sqlValues);
             const resultRows = normalizeMysqlRows(rows);
-            return {
+${finishSqlCaseResult(
+    `{
                 rows: resultRows,
                 rowCount: resultRows.length
-            };
+            }`,
+    useAfterHook
+)}
         }`;
     }
     if (dialect === 'duckdb') {
@@ -208,10 +228,13 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
             });
             const reader = await connection.runAndReadAll(sqlText, sqlValues);
             const rows = reader.getRowObjectsJson();
-            return {
+${finishSqlCaseResult(
+    `{
                 rows,
                 rowCount: rows.length
-            };
+            }`,
+    useAfterHook
+)}
         }`;
     }
     return `        case ${JSON.stringify(tool.toolName)}: {
@@ -222,11 +245,14 @@ ${tool.params.map((p) => `                    ${JSON.stringify(p.name)}: ${optio
                 sql: compactSqlForLog(sqlText),
                 values: sqlValues
             });
-            const result = await client.query({ text: sqlText, values: sqlValues });
-            return {
-                rows: result.rows,
-                rowCount: result.rowCount ?? result.rows.length
-            };
+            const execResult = await client.query({ text: sqlText, values: sqlValues });
+${finishSqlCaseResult(
+    `{
+                rows: execResult.rows,
+                rowCount: execResult.rowCount ?? execResult.rows.length
+            }`,
+    useAfterHook
+)}
         }`;
 }
 
@@ -279,17 +305,19 @@ function resolveInvokeParamHelperFlags(tools: ResolvedDbToolCodegen[]): InvokePa
 function renderInvokeSwitchCases(
     tools: ResolvedDbToolCodegen[],
     dialect: ResolvedDatabaseDialect,
-    optionsVar: string
+    optionsVar: string,
+    useAfterHook: boolean
 ): string {
-    return tools.map((tool) => renderSqlInvokeCase(tool, dialect, optionsVar)).join('\n');
+    return tools.map((tool) => renderSqlInvokeCase(tool, dialect, optionsVar, useAfterHook)).join('\n');
 }
 
-function renderOptionsResolvedInit(authPipelineTier: AuthPipelineTier): string {
-    if (authPipelineTier === 'none') {
+function renderOptionsResolvedInit(invokePipelineTier: InvokePipelineTier, stubMaps: HookStubMaps): string {
+    if (invokePipelineTier === 'none') {
         return '';
     }
+    const decl = stubMaps.prepareToolCall ? 'let optionsResolved = options;' : 'const optionsResolved = options;';
     return `
-    let optionsResolved = options;`;
+    ${decl}`;
 }
 
 function renderHostBinding(typescript: boolean): string {
@@ -330,21 +358,33 @@ function renderDuckdbClientSetup(): string {
 function renderDbInvokePreamble(
     connectBlock: string,
     hasVerifyCredential: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     stubMaps: HookStubMaps,
     typescript: boolean
 ): string {
     const accessChecks =
-        authPipelineTier === 'none' ? '' : renderInvokeAuthPipeline(authPipelineTier, hasVerifyCredential, stubMaps);
+        invokePipelineTier === 'none' ? '' : renderInvokePipeline(invokePipelineTier, hasVerifyCredential, stubMaps);
+    const switchIntro = stubMaps.afterToolCall
+        ? `        let invokeResult: unknown;
+        switch (toolName) {`
+        : `        switch (toolName) {`;
     return `
     const toolMeta = generatedTools.find((t) => t.toolName === toolName);
     if (!toolMeta) {
         throw new Error('Unknown tool: ' + toolName);
     }
     loggingAdapter.debug('invokeTool', { toolName });
-${renderHostBinding(typescript)}${renderOptionsResolvedInit(authPipelineTier)}${accessChecks}${connectBlock}
+${renderHostBinding(typescript)}${renderOptionsResolvedInit(invokePipelineTier, stubMaps)}${accessChecks}${connectBlock}
     try {
-        switch (toolName) {`;
+${switchIntro}`;
+}
+
+function renderSwitchSuccessEpilogue(stubMaps: HookStubMaps): string {
+    if (!stubMaps.afterToolCall) {
+        return '';
+    }
+    return `${renderAfterToolCallBlock(stubMaps, 'toolMeta', 'invokeResult')}
+        return invokeResult;`;
 }
 
 const COMPACT_SQL_FOR_LOG_TS = `
@@ -355,10 +395,10 @@ function compactSqlForLog(sql: string): string {
 
 function renderInvokeOptionsParam(
     hasSqlTools: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     typescript: boolean
 ): string {
-    const name = hasSqlTools || authPipelineTier !== 'none' ? 'options' : '_options';
+    const name = hasSqlTools || invokePipelineTier !== 'none' ? 'options' : '_options';
     return typescript ? `${name}: InvokeOptions = {}` : `${name} = {}`;
 }
 
@@ -434,7 +474,7 @@ function renderPostgresInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasVerifyCredential: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
@@ -442,7 +482,7 @@ function renderPostgresInvokeBlockTs(
     const preamble = renderDbInvokePreamble(
         renderPostgresClientSetup(true),
         hasVerifyCredential,
-        authPipelineTier,
+        invokePipelineTier,
         stubMaps,
         true
     );
@@ -476,6 +516,7 @@ ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
+${renderSwitchSuccessEpilogue(stubMaps)}
     } finally {
         await client.end();
     }
@@ -487,7 +528,7 @@ function renderDuckdbInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasVerifyCredential: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
@@ -495,7 +536,7 @@ function renderDuckdbInvokeBlockTs(
     const preamble = renderDbInvokePreamble(
         renderDuckdbClientSetup(),
         hasVerifyCredential,
-        authPipelineTier,
+        invokePipelineTier,
         stubMaps,
         true
     );
@@ -520,6 +561,7 @@ ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
+${renderSwitchSuccessEpilogue(stubMaps)}
     } finally {
         connection.closeSync();
     }
@@ -531,7 +573,7 @@ function renderMysqlInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasVerifyCredential: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
@@ -541,7 +583,7 @@ function renderMysqlInvokeBlockTs(
     const connectionString = connectionUrlForMysqlDriver(resolveConnectionString(host));
     const client = await mysql.createConnection(connectionString);`,
         hasVerifyCredential,
-        authPipelineTier,
+        invokePipelineTier,
         stubMaps,
         true
     );
@@ -581,6 +623,7 @@ ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
+${renderSwitchSuccessEpilogue(stubMaps)}
     } finally {
         await client.end();
     }
@@ -669,7 +712,7 @@ function renderOracleInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasVerifyCredential: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
@@ -679,7 +722,7 @@ function renderOracleInvokeBlockTs(
     const connectionString = resolveConnectionString(host);
     const connection = await oracledb.getConnection(parseOracleConnectInput(connectionString));`,
         hasVerifyCredential,
-        authPipelineTier,
+        invokePipelineTier,
         stubMaps,
         true
     );
@@ -730,6 +773,7 @@ ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
+${renderSwitchSuccessEpilogue(stubMaps)}
     } finally {
         await connection.close();
     }
@@ -741,7 +785,7 @@ function renderSqlserverInvokeBlockTs(
     toolCases: string,
     flags: InvokeParamHelperFlags,
     hasVerifyCredential: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     stubMaps: HookStubMaps,
     hasSqlTools: boolean,
     optionsParam: string
@@ -751,7 +795,7 @@ function renderSqlserverInvokeBlockTs(
     const connectionString = resolveConnectionString(host);
     const pool = await sql.connect(parseSqlserverConnectInput(connectionString));`,
         hasVerifyCredential,
-        authPipelineTier,
+        invokePipelineTier,
         stubMaps,
         true
     );
@@ -808,6 +852,7 @@ ${toolCases}
             default:
                 throw new Error('Unknown tool: ' + toolName);
         }
+${renderSwitchSuccessEpilogue(stubMaps)}
     } finally {
         await pool.close();
     }
@@ -819,20 +864,20 @@ export function renderInvokeBlockTs(
     tools: ResolvedDbToolCodegen[],
     dialect: ResolvedDatabaseDialect,
     hasVerifyCredential: boolean,
-    authPipelineTier: AuthPipelineTier,
+    invokePipelineTier: InvokePipelineTier,
     stubMaps: HookStubMaps
 ): string {
-    const optionsVar = authPipelineTier !== 'none' ? 'optionsResolved' : 'options';
-    const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar);
+    const optionsVar = invokePipelineTier !== 'none' ? 'optionsResolved' : 'options';
+    const toolCases = renderInvokeSwitchCases(tools, dialect, optionsVar, stubMaps.afterToolCall);
     const flags = resolveInvokeParamHelperFlags(tools);
     const hasSqlTools = tools.length > 0;
-    const optionsParam = renderInvokeOptionsParam(hasSqlTools, authPipelineTier, true);
+    const optionsParam = renderInvokeOptionsParam(hasSqlTools, invokePipelineTier, true);
     if (isMysqlDialect(dialect)) {
         return renderMysqlInvokeBlockTs(
             toolCases,
             flags,
             hasVerifyCredential,
-            authPipelineTier,
+            invokePipelineTier,
             stubMaps,
             hasSqlTools,
             optionsParam
@@ -843,7 +888,7 @@ export function renderInvokeBlockTs(
             toolCases,
             flags,
             hasVerifyCredential,
-            authPipelineTier,
+            invokePipelineTier,
             stubMaps,
             hasSqlTools,
             optionsParam
@@ -854,7 +899,7 @@ export function renderInvokeBlockTs(
             toolCases,
             flags,
             hasVerifyCredential,
-            authPipelineTier,
+            invokePipelineTier,
             stubMaps,
             hasSqlTools,
             optionsParam
@@ -865,7 +910,7 @@ export function renderInvokeBlockTs(
             toolCases,
             flags,
             hasVerifyCredential,
-            authPipelineTier,
+            invokePipelineTier,
             stubMaps,
             hasSqlTools,
             optionsParam
@@ -875,7 +920,7 @@ export function renderInvokeBlockTs(
         toolCases,
         flags,
         hasVerifyCredential,
-        authPipelineTier,
+        invokePipelineTier,
         stubMaps,
         hasSqlTools,
         optionsParam

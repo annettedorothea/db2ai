@@ -67,7 +67,7 @@ const SQL_PARAM_SPEC_SORT: Record<SqlParamSpecKey, string> = {
 const SQL_BLOCK_KEYWORD_INSERT: Record<SqlBlockKey, string> = {
     toolName: 'toolName: $1$0',
     access: 'access: public$0',
-    hooks: 'hooks: {\n    checkToolAccess: true\n    prepareToolCall: true\n}$0',
+    hooks: 'hooks: {\n    checkToolAccess: true\n    prepareToolCall: true\n    afterToolCall: true\n}$0',
     intent: 'intent: "$1"$0',
     query: "query: '''\n$1\n'''$0",
     summary: 'summary: "$1"$0',
@@ -545,6 +545,31 @@ function buildAuthorizeSpecCompletionItems(document: LangiumDocument, position: 
     ];
 }
 
+function buildAfterToolCallSpecCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
+    const textDoc = document.textDocument;
+    const line = textDoc.getText({
+        start: { line: position.line, character: 0 },
+        end: { line: position.line, character: position.character }
+    });
+    const match = /^\s*afterToolCall\s*:\s*(\w*)$/.exec(line);
+    if (!match) {
+        return [];
+    }
+    const prefix = match[1] ?? '';
+    if (!'true'.startsWith(prefix)) {
+        return [];
+    }
+    return [
+        {
+            label: 'true',
+            kind: CompletionItemKind.Constant,
+            detail: 'Enable afterToolCallFor{Tool} stub',
+            insertTextFormat: InsertTextFormat.PlainText,
+            insertText: 'true'
+        }
+    ];
+}
+
 function buildPrepareSpecCompletionItems(document: LangiumDocument, position: Position): CompletionItem[] {
     const textDoc = document.textDocument;
     const line = textDoc.getText({
@@ -614,6 +639,10 @@ export class Db2AiDslCompletionProvider extends DefaultCompletionProvider {
         const prepareToolCallSpecItems = buildPrepareSpecCompletionItems(document, params.position);
         if (prepareToolCallSpecItems.length > 0) {
             return CompletionList.create(this.deduplicateItems(prepareToolCallSpecItems), false);
+        }
+        const afterToolCallSpecItems = buildAfterToolCallSpecCompletionItems(document, params.position);
+        if (afterToolCallSpecItems.length > 0) {
+            return CompletionList.create(this.deduplicateItems(afterToolCallSpecItems), false);
         }
         const prepareToolCallBodyItems = buildPrepareBodyKeywordCompletionItems(document, params.position);
         if (prepareToolCallBodyItems.length > 0) {
