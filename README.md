@@ -88,6 +88,8 @@ SQL {
 
 [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md) — architecture, authoring, runtime, and integrations.
 
+[Videos](https://github.com/annettedorothea/core2ai/blob/main/docs/videos.md) — [Willkommen bei Tool Factory](https://www.youtube.com/watch?v=KYaKTWkooeU) (DE) and more.
+
 See [CHANGELOG.md](CHANGELOG.md) for version history and upgrade notes.
 
 ---
