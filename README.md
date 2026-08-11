@@ -22,9 +22,12 @@ The easiest way to explore `db2ai` is with the VSIX extension and the bundled de
 
 ### 1. Install the extension
 
-Download the latest VSIX from the GitHub releases page:
+Preferred: install from the marketplace in your editor (search **db2ai** / publisher **toolfactorydev**):
 
-https://github.com/annettedorothea/db2ai/releases
+- [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=toolfactorydev.vscode-db2ai) (VS Code)
+- [Open VSX](https://open-vsx.org/extension/toolfactorydev/vscode-db2ai) (Cursor)
+
+Alternative: download the latest `.vsix` from [GitHub Releases](https://github.com/annettedorothea/db2ai/releases) and install it manually (**Install from VSIX…**).
 
 ### 2. Create a demo workspace
 
