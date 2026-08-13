@@ -33,6 +33,12 @@ export type GeneratedTool = {
     hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
+    annotations?: {
+        readOnlyHint?: boolean;
+        destructiveHint?: boolean;
+        idempotentHint?: boolean;
+        openWorldHint?: boolean;
+    };
 };
 
 export type InvokeOptions = Record<string, unknown>;
@@ -75,7 +81,11 @@ export const generatedTools: GeneratedTool[] = [
                 example: '20',
                 jsonSchemaType: 'integer'
             }
-        ]
+        ],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -108,7 +118,11 @@ export const generatedTools: GeneratedTool[] = [
                 example: '20',
                 jsonSchemaType: 'integer'
             }
-        ]
+        ],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -121,7 +135,11 @@ export const generatedTools: GeneratedTool[] = [
         hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            region,\n            COUNT(*) AS line_count,\n            COUNT(DISTINCT customer_id) AS customer_count,\n            ROUND(SUM(net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines\n        GROUP BY\n            region\n        ORDER BY\n            net_eur_total DESC\n    ',
-        params: []
+        params: [],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -134,7 +152,11 @@ export const generatedTools: GeneratedTool[] = [
         hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            product_group,\n            COUNT(*) AS line_count,\n            COUNT(DISTINCT customer_id) AS customer_count,\n            ROUND(SUM(net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines\n        GROUP BY\n            product_group\n        ORDER BY\n            net_eur_total DESC\n    ',
-        params: []
+        params: [],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -147,7 +169,11 @@ export const generatedTools: GeneratedTool[] = [
         hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            region,\n            product_group,\n            COUNT(*) AS line_count,\n            ROUND(SUM(net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines\n        GROUP BY\n            region,\n            product_group\n        ORDER BY\n            region,\n            net_eur_total DESC\n    ',
-        params: []
+        params: [],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -160,7 +186,11 @@ export const generatedTools: GeneratedTool[] = [
         hasAfterToolCall: false,
         sqlText:
             '\n        SELECT\n            c.segment,\n            COUNT(*) AS line_count,\n            ROUND(SUM(s.net_eur), 2) AS net_eur_total\n        FROM\n            sales_lines s\n            INNER JOIN customers c ON c.customer_id = s.customer_id\n        GROUP BY\n            c.segment\n        ORDER BY\n            net_eur_total DESC\n    ',
-        params: []
+        params: [],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -184,12 +214,16 @@ export const generatedTools: GeneratedTool[] = [
                 example: '5',
                 jsonSchemaType: 'integer'
             }
-        ]
+        ],
+        annotations: {
+            destructiveHint: false,
+            openWorldHint: false
+        }
     }
 ];
 
 export const mcpServerName = 'sales-report-tools';
-export const mcpServerVersion = '1.2.0';
+export const mcpServerVersion = '1.2.2';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

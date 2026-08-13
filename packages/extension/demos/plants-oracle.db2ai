@@ -18,6 +18,10 @@ SQL {
         FETCH FIRST :limit ROWS ONLY
     '''
     summary: "Paginated plant catalog"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows" example: "20" type: integer }
     }
@@ -44,6 +48,10 @@ SQL {
         FETCH FIRST :maxRows ROWS ONLY
     '''
     summary: "Name search in the plant catalog"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         searchText: { description: "text matched in common or Latin name" example: "oak" }
         maxRows: { description: "max rows to return" example: "10" type: integer }
@@ -60,6 +68,10 @@ SQL {
         RETURNING plant_id, common_name, latin_name, description
     '''
     summary: "Add one plant to the catalog"
+    annotations: {
+        destructiveHint: false
+        openWorldHint: false
+    }
     params: {
         commonName: { description: "English common name" example: "Mint" type: string }
         latinName: { description: "Latin species name" example: "Mentha spicata" type: string }
@@ -81,6 +93,11 @@ SQL {
         RETURNING plant_id, common_name, latin_name, description
     '''
     summary: "Update one plant by id"
+    annotations: {
+        destructiveHint: false
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         plantId: { description: "plant id to update" example: "1" type: integer }
         commonName: { description: "English common name" example: "Mint" type: string }
@@ -99,6 +116,11 @@ SQL {
         RETURNING plant_id, common_name, latin_name, description
     '''
     summary: "Remove one plant by id"
+    annotations: {
+        destructiveHint: true
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         plantId: { description: "plant id to delete" example: "999" type: integer }
     }

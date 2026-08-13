@@ -19,6 +19,13 @@ import { enrichJsonSchemaPropertyDescription } from '@toolfactory.dev/core/codeg
 
 export type JsonSchemaDict = Record<string, unknown>;
 
+export type McpToolAnnotations = {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+};
+
 export type ResolvedSqlToolCodegen = {
     kind: 'sql';
     toolName: string;
@@ -31,6 +38,7 @@ export type ResolvedSqlToolCodegen = {
     hasCheckToolAccess: boolean;
     hasPrepareToolCall: boolean;
     hasAfterToolCall: boolean;
+    annotations?: McpToolAnnotations;
 };
 
 export type ResolvedDbToolCodegen = ResolvedSqlToolCodegen;
@@ -81,11 +89,33 @@ function buildSqlDescription(query: SqlQuery, params: ResolvedSqlParam[]): strin
     return lines.join('\n');
 }
 
+function resolveToolAnnotations(query: SqlQuery): McpToolAnnotations | undefined {
+    const source = query.annotations;
+    if (!source) {
+        return undefined;
+    }
+    const annotations: McpToolAnnotations = {};
+    if (source.readOnlyHint !== undefined) {
+        annotations.readOnlyHint = source.readOnlyHint;
+    }
+    if (source.destructiveHint !== undefined) {
+        annotations.destructiveHint = source.destructiveHint;
+    }
+    if (source.idempotentHint !== undefined) {
+        annotations.idempotentHint = source.idempotentHint;
+    }
+    if (source.openWorldHint !== undefined) {
+        annotations.openWorldHint = source.openWorldHint;
+    }
+    return Object.keys(annotations).length > 0 ? annotations : undefined;
+}
+
 function resolveSqlTool(query: SqlQuery, dialect: ResolvedDatabaseDialect): ResolvedSqlToolCodegen {
     const logicalSql = query.query !== undefined ? String(query.query) : '';
     const entries = query.params?.entries ?? [];
     const params = resolveSqlParamsOrdered(entries, logicalSql);
     const sqlText = rewriteNamedPlaceholdersForDialect(logicalSql, dialect);
+    const annotations = resolveToolAnnotations(query);
     return {
         kind: 'sql',
         toolName: requireToolName(query.toolName, 'SQL tool'),
@@ -97,7 +127,8 @@ function resolveSqlTool(query: SqlQuery, dialect: ResolvedDatabaseDialect): Reso
         access: getAccessKind(query),
         hasCheckToolAccess: isCheckToolAccessEnabled(query),
         hasPrepareToolCall: isPrepareToolCallEnabled(query),
-        hasAfterToolCall: isAfterToolCallEnabled(query)
+        hasAfterToolCall: isAfterToolCallEnabled(query),
+        ...(annotations ? { annotations } : {})
     };
 }
 

@@ -28,8 +28,17 @@ SqlQuery:
         ('intent' ':' intent=DslText)?
         ('query' ':' query=DslText)?
         ('summary' ':' summary=DslText)?
+        ('annotations' ':' annotations=ToolAnnotations)?
         ('params' ':' params=SqlParamMap)?
         ('response' ':' response=DslText)?
+    '}';
+
+ToolAnnotations:
+    '{'
+        ('readOnlyHint' ':' readOnlyHint=Boolean)?
+        ('destructiveHint' ':' destructiveHint=Boolean)?
+        ('idempotentHint' ':' idempotentHint=Boolean)?
+        ('openWorldHint' ':' openWorldHint=Boolean)?
     '}';
 
 ToolHooks:

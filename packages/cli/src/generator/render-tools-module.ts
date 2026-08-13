@@ -65,6 +65,12 @@ export type GeneratedToolModule = {
     hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
+    annotations?: {
+        readOnlyHint?: boolean;
+        destructiveHint?: boolean;
+        idempotentHint?: boolean;
+        openWorldHint?: boolean;
+    };
 };
 
 export type RenderToolsModuleInput = {
@@ -99,7 +105,8 @@ function toGeneratedToolModule(tool: ResolvedDbToolCodegen): GeneratedToolModule
         hasPrepareToolCall: tool.hasPrepareToolCall,
         hasAfterToolCall: tool.hasAfterToolCall,
         sqlText: tool.sqlText,
-        params: tool.params.map(serializeSqlParam)
+        params: tool.params.map(serializeSqlParam),
+        ...(tool.annotations ? { annotations: tool.annotations } : {})
     };
 }
 
@@ -217,6 +224,12 @@ export type GeneratedTool = {
     hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
+    annotations?: {
+        readOnlyHint?: boolean;
+        destructiveHint?: boolean;
+        idempotentHint?: boolean;
+        openWorldHint?: boolean;
+    };
 };
 
 export type InvokeOptions = Record<string, unknown>;

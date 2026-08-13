@@ -30,7 +30,18 @@ type VerifyCredentialFn = (credential: string) => void | Promise<void>;
 type TokenExchangeFn = (idpCredential: string) => Promise<string>;
 
 type GeneratedHostModule = {
-    generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
+    generatedTools: Array<{
+        toolName: string;
+        title?: string;
+        description: string;
+        access?: string;
+        annotations?: {
+            readOnlyHint?: boolean;
+            destructiveHint?: boolean;
+            idempotentHint?: boolean;
+            openWorldHint?: boolean;
+        };
+    }>;
     invokeTool: (toolName: string, args?: Record<string, unknown>, hostContext?: unknown) => Promise<unknown>;
     inputZodByTool?: Record<string, unknown>;
     mcpServerName?: string;
@@ -187,6 +198,12 @@ function readGeneratedModule(imported: Record<string, unknown>): GeneratedHostMo
             title?: string;
             description: string;
             access?: string;
+            annotations?: {
+                readOnlyHint?: boolean;
+                destructiveHint?: boolean;
+                idempotentHint?: boolean;
+                openWorldHint?: boolean;
+            };
         }>,
         invokeTool: invokeTool as (
             toolName: string,
@@ -341,7 +358,8 @@ async function registerMcpTools(
             {
                 title: typeof tool.title === 'string' && tool.title.length > 0 ? tool.title : undefined,
                 description: tool.description,
-                inputSchema
+                inputSchema,
+                annotations: tool.annotations
             },
             async (args) => {
                 loadLocalEnvFiles(options.envDirs, { refresh: true });

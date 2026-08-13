@@ -9,6 +9,10 @@ SQL {
     intent: "list films from Sakila (MariaDB dialect smoke test against the Sakila Docker DB)"
     query: "SELECT film_id, title, release_year, rating FROM film ORDER BY title LIMIT :limit OFFSET :offset"
     summary: "Paginated film rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "20" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -24,6 +28,10 @@ SQL {
     intent: "search Sakila films by title substring"
     query: "SELECT film_id, title, release_year, rating FROM film WHERE title LIKE CONCAT('%', :searchText, '%') ORDER BY title LIMIT :maxRows"
     summary: "Title search in Sakila"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         searchText: { description: "matched in film title" example: "love" type: string }
         maxRows: { description: "max rows" example: "10" type: integer }

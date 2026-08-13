@@ -17,6 +17,10 @@ SQL {
         ORDER BY common_name
     '''
     summary: "Paginated animal catalog"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows" example: "20" type: integer }
     }
@@ -42,6 +46,10 @@ SQL {
         ORDER BY common_name
     '''
     summary: "Name search in the animal catalog"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         searchText: { description: "text matched in common or Latin name" example: "fox" }
         maxRows: { description: "max rows to return" example: "10" type: integer }
@@ -58,6 +66,10 @@ SQL {
         VALUES (:commonName, :latinName, :aboutText)
     '''
     summary: "Add one animal to the catalog"
+    annotations: {
+        destructiveHint: false
+        openWorldHint: false
+    }
     params: {
         commonName: { description: "English common name" example: "European hedgehog" type: string }
         latinName: { description: "Latin species name" example: "Erinaceus europaeus" type: string }
@@ -79,6 +91,11 @@ SQL {
         WHERE animal_id = :animalId
     '''
     summary: "Update one animal by id"
+    annotations: {
+        destructiveHint: false
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         animalId: { description: "animal id to update" example: "1" type: integer }
         commonName: { description: "English common name" example: "European hedgehog" type: string }
@@ -97,6 +114,11 @@ SQL {
         WHERE animal_id = :animalId
     '''
     summary: "Remove one animal by id"
+    annotations: {
+        destructiveHint: true
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         animalId: { description: "animal id to delete" example: "999" type: integer }
     }

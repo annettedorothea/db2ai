@@ -23,6 +23,10 @@ SQL {
             :limit
     '''
     summary: "Sales lines for a region"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         region: { description: "sales region (Nord, West, Süd, Ost)" example: "Nord" type: string }
         limit: { description: "max rows" example: "20" type: integer }
@@ -52,6 +56,10 @@ SQL {
             :limit
     '''
     summary: "Sales lines for a product group"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         productGroup: {
             description: "Warengruppe (Maschinen, Ersatzteile, Software, Schulung, Sensorik, Dienstleistung)"
@@ -80,6 +88,10 @@ SQL {
             net_eur_total DESC
     '''
     summary: "Net sales totals by region"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
 }
 
 SQL {
@@ -100,6 +112,10 @@ SQL {
             net_eur_total DESC
     '''
     summary: "Net sales totals by product group"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
 }
 
 SQL {
@@ -122,6 +138,10 @@ SQL {
             net_eur_total DESC
     '''
     summary: "Net sales by region and product group"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
 }
 
 SQL {
@@ -142,6 +162,10 @@ SQL {
             net_eur_total DESC
     '''
     summary: "Net sales totals by customer segment"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
 }
 
 SQL {
@@ -177,6 +201,10 @@ SQL {
             :limit
     '''
     summary: "Top customers by revenue (CSV export via afterToolCall)"
+    annotations: {
+        destructiveHint: false
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max customers" example: "5" type: integer }
     }

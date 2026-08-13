@@ -16,7 +16,18 @@ type VerifyCredentialFn = (credential: string) => void | Promise<void>;
 type TokenExchangeFn = (idpCredential: string) => Promise<string>;
 
 type GeneratedHostModule = {
-    generatedTools: Array<{ toolName: string; title?: string; description: string; access?: string }>;
+    generatedTools: Array<{
+        toolName: string;
+        title?: string;
+        description: string;
+        access?: string;
+        annotations?: {
+            readOnlyHint?: boolean;
+            destructiveHint?: boolean;
+            idempotentHint?: boolean;
+            openWorldHint?: boolean;
+        };
+    }>;
     invokeTool: (
         toolName: string,
         args?: Record<string, unknown>,

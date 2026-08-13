@@ -19,6 +19,10 @@ SQL {
             :limit
     '''
     summary: "Flights matching origin city"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         city: { description: "origin city" example: "New York" type: string }
         limit: { description: "max rows" example: "20" type: integer }

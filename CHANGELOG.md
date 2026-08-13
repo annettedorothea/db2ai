@@ -10,10 +10,23 @@ Policy: [core2ai docs/development/changelog-policy.md](https://github.com/annett
 
 ## [Unreleased]
 
+---
+
+## [1.2.2] - 2026-08-13
+
+### Added
+
+- **DSL `annotations`:** optional MCP ToolAnnotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) on SQL tools; curated only (not inferred from SQL)
+- **Demos:** MCP `annotations` on all SQL tools (read-only lists, CRUD writes; `sales-report` `topCustomersByRevenue` not read-only because `afterToolCall` writes CSV)
+
 ### Changed
 
-- **`@toolfactory.dev/core`:** pin `^1.2.0` (registry)
+- **`@toolfactory.dev/core`:** pin **1.2.2** (MCP `registerTool` annotations passthrough)
 - **`afterToolCall` stubs:** receive `options` (shared core pipeline; write-once stubs updated)
+
+### Upgrade notes
+
+- Regenerate after upgrade. Requires `@toolfactory.dev/core` **1.2.2**.
 
 ---
 

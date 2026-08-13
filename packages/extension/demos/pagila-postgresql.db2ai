@@ -11,6 +11,10 @@ SQL {
     intent: "list films from Pagila with pagination"
     query: "SELECT * FROM film LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated film rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -32,6 +36,10 @@ SQL {
     '''
     query: "SELECT * FROM actor LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated actor rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: '''
                 Max rows per page.
@@ -57,6 +65,10 @@ SQL {
     intent: "list customers with pagination"
     query: "SELECT * FROM customer LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated customer rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "10" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -76,6 +88,10 @@ SQL {
     intent: "list categories with pagination"
     query: "SELECT * FROM category LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated category rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -95,6 +111,10 @@ SQL {
     intent: "list countries with pagination"
     query: "SELECT * FROM country LIMIT LEAST(:limit, 100) OFFSET :offset"
     summary: "Paginated country rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -123,6 +143,10 @@ SQL {
             :offset
     '''
     summary: "Paginated inventory rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -159,6 +183,10 @@ SQL {
             :maxRows
     '''
     summary: "Films by MPAA rating (G, PG, PG-13, R, NC-17)"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         rating: { description: "MPAA rating (G, PG, PG-13, R, or NC-17)"
             example: "PG-13" }
@@ -200,6 +228,10 @@ SQL {
             :maxRows
     '''
     summary: "Actor–film cast via film_actor join"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         lastNamePrefix: { description: '''
                 Actor last name prefix (case-insensitive).
@@ -245,6 +277,10 @@ SQL {
             :maxRows
     '''
     summary: "Film full-text style search (title and description)"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         searchText: { description: "search text (matched in title or description)"
             example: "dog" }
@@ -268,6 +304,10 @@ SQL {
     '''
     query: "INSERT INTO actor (first_name, last_name, last_update) VALUES (:firstName, :lastName, NOW()) RETURNING actor_id, first_name, last_name, last_update"
     summary: "Create actor with first and last name"
+    annotations: {
+        destructiveHint: false
+        openWorldHint: false
+    }
     params: {
         firstName: { 
             description: "actor first name"
@@ -295,6 +335,11 @@ SQL {
     '''
     query: "UPDATE actor SET first_name = :firstName, last_name = :lastName, last_update = NOW() WHERE actor_id = :actorId RETURNING actor_id, first_name, last_name, last_update"
     summary: "Update actor by id"
+    annotations: {
+        destructiveHint: false
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         actorId: { description: "actor id to update"
             example: "1"
@@ -326,6 +371,11 @@ SQL {
     '''
     query: "DELETE FROM actor WHERE actor_id = :actorId RETURNING actor_id, first_name, last_name, last_update"
     summary: "Delete actor by id"
+    annotations: {
+        destructiveHint: true
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         actorId: { 
             description: "actor id to delete"

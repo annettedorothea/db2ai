@@ -14,6 +14,12 @@ export function readGeneratedModuleTailFragment(): string {
             title?: string;
             description: string;
             access?: string;
+            annotations?: {
+                readOnlyHint?: boolean;
+                destructiveHint?: boolean;
+                idempotentHint?: boolean;
+                openWorldHint?: boolean;
+            };
         }>,
         invokeTool: invokeTool as (
             toolName: string,

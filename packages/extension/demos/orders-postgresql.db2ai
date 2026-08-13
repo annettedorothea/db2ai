@@ -30,6 +30,10 @@ SQL {
             order_id
     '''
     summary: "Customer order rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         customerId: { 
             description: "Customer id (e.g. alice, bob). Defaults from JWT when omitted on checked tools."
@@ -48,6 +52,10 @@ SQL {
     intent: "list products in the orders-postgresql catalog"
     query: "SELECT product_id, name, price FROM products ORDER BY product_id LIMIT :limit"
     summary: "Product catalog rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows" example: "50" type: integer }
     }
@@ -86,6 +94,10 @@ SQL {
         Products with reviews (requires credential).
         Join products and reviews; cap 100 rows in SQL.
     '''
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows" example: "50" type: integer }
     }
@@ -106,6 +118,10 @@ SQL {
     '''
     query: "INSERT INTO orders (customer_id, product_id, quantity) VALUES (:customerId, :productId, 1) RETURNING order_id, customer_id, product_id, quantity"
     summary: "Create order for customer and product"
+    annotations: {
+        destructiveHint: false
+        openWorldHint: false
+    }
     params: {
         customerId: { description: '''
                 Customer id (e.g. alice, bob).
@@ -132,6 +148,10 @@ SQL {
     '''
     query: "INSERT INTO products (name, price) VALUES (:productName, :price) RETURNING product_id, name, price"
     summary: "Create product (admin only)"
+    annotations: {
+        destructiveHint: false
+        openWorldHint: false
+    }
     params: {
         productName: { description: "Product name"
             example: "Widget Pro"
@@ -155,6 +175,11 @@ SQL {
     '''
     query: "UPDATE products SET name = :productName, price = :price WHERE product_id = :productId RETURNING product_id, name, price"
     summary: "Update product (admin only)"
+    annotations: {
+        destructiveHint: false
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         productId: { description: "Product id to update"
             example: "1"
@@ -182,6 +207,11 @@ SQL {
     '''
     query: "DELETE FROM products WHERE product_id = :productId RETURNING product_id, name, price"
     summary: "Delete product (admin only)"
+    annotations: {
+        destructiveHint: true
+        idempotentHint: true
+        openWorldHint: false
+    }
     params: {
         productId: { description: "Product id to delete"
             example: "999"

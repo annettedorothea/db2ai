@@ -51,7 +51,17 @@ describe('Completion for SQL block keywords', () => {
         const list = await completionAt(header, offset);
 
         const labels = sortedBlockKeywordLabels(list?.items ?? []);
-        expect(labels).toEqual(['toolName', 'access', 'hooks', 'intent', 'query', 'summary', 'params', 'response']);
+        expect(labels).toEqual([
+            'toolName',
+            'access',
+            'hooks',
+            'intent',
+            'query',
+            'summary',
+            'annotations',
+            'params',
+            'response'
+        ]);
     });
 
     test('does not suggest already used block keywords', async () => {

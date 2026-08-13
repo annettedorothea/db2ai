@@ -33,6 +33,12 @@ export type GeneratedTool = {
     hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
+    annotations?: {
+        readOnlyHint?: boolean;
+        destructiveHint?: boolean;
+        idempotentHint?: boolean;
+        openWorldHint?: boolean;
+    };
 };
 
 export type InvokeOptions = Record<string, unknown>;
@@ -66,7 +72,11 @@ export const generatedTools: GeneratedTool[] = [
                 example: '20',
                 jsonSchemaType: 'integer'
             }
-        ]
+        ],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -99,7 +109,11 @@ export const generatedTools: GeneratedTool[] = [
                 example: 'fox',
                 jsonSchemaType: 'string'
             }
-        ]
+        ],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -141,7 +155,11 @@ export const generatedTools: GeneratedTool[] = [
                 example: 'Small nocturnal insectivore with spines, common in gardens and hedgerows.',
                 jsonSchemaType: 'string'
             }
-        ]
+        ],
+        annotations: {
+            destructiveHint: false,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -192,7 +210,12 @@ export const generatedTools: GeneratedTool[] = [
                 example: '1',
                 jsonSchemaType: 'integer'
             }
-        ]
+        ],
+        annotations: {
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false
+        }
     },
     {
         kind: 'sql',
@@ -215,12 +238,17 @@ export const generatedTools: GeneratedTool[] = [
                 example: '999',
                 jsonSchemaType: 'integer'
             }
-        ]
+        ],
+        annotations: {
+            destructiveHint: true,
+            idempotentHint: true,
+            openWorldHint: false
+        }
     }
 ];
 
 export const mcpServerName = 'animals-sqlserver-tools';
-export const mcpServerVersion = '1.2.0';
+export const mcpServerVersion = '1.2.2';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 

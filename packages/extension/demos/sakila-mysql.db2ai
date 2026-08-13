@@ -11,6 +11,10 @@ SQL {
     intent: "list films from Sakila with pagination"
     query: "SELECT * FROM film LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila film rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -29,6 +33,10 @@ SQL {
     '''
     query: "SELECT * FROM actor LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila actor rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -44,6 +52,10 @@ SQL {
     intent: "list film categories with pagination"
     query: "SELECT * FROM category LIMIT :limit OFFSET :offset"
     summary: "Paginated Sakila category rows"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         limit: { description: "max rows per page" example: "100" type: integer }
         offset: { description: "rows to skip" example: "0" type: integer }
@@ -72,6 +84,10 @@ SQL {
             :maxRows
     '''
     summary: "Films by rating (G, PG, PG-13, R, NC-17)"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         rating: { description: "rating (G, PG, PG-13, R, or NC-17)"
             example: "PG" }
@@ -112,6 +128,10 @@ SQL {
             :maxRows
     '''
     summary: "Actor-film cast via film_actor join"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         lastNamePrefix: { description: "actor last name prefix (e.g. GAR, BER, HOP)"
             example: "GAR"
@@ -150,6 +170,10 @@ SQL {
             :maxRows
     '''
     summary: "Film search across title and description"
+    annotations: {
+        readOnlyHint: true
+        openWorldHint: false
+    }
     params: {
         searchText: { description: '''
                 Search text matched in title or description.
@@ -171,6 +195,10 @@ SQL {
     '''
     query: "INSERT INTO actor (first_name, last_name, last_update) VALUES (:firstName, :lastName, NOW())"
     summary: "Insert actor with first and last name"
+    annotations: {
+        destructiveHint: false
+        openWorldHint: false
+    }
     params: {
         firstName: { description: "actor first name"
             example: "MARY"

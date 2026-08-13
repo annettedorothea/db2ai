@@ -32,6 +32,12 @@ export type GeneratedTool = {
     hasAfterToolCall: boolean;
     sqlText: string;
     params?: GeneratedSqlParam[];
+    annotations?: {
+        readOnlyHint?: boolean;
+        destructiveHint?: boolean;
+        idempotentHint?: boolean;
+        openWorldHint?: boolean;
+    };
 };
 
 export type InvokeOptions = Record<string, unknown>;
@@ -73,12 +79,16 @@ export const generatedTools: GeneratedTool[] = [
                 example: '20',
                 jsonSchemaType: 'integer'
             }
-        ]
+        ],
+        annotations: {
+            readOnlyHint: true,
+            openWorldHint: false
+        }
     }
 ];
 
 export const mcpServerName = 'flight-tools';
-export const mcpServerVersion = '1.2.0';
+export const mcpServerVersion = '1.2.2';
 
 export { mcpBuildGeneratedAt } from '../mcp-build-generated-at.js';
 
