@@ -45,8 +45,7 @@ function printMcpInspectAuthHints(demoName, env = process.env) {
 
     if (httpDemo?.authExpectedEnv) {
         const headerName = env.MCP_AUTH_HEADER?.trim() || 'x-api-token';
-        const headerValue = env.MCP_AUTH_EXPECTED?.trim() || 'demo';
-        printAuthHeader(headerName, headerValue);
+        printAuthHeader(headerName);
         console.log('  Must match MCP_AUTH_EXPECTED in .env.');
         console.log('');
         return;

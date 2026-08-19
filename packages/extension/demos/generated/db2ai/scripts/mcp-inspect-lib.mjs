@@ -27,13 +27,12 @@ export function printAuthField(label, value) {
 }
 
 /**
- * @param {string} name
- * @param {string} value
+ * @param {string} name Header name for Inspector Custom Headers (value never logged).
  */
-export function printAuthHeader(name, value) {
+export function printAuthHeader(name) {
     console.log('  Custom Headers — enable toggle, then set:');
     printAuthField('Name:', name);
-    printAuthField('Value:', value);
+    console.log('     (value from .env or mcp.json — not printed)');
 }
 
 /**
@@ -210,8 +209,11 @@ export async function runMcpInspect(options) {
     printAuthHints(demoName, process.env);
 
     console.log(`[mcp:inspect] opening MCP Inspector → ${mcpEntry.url}`);
-    if (Object.keys(mcpEntry.headers).length > 0) {
-        console.log(`[mcp:inspect] pre-filled headers (CLI): ${JSON.stringify(mcpEntry.headers)}`);
+    const headerNames = Object.keys(mcpEntry.headers);
+    if (headerNames.length > 0) {
+        console.log(
+            `[mcp:inspect] pre-filled headers (CLI): ${headerNames.join(', ')} (values not printed)`
+        );
     }
 
     const code = await runInspector(demosRoot, buildInspectorArgs(mcpEntry));
