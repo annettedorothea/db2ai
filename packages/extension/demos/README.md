@@ -6,8 +6,6 @@ This workspace contains examples that demonstrate database-backed MCP tools, aut
 
 If this is your first time using `db2ai`, start with the PostgreSQL or MySQL examples.
 
-Walkthrough (DE): [Willkommen bei Tool Factory](https://www.youtube.com/watch?v=KYaKTWkooeU)
-
 ---
 
 ## Quick Start
@@ -176,8 +174,6 @@ Host types: `public-http`, `passthrough-http`, `oauth-http`.
 ## Documentation
 
 [Documentation index](https://github.com/annettedorothea/core2ai/blob/main/docs/README.md) — architecture, authoring, runtime, and integrations.
-
-[Videos](https://github.com/annettedorothea/core2ai/blob/main/docs/videos.md) — [Willkommen bei Tool Factory](https://www.youtube.com/watch?v=KYaKTWkooeU) (DE) and more.
 
 ---
 
